@@ -7,7 +7,7 @@ setup(
     url='https://github.com/fetch/',
     author='Edward FitzGerald',
     author_email='edward.fitzgerald@fetch.ai',
-    packages=find_packages(exclude=['contrib', 'docs', 'tests']),  # Required
+    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     install_requires=['requests'],
     extras_require={
         'dev': ['check-manifest'],
