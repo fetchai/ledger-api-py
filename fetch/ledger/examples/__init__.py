@@ -1,2 +1,1 @@
-from .basic import SimpleBalanceRequest
-from .basic import SimpleTransferExchange
+from .basic import MultipleBalanceRequest

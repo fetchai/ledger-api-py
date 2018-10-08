@@ -26,9 +26,21 @@ class WalletApiExample(object):
             time.sleep(self.ITERATION_PERIOD_SECS)
 
         if balance == 0:
-            raise RuntimeError('Failed to generate a balance from the registered account')
+            raise RuntimeError('Failed to generate a balance from the registered account: ' + address)
 
         return address
+
+    def _create_accounts(self, count):
+
+        raw_data_that_ed_likes = self._api.register(count)
+
+        accounts = self._api.to_accounts(raw_data_that_ed_likes)
+
+        if accounts is None:
+            raise RuntimeError('Unable to create accounts from wallet API')
+
+        # don't wait for the balances to show, verify this later
+        return accounts
 
     def _balance(self, address):
         if address is None:
@@ -55,35 +67,57 @@ class WalletApiExample(object):
         if not self._api.transfer(from_address, to_address, amount):
             raise RuntimeError('Failed to submit the transfer transaction')
 
+# Account class for managing accounts easily
+class Account():
+    MAX_ITERATIONS        = 300
+    ITERATION_PERIOD_SECS = 0.5
 
-class SimpleBalanceRequest(WalletApiExample):
-    def run(self):
-        # register with the ledger for an address
-        address = self._register()
+    def __init__(self, api, address):
+        self._api     = api
+        self._address = address
+        self._balance = 0
 
-        # check that we have been given a "valid" address
-        balance = self._balance(address)
+    # For now, we assume that if we are updating that the balance must have changed
+    def update(self, expect_new_balance=True):
 
-        print('Balance for address: {} is {}'.format(address, balance))
+        for i in range(self.MAX_ITERATIONS):
+            new_balance = self._api.balance(self._address)
+            if(self._balance != new_balance or not expect_new_balance):
+                self._balance = new_balance
+                return
+            time.sleep(self.ITERATION_PERIOD_SECS)
+        else:
+            raise RuntimeError('Failed to get new balance at: {} . Old balance: {} '.format(self._address, self._balance))
+
+    @property
+    def address(self):
+        return self._address
+
+    @property
+    def balance(self):
+        return self._balance
+
+    def send_funds(self, amount, other):
+        other_address = other.address
+
+        self._api.transfer(self.address, other_address, amount)
+
+        if(amount != 0):
+            self.update()
+            other.update()
+    @property
+    def abbrev_address(self):
+        return self._address[0:15]
+
+    def __str__(self):
+        return "Account {} Balance {}".format(self.abbrev_address, self._balance)
+
+    def __repr__(self):
+        return "Account {} Balance {}".format(self._address, self._balance)
 
 
-class SimpleTransferExchange(WalletApiExample):
-    def run(self):
-        # register with the ledger for an address
-        address1 = self._register()
-        address2 = self._register()
+class MultipleBalanceRequest(WalletApiExample):
+    def run(self, count = 100):
 
-        # get the balances for the different accounts
-        balance1 = self._balance(address1)
-        balance2 = self._balance(address2)
-
-        assert balance1 >= 1
-
-        transfer_amount = max(balance1 // 10, 1)
-
-        # determine the expected balances
-        expected_balance1 = balance1 - transfer_amount
-        expected_balance2 = balance2 + transfer_amount
-
-        # wait until the balances match
-
+        # register with the ledger for addresses
+        self.accounts = self._create_accounts(count)
