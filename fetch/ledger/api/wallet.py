@@ -63,9 +63,10 @@ class Account():
     MAX_ITERATIONS        = 300
     ITERATION_PERIOD_SECS = 0.5
 
-    def __init__(self, api, address):
+    def __init__(self, api, data):
         self._api     = api
-        self._address = address
+        self._address = data["address"]
+        self._lane = data["lane"]
         self._balance = 0
 
     # For now, we assume that if we are updating that the balance must have changed
@@ -85,6 +86,10 @@ class Account():
         return self._address
 
     @property
+    def lane(self):
+        return self._lane
+
+    @property
     def balance(self):
         return self._balance
 
@@ -101,8 +106,8 @@ class Account():
         return self._address[0:15]
 
     def __str__(self):
-        return "Account {} Balance {}".format(self.abbrev_address, self._balance)
+        return "Account {} Lane {} Balance {}".format(self.abbrev_address, self.lane, self._balance)
 
     def __repr__(self):
-        return "Account {} Balance {}".format(self._address, self._balance)
+        return "Account {} Lane {} Balance {}".format(self._address, self.lane, self._balance)
 

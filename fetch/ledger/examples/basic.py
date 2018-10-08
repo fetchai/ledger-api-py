@@ -32,9 +32,8 @@ class WalletApiExample(object):
 
     def _create_accounts(self, count):
 
-        raw_data_that_ed_likes = self._api.register(count)
-
-        accounts = self._api.to_accounts(raw_data_that_ed_likes)
+        raw_data = self._api.register(count)
+        accounts = self._api.to_accounts(raw_data)
 
         if accounts is None:
             raise RuntimeError('Unable to create accounts from wallet API')
