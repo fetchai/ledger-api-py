@@ -8,10 +8,10 @@ setup(
     author='Edward FitzGerald',
     author_email='edward.fitzgerald@fetch.ai',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    install_requires=['requests'],
+    install_requires=['requests', 'ecdsa'],
     extras_require={
         'dev': ['check-manifest'],
-        'test': ['coverage'],
+        'test': ['coverage', 'pytest'],
     },
     entry_points={
         'console_scripts': [
