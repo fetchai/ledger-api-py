@@ -10,20 +10,19 @@ pipeline {
         stage('Python2 uTests') {
           agent {
             docker {
-              image "2.7-alpine"
+              image "python:2.7-alpine"
             }
           }
 
           stages {
-            stage('Setup environment') {
+            stage('Setup env python2.7') {
               steps {
                 sh 'pip install .[test]'
-              }
-              steps {
-                sh 'python setup.py'
+
+                sh 'python setup.py install'
               }
             }
-            stage('Execute unit tests') {
+            stage('Execute unit tests python2.7') {
               steps {
                 sh 'pytest'
               }
@@ -34,20 +33,19 @@ pipeline {
         stage('Python3 uTests') {
           agent {
             docker {
-              image "3.6-alpine"
+              image "python:3.6-alpine"
             }
           }
 
           stages {
-            stage('Setup environment') {
+            stage('Setup env python3.6') {
               steps {
-                sh 'pip3 install .[test]'
-              }
-              steps {
-                sh 'python setup.py'
+                sh 'pip install .[test]'
+
+                sh 'python setup.py install'
               }
             }
-            stage('Execute unit tests') {
+            stage('Execute unit tests python3.6') {
               steps {
                 sh 'pytest'
               }

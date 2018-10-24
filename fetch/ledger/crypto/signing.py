@@ -17,4 +17,21 @@
 #
 #------------------------------------------------------------------------------
 
-__path__ = __import__('pkgutil').extend_path(__path__, __name__)
+import ecdsa
+import hashlib
+
+class Signing(object):
+    curve = ecdsa.SECP256k1
+    digest = hashlib.sha256
+
+    @classmethod
+    def generatePrivKey(cls):
+        return ecdsa.SigningKey.generate(curve=cls.curve)
+
+    @classmethod
+    def privKeyFromBin(cls, private_key_data):
+        return ecdsa.SigningKey.from_string(private_key_data, curve=cls.curve)
+
+    @classmethod
+    def pubKeyFromBin(cls, public_key_data):
+        return ecdsa.VerifyingKey.from_string(public_key_data, curve=cls.curve)

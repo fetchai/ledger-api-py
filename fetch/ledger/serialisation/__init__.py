@@ -17,4 +17,9 @@
 #
 #------------------------------------------------------------------------------
 
-__path__ = __import__('pkgutil').extend_path(__path__, __name__)
+from .stream_packing import *
+from .interfaces import *
+from .primitive_types import *
+from .primitive_static_array import *
+from .primitive_dynamic_array import *
+from .collection_containers import *
