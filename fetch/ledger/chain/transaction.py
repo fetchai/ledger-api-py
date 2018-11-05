@@ -262,12 +262,12 @@ class Tx(TxBase):
 
                 signatories[identity_b64] = signature_b64
 
-        metadata["signatures"] = signatories
+        metadata["signatories"] = signatories
 
         return metadata
 
     def toWireFormat(self, include_metadata=False):
-        wire_format = {"ver":0}
+        wire_format = {"ver":"1.0"}
         if include_metadata:
             wire_format["metadata"] = self.getMetadataDict()
 
