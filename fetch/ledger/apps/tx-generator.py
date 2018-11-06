@@ -109,7 +109,7 @@ def main():
     elif args.subcommand == 'verify-tx':
         if args.filename:
             with open(args.filename, 'r') as f:
-                wire_tx = f.readlines()
+                wire_tx = f.read()
         else:
             wire_tx = args.tx_wire_format_string
 
