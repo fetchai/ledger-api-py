@@ -20,6 +20,7 @@
 
 from fetch.ledger.chain import Tx, Identity
 from fetch.ledger.crypto import Signing
+from fetch.ledger.chain.transaction_api import create_transfer_tx, create_wealth_tx
 
 import json
 import base64
@@ -28,48 +29,49 @@ from io import BytesIO
 from ecdsa import VerifyingKey
 from sys import argv
 
-def serialise_identity(identity):
-    stream = BytesIO()
-    identity.serialise(stream)
-    return stream.getvalue()
+def create_signed_transfer_transaction(priv_keys_from, address_to_bin, amount, fee):
+    address_from_bin = priv_keys_from[0].get_verifying_key().to_string()
 
-def create_transfer_contract(identity_from, identity_to, amount):
-    contract = { 
-        "from": base64.b64encode(serialise_identity(identity_from)).decode(),
-        "to": base64.b64encode(serialise_identity(identity_to)).decode(),
-        "amount": amount
-        }
-    contract_json_str = json.dumps(contract)
-    return contract_json_str.encode()
-
-def create_transfer_transaction(priv_keys_from, pub_key_to, amount, fee):
-    identity_from = Identity(data=priv_keys_from[0].get_verifying_key().to_string())
-
-    if isinstance(pub_key_to, VerifyingKey):
-        pub_key_to = pub_key_to.to_string()
-    elif not isinstance(pub_key_to, bytes):
-        raise TypeError("Unexpected type of `public_key_to` parameter, it must be either instance of `VerfyingKey` class or `bytes` type.")
-
-    identity_to = Identity(data=pub_key_to)
-
-    tx = Tx()
-    tx.contract_name = b'fetch.token.transfer'
-    tx.data = create_transfer_contract(identity_from, identity_to, amount)
-    tx.fee = fee
-    tx.resources = [serialise_identity(identity_from), serialise_identity(identity_to)]
+    tx = create_transfer_tx(address_from_bin, address_to_bin, amount, fee)
 
     for pk in priv_keys_from:
         tx.sign(pk)
 
     return tx
 
+def create_signed_wealth_transaction(priv_keys_to, amount, fee):
+    address_to_bin = priv_keys_to[0].get_verifying_key().to_string()
+
+    tx = create_wealth_tx(address_to_bin, amount, fee)
+
+    for pk in priv_keys_to:
+        tx.sign(pk)
+
+    return tx
+
 def parse_args(args=None):
     parser = argparse.ArgumentParser(description="Generates transfer Transaction in Wire Format.")
-    parser.add_argument('-p', '--private-key', type=str, nargs='+', help='Base64 encoded Private key (EDCSA secp256k1 in canonical binary form. The FIRST private key will be used to derive the `FROM` identity (public key) to make transfer from. If omitted, single private key will be generated.)')
-    parser.add_argument('-t', '--public-key-to', type=str, help='Base64 encoded Public key(EDCSA secp256k1 in canonical binary form) representing `TO` (destination) identity. If omitted, it will be generated.')
-    parser.add_argument('-a', '--amount', type=int, help='Amount to transfer. Must be unsigned integer (64 bites).', default=100)
-    parser.add_argument('-f', '--fee', type=int, help='Fee. Must be unsigned integer (64 bites).', default=1)
-    parser.add_argument('-m', '--include_metadata', action='store_true', help='Include non-mandatory metadata section.')
+    subparsers = parser.add_subparsers(dest="subcommand")
+
+    transfer_tx_parser = subparsers.add_parser('create-transfer-tx')
+    transfer_tx_parser.add_argument('-p', '--private-key', type=str, nargs='+', help='Base64 encoded Private key (EDCSA secp256k1 in canonical binary form. The FIRST private key will be used to derive the `FROM` identity (public key) to make transfer from. If omitted, single private key will be generated.)')
+    transfer_tx_parser.add_argument('-t', '--public-key-to', type=str, help='Base64 encoded Public key(EDCSA secp256k1 in canonical binary form) representing `TO` (destination) identity. If omitted, it will be generated.')
+    transfer_tx_parser.add_argument('-a', '--amount', type=int, help='Amount to transfer. Must be unsigned integer (64 bites).', default=100)
+    transfer_tx_parser.add_argument('-f', '--fee', type=int, help='Fee. Must be unsigned integer (64 bites).', default=1)
+    transfer_tx_parser.add_argument('-m', '--include_metadata', action='store_true', help='Include non-mandatory metadata section.')
+
+    wealth_tx_parser = subparsers.add_parser('create-wealth-tx')
+    wealth_tx_parser.add_argument('-p', '--private-key', type=str, nargs='+', help='Base64 encoded Private key (EDCSA secp256k1 in canonical binary form. The FIRST private key will be used to derive the `FROM` identity (public key) to make transfer from. If omitted, single private key will be generated.)')
+    wealth_tx_parser.add_argument('-a', '--amount', type=int, help='Amount to transfer. Must be unsigned integer (64 bites).', default=100)
+    wealth_tx_parser.add_argument('-f', '--fee', type=int, help='Fee. Must be unsigned integer (64 bites).', default=1)
+    wealth_tx_parser.add_argument('-m', '--include_metadata', action='store_true', help='Include non-mandatory metadata section.')
+
+    verify_tx_parser = subparsers.add_parser('verify-tx')
+    v_group = verify_tx_parser.add_mutually_exclusive_group(required=True)
+    v_group.add_argument('-t', '--tx-wire-format-string', type=str, help='Transaction in wire format, for example -t \'{"ver":"1.0", "data":"..."}\'.')
+    v_group.add_argument('-f', '--filename', type=str, help='Filename containing transaction in wire format.')
+    verify_tx_parser.add_argument('-m', '--print_metadata', action='store_true', help='Include non-mandatory metadata section.')
+
     return parser.parse_args(args)
 
 def get_private_keys(b64_encoded_priv_keys):
@@ -81,18 +83,48 @@ def get_private_keys(b64_encoded_priv_keys):
 def main():
     args = parse_args()
 
-    if args.private_key:
-        priv_keys = get_private_keys(args.private_key)
-    else:
-        priv_keys = [Signing.generatePrivKey()]
+    if args.subcommand == 'create-transfer-tx':
+        if args.private_key:
+            priv_keys = get_private_keys(args.private_key)
+        else:
+            priv_keys = [Signing.generatePrivKey()]
 
-    if args.public_key_to:
-        pub_key_to = Signing.pubKeyFromBin(base64.b64decode(args.public_key_to))
-    else:
-        pub_key_to = Signing.generatePrivKey().get_verifying_key()
+        if args.public_key_to:
+            pub_key_to_bin = base64.b64decode(args.public_key_to)
+        else:
+            pub_key_to_bin = Signing.generatePrivKey().get_verifying_key().to_string()
 
-    tx = create_transfer_transaction(priv_keys, pub_key_to, amount=args.amount, fee=args.fee)
-    print(tx.toWireFormat(include_metadata=args.include_metadata))
+        tx = create_signed_transfer_transaction(priv_keys, pub_key_to_bin, amount=args.amount, fee=args.fee)
+        print(tx.toWireFormat(include_metadata=args.include_metadata))
+
+    elif args.subcommand == 'create-wealth-tx':
+        if args.private_key:
+            priv_keys = get_private_keys(args.private_key)
+        else:
+            priv_keys = [Signing.generatePrivKey()]
+
+        tx = create_signed_wealth_transaction(priv_keys, amount=args.amount, fee=args.fee)
+        print(tx.toWireFormat(include_metadata=args.include_metadata))
+
+    elif args.subcommand == 'verify-tx':
+        if args.filename:
+            with open(args.filename, 'r') as f:
+                wire_tx = f.readlines()
+        else:
+            wire_tx = args.tx_wire_format_string
+
+        tx = Tx.fromWireFormat(wire_tx)
+
+        if args.print_metadata:
+            print(tx)
+            #print("hex:\n{}".format(tx))
+            #print("bin64:\n{}".format(tx.getMetadataDict()))
+
+        if tx.verify():
+            msg = "SUCCESSFULLY verified."
+        else:
+            msg = "FAILED to verify."
+        print(msg)
 
 if __name__ == '__main__':
     main()

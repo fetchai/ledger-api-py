@@ -48,7 +48,7 @@ class TxBase(Serialise):
         self.data = data
 
     def __str__(self, ):
-        return 'contract name: "{}",\nfee: {},\nresources: {},\ncontract data: {}'.format(self._contract_name, self._fee, self._resources, self._data)
+        return 'contract name: "{}",\nfee: {},\nresources: {},\ncontract data: {}'.format(self._contract_name, self._fee, [binascii.hexlify(res) for res in self._resources], self._data)
 
     def __eq__(self, other):
         return self._contract_name == other._contract_name and \
@@ -202,7 +202,7 @@ class Tx(TxBase):
         self._signatories = None
 
     def __str__(self):
-        return '{},\nsignatories: {}'.format(TxBase.__str__(self), self._signatories)
+        return '{},\nsignatories: {}'.format(TxBase.__str__(self), [(str(iden), str(sig)) for iden, sig, in self._signatories.items()])
 
     def __eq__(self, other):
         return TxBase.__eq__(self, other) and self._signatories == other._signatories

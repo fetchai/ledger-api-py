@@ -29,6 +29,9 @@ class Identity(Serialise):
         self.data = data
         self.params = params
 
+    def __str__(self):
+        return "{}: {}".format(binascii.hexlify(self.data), self.params)
+
     def __eq__(self, other):
         return self.data == other.data and self.params == other.params
 
@@ -42,6 +45,3 @@ class Identity(Serialise):
     def deserialise(self, from_buffer):
         self.data = ByteArray().deserialise(from_buffer).data
         self.params = ByteArray().deserialise(from_buffer).data
-
-    def __str__(self):
-        return "{}: {}".format(binascii.hexlify(self.data), self.params)
