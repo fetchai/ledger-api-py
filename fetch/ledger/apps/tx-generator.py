@@ -75,9 +75,10 @@ def parse_args(args=None):
     return parser.parse_args(args)
 
 def get_private_keys(b64_encoded_priv_keys):
-    keys = set()
+    keys = []
     for pk in b64_encoded_priv_keys:
-        keys.add(Signing.privKeyFromBin(base64.b64decode(pk)))
+        keys.append(Signing.privKeyFromBin(base64.b64decode(pk)))
+    assert len(keys) == len(set(keys)), "Private keys in provided list are not unique (some of them are provided multiple times)."
     return keys
 
 def main():

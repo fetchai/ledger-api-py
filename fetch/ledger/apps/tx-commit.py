@@ -33,7 +33,6 @@ def parse_args(args=None):
     v_group = parser.add_mutually_exclusive_group(required=True)
     v_group.add_argument('-t', '--tx-wire-format-string', type=str, help='Transaction in wire format, for example -t \'{"ver":"1.0", "data":"..."}\'.')
     v_group.add_argument('-f', '--filename', type=str, help='Filename containing transaction in wire format.')
-    verify_tx_parser.add_argument('-m', '--print_metadata', action='store_true', help='Include non-mandatory metadata section.')
     v_group.add_argument('-c', '--from-stdin', action='store_true', help='Read wire tx from stdin.')
 
     return parser.parse_args(args)
