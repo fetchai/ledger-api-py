@@ -15,15 +15,17 @@ class TokenContractApi(ApiEndpoint):
         tx = create_wealth_tx(priv_key.get_verifying_key().to_string(), amount, fee)
         tx.sign(priv_key)
         wire_tx = tx.toWireFormat()
-        success, _ = self._post(self.api_prefix + 'submit', wire_tx)
-        if success:
-            return True
+        return self.submit(wire_tx)
 
     def transfer(self, private_key_bin, to_address, amount, fee=0):
         priv_key = Signing.privKeyFromBin(private_key_bin)
         tx = create_transfer_tx(priv_key.get_verifying_key().to_string(), to_address, amount, fee=fee)
         tx.sign(priv_key)
         wire_tx = tx.toWireFormat()
+        return self.submit(wire_tx)
+
+    def submit(self, wire_tx):
         success, _ = self._post(self.api_prefix + 'submit', wire_tx)
         if success:
             return True
+
