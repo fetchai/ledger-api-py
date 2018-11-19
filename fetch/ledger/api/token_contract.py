@@ -3,6 +3,7 @@ from fetch.ledger.chain.transaction_api import create_wealth_tx, create_transfer
 from fetch.ledger.crypto.signing import Signing
 
 import time
+import json
 
 class TokenContractApi(ApiEndpoint):
     @property
@@ -24,8 +25,8 @@ class TokenContractApi(ApiEndpoint):
         wire_tx = tx.toWireFormat()
         return self.submit(wire_tx)
 
-    def submit(self, wire_tx):
-        success, _ = self._post(self.api_prefix + 'submit', wire_tx)
+    def submit(self, wire_tx):        
+        success, _ = self._post(self.api_prefix + 'submit', json.loads(wire_tx))
         if success:
             return True
 
