@@ -45,3 +45,12 @@ class ApiEndpoint(object):
             return True, response
 
         return False, None
+
+    @classmethod
+    def contract_name_to_url_path(cls, contract_name):
+        if type(contract_name) is bytes:
+            contract_name = contract_name.decode()
+        replaced = contract_name.replace(".", "/")
+        if replaced[-1:] == "/":
+            replaced = replaced[:-1]
+        return replaced

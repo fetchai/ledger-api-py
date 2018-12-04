@@ -18,6 +18,7 @@
 #------------------------------------------------------------------------------
 
 from fetch.ledger.api import TokenContractApi
+from fetch.ledger.chain import Tx
 
 import argparse
 import sys
@@ -32,6 +33,7 @@ def parse_args(args=None):
 
     v_group = parser.add_mutually_exclusive_group(required=True)
     v_group.add_argument('-t', '--tx-wire-format-string', type=str, help='Transaction in wire format, for example -t \'{"ver":"1.0", "data":"..."}\'.')
+    #v_group.add_argument('-n', '--tx-contract-name', type=str, help='Transaction contract name, for example. Default value is \`fetch.token.transfer\` if not provided. This value !MUST! correspond with contract name provided in wire transaction data.')
     v_group.add_argument('-f', '--filename', type=str, help='Filename containing transaction in wire format.')
     v_group.add_argument('-c', '--from-stdin', action='store_true', help='Read wire tx from stdin.')
 
@@ -53,9 +55,11 @@ def main():
     elif args.from_stdin:
         wire_tx = sys.stdin.read()
 
+    tx = Tx.fromWireFormat(wire_tx)
+
     tca = TokenContractApi(host, port, args.host_api_version)
-    tca.submit(wire_tx)
-    
+    tca.submit(wire_tx=wire_tx, contract_name=tx.contract_name)
+
 
 if __name__ == '__main__':
     main()

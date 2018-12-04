@@ -24,10 +24,12 @@ from fetch.ledger.chain.transaction_api import create_transfer_tx, create_wealth
 
 import json
 import base64
+import binascii
 import argparse
 from io import BytesIO
 from ecdsa import VerifyingKey
 from sys import argv
+
 
 def create_signed_transfer_transaction(priv_keys_from, address_to_bin, amount, fee):
     address_from_bin = priv_keys_from[0].get_verifying_key().to_string()
@@ -39,6 +41,7 @@ def create_signed_transfer_transaction(priv_keys_from, address_to_bin, amount, f
 
     return tx
 
+
 def create_signed_wealth_transaction(priv_keys_to, amount, fee):
     address_to_bin = priv_keys_to[0].get_verifying_key().to_string()
 
@@ -49,19 +52,20 @@ def create_signed_wealth_transaction(priv_keys_to, amount, fee):
 
     return tx
 
+
 def parse_args(args=None):
     parser = argparse.ArgumentParser(description="Generates transfer Transaction in Wire Format.")
     subparsers = parser.add_subparsers(dest="subcommand")
 
     transfer_tx_parser = subparsers.add_parser('create-transfer-tx')
-    transfer_tx_parser.add_argument('-p', '--private-key', type=str, nargs='+', help='Base64 encoded Private key (EDCSA secp256k1 in canonical binary form. The FIRST private key will be used to derive the `FROM` identity (public key) to make transfer from. If omitted, single private key will be generated.)')
-    transfer_tx_parser.add_argument('-t', '--public-key-to', type=str, help='Base64 encoded Public key(EDCSA secp256k1 in canonical binary form) representing `TO` (destination) identity. If omitted, it will be generated.')
+    transfer_tx_parser.add_argument('-p', '--private-key', type=str, nargs='+', help='Base64 or Hex encoded Private key (EDCSA secp256k1 in canonical binary form. Provide `hex:` prefix if value is hex encoded, base64 encoding is assumed if no prefix is provided. The FIRST private key will be used to derive the `FROM` identity (public key) to make transfer from. If omitted, single private key will be generated.)')
+    transfer_tx_parser.add_argument('-t', '--public-key-to', type=str, help='Base64 or Hex encoded Public key(EDCSA secp256k1 in canonical binary form) representing `TO` (destination) identity. Provide `hex:` prefix if value is hex encoded, base64 encoding is assumed if no prefix is provided. If omitted, it will be generated.')
     transfer_tx_parser.add_argument('-a', '--amount', type=int, help='Amount to transfer. Must be unsigned integer (64 bites).', default=100)
     transfer_tx_parser.add_argument('-f', '--fee', type=int, help='Fee. Must be unsigned integer (64 bites).', default=1)
     transfer_tx_parser.add_argument('-m', '--include_metadata', action='store_true', help='Include non-mandatory metadata section.')
 
     wealth_tx_parser = subparsers.add_parser('create-wealth-tx')
-    wealth_tx_parser.add_argument('-p', '--private-key', type=str, nargs='+', help='Base64 encoded Private key (EDCSA secp256k1 in canonical binary form. The FIRST private key will be used to derive the `FROM` identity (public key) to make transfer from. If omitted, single private key will be generated.)')
+    wealth_tx_parser.add_argument('-p', '--private-key', type=str, nargs='+', help='Base64 or Hex encoded Private key (EDCSA secp256k1 in canonical binary form. Provide `hex:` prefix if value is hex encoded, base64 encoding is assumed if no prefix is provided. The FIRST private key will be used to derive the `FROM` identity (public key) to make transfer from. If omitted, single private key will be generated.)')
     wealth_tx_parser.add_argument('-a', '--amount', type=int, help='Amount to transfer. Must be unsigned integer (64 bites).', default=100)
     wealth_tx_parser.add_argument('-f', '--fee', type=int, help='Fee. Must be unsigned integer (64 bites).', default=1)
     wealth_tx_parser.add_argument('-m', '--include_metadata', action='store_true', help='Include non-mandatory metadata section.')
@@ -74,12 +78,34 @@ def parse_args(args=None):
 
     return parser.parse_args(args)
 
+
+def decode(hex_or_base64_encoded_val):
+    split_res = hex_or_base64_encoded_val.split(':', 1)
+
+    if len(split_res) == 2:
+        key, value = split_res
+    else:
+        key = "b64"
+        value = hex_or_base64_encoded_val
+
+    if key == "b64":
+        dec_val = base64.b64decode(value)
+    elif key == 'hex':
+        dec_val = binascii.unhexlify(value)
+    else:
+        raise ValueError("Unexpected encoding type '{}' provided as prefix.".format(key))
+
+    return dec_val
+
+
 def get_private_keys(b64_encoded_priv_keys):
     keys = []
     for pk in b64_encoded_priv_keys:
-        keys.append(Signing.privKeyFromBin(base64.b64decode(pk)))
+        dec_priv_key = decode(pk)
+        keys.append(Signing.privKeyFromBin(dec_priv_key))
     assert len(keys) == len(set(keys)), "Private keys in provided list are not unique (some of them are provided multiple times)."
     return keys
+
 
 def main():
     args = parse_args()
@@ -91,7 +117,7 @@ def main():
             priv_keys = [Signing.generatePrivKey()]
 
         if args.public_key_to:
-            pub_key_to_bin = base64.b64decode(args.public_key_to)
+            pub_key_to_bin = decode(args.public_key_to)
         else:
             pub_key_to_bin = Signing.generatePrivKey().get_verifying_key().to_string()
 
@@ -126,6 +152,7 @@ def main():
         else:
             msg = "FAILED to verify."
         print(msg)
+
 
 if __name__ == '__main__':
     main()
