@@ -1,7 +1,6 @@
+# ------------------------------------------------------------------------------
 #
-#------------------------------------------------------------------------------
-#
-#   Copyright 2018 Fetch.AI Limited
+#   Copyright 2018-2019 Fetch.AI Limited
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,18 +14,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-#------------------------------------------------------------------------------
-
-
+# ------------------------------------------------------------------------------
 from fetch.ledger.serialisation import *
 
-import pytest
 import unittest
-
-import binascii
 import io
-import hashlib
-import base64
+
 
 class PackingToStreamTest(unittest.TestCase):
 
@@ -43,7 +36,7 @@ class PackingToStreamTest(unittest.TestCase):
             stream.seek(0)
             pack(fmt, stream, expected_num)
             stream.seek(0)
-            (num_des, ) = unpack(fmt, stream)
+            (num_des,) = unpack(fmt, stream)
 
         assert expected_num == num_des
 
@@ -92,7 +85,8 @@ class NativeDynamicArrayTest(unittest.TestCase):
             stream.seek(0)
             a_des.deserialise(stream)
 
-        assert expected_list == list(a_des.data), "expected_list={}, received data={}".format(expected_list, list(a_des.data))
+        assert expected_list == list(a_des.data), "expected_list={}, received data={}".format(expected_list,
+                                                                                              list(a_des.data))
 
 
 class ListTest(unittest.TestCase):
@@ -110,7 +104,8 @@ class ListTest(unittest.TestCase):
             stream.seek(0)
             a_des.deserialise(stream)
 
-        assert expected_list == list(a_des.data), "expected_list={}, received data={}".format(expected_list, list(a_des.data))
+        assert expected_list == list(a_des.data), "expected_list={}, received data={}".format(expected_list,
+                                                                                              list(a_des.data))
 
     def test_primitive_char_as_input_data(self):
         self._test_list(type_of_value=Char, input_list=[b'a', b's', b'g', b'd', b'f', b'g'])
@@ -149,23 +144,27 @@ class DictTest(unittest.TestCase):
         assert expected_dict == a_des.data, "expected_set={}, received data={}".format(expected_dict, a_des.data)
 
     def test_primitive_type_as_input_data(self):
-        self._test_dict(type_of_key=ByteArray, type_of_value=ByteArray, input_dict={b'a':b'dfsda', b's':b'54624', b'g':b'sadfas', b'd':b'dasfS', b'f':b'354^', b'g':b'@#'})
+        self._test_dict(type_of_key=ByteArray, type_of_value=ByteArray,
+                        input_dict={b'a': b'dfsda', b's': b'54624', b'g': b'sadfas', b'd': b'dasfS', b'f': b'354^',
+                                    b'g': b'@#'})
 
     def test_primitive_type_as_input_data_2(self):
-        self._test_dict(type_of_key=UnsignedInt, type_of_value=ByteArray, input_dict={1:b'dfsda', 2:b'54624', 3:b'sadfas', 4:b'dasfS', 5:b'354^', 6:b'@#'})
+        self._test_dict(type_of_key=UnsignedInt, type_of_value=ByteArray,
+                        input_dict={1: b'dfsda', 2: b'54624', 3: b'sadfas', 4: b'dasfS', 5: b'354^', 6: b'@#'})
 
     def test_primitive_type_as_input_data_3(self):
-        self._test_dict(type_of_key=UnsignedInt, type_of_value=Float64b, input_dict={1:7.123, 2:0.345, 3:5.14, 4:3.45, 5:6, 6:9.56})
+        self._test_dict(type_of_key=UnsignedInt, type_of_value=Float64b,
+                        input_dict={1: 7.123, 2: 0.345, 3: 5.14, 4: 3.45, 5: 6, 6: 9.56})
 
     def test_bytes_primitives_mixed_with_byte_array_as_input_data(self):
-        input_dict =  {
+        input_dict = {
             ByteArray(b'a'): b'dfsda',
-                      b's' : b'54624',
+            b's': b'54624',
             ByteArray(b'g'): ByteArray(b'sadfas'),
-                      b'd' : ByteArray(b'dasfS'),
-            b'f':b'354^',
-            b'g':b'@#'
-            }
+            b'd': ByteArray(b'dasfS'),
+            b'f': b'354^',
+            b'g': b'@#'
+        }
 
         expected_dict = {}
         for key, val in input_dict.items():
@@ -175,7 +174,8 @@ class DictTest(unittest.TestCase):
                 val = val.data
             expected_dict[key] = val
 
-        self._test_dict(type_of_key=ByteArray, type_of_value=ByteArray, input_dict=input_dict, expected_dict=expected_dict)
+        self._test_dict(type_of_key=ByteArray, type_of_value=ByteArray, input_dict=input_dict,
+                        expected_dict=expected_dict)
 
 
 class SetTest(unittest.TestCase):
@@ -205,14 +205,14 @@ class SetTest(unittest.TestCase):
         self._test_set(type_of_value=Float64b, input_set=set([7.123, 0.345, 5.14, 3.45, 6, 9.56]))
 
     def test_bytes_primitives_mixed_with_byte_array_as_input_data(self):
-        input_set =  set([
+        input_set = set([
             ByteArray(b'a'),
-                      b's',
+            b's',
             ByteArray(b'g'),
-                      b'd',
+            b'd',
             ByteArray(b'354^'),
-                      b'@#'
-            ])
+            b'@#'
+        ])
 
         expected_set = set()
         for val in input_set:
@@ -221,4 +221,3 @@ class SetTest(unittest.TestCase):
             expected_set.add(val)
 
         self._test_set(type_of_value=ByteArray, input_set=input_set, expected_set=expected_set)
-

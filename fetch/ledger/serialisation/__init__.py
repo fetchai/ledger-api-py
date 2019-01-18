@@ -1,7 +1,6 @@
+# ------------------------------------------------------------------------------
 #
-#------------------------------------------------------------------------------
-#
-#   Copyright 2018 Fetch.AI Limited
+#   Copyright 2018-2019 Fetch.AI Limited
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,11 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-from .stream_packing import *
+from .stream import *
 from .interfaces import *
-from .primitive_types import *
-from .primitive_static_array import *
-from .primitive_dynamic_array import *
-from .collection_containers import *
+from .primitives import *
+from .containers import *

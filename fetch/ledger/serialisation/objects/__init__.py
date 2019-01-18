@@ -1,7 +1,6 @@
+# ------------------------------------------------------------------------------
 #
-#------------------------------------------------------------------------------
-#
-#   Copyright 2018 Fetch.AI Limited
+#   Copyright 2018-2019 Fetch.AI Limited
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,15 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-import struct
-
-
-def pack(fmt, stream, *args, **kwargs):
-    stream.write(struct.pack(fmt, *args, **kwargs))
-
-
-def unpack(fmt, stream):
-    size = struct.calcsize(fmt)
-    return struct.unpack(fmt, stream.read(size))
+from .transaction import Tx

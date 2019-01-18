@@ -7,51 +7,65 @@ pipeline {
     stage('Unit Tests') {
       parallel {
 
-        stage('Python2 uTests') {
+        stage('Python 2.7') {
+
           agent {
             docker {
               image "python:2.7-alpine"
             }
           }
 
-          stages {
-            stage('Setup env python2.7') {
-              steps {
-                sh 'pip install .[test]'
+          steps {
+            sh 'pip install tox'
+            sh 'tox -e py27'
+          }
 
-                sh 'python setup.py install'
-              }
-            }
-            stage('Execute unit tests python2.7') {
-              steps {
-                sh 'pytest'
-              }
+        } // Python 2.7
+
+        stage('Python 3.5') {
+
+          agent {
+            docker {
+              image "python:3.5-alpine"
             }
           }
-        } // Python2 uTests
 
-        stage('Python3 uTests') {
+          steps {
+            sh 'pip install tox'
+            sh 'tox -e py35'
+          }
+
+        } // Python 3.5
+
+        stage('Python 3.6') {
+
           agent {
             docker {
               image "python:3.6-alpine"
             }
           }
 
-          stages {
-            stage('Setup env python3.6') {
-              steps {
-                sh 'pip install .[test]'
+          steps {
+            sh 'pip install tox'
+            sh 'tox -e py36'
+          }
 
-                sh 'python setup.py install'
-              }
-            }
-            stage('Execute unit tests python3.6') {
-              steps {
-                sh 'pytest'
-              }
+        } // Python 3.6
+
+        stage('Python 3.7') {
+
+          agent {
+            docker {
+              image "python:3.7-alpine"
             }
           }
-        } // Python3 uTests
+
+          steps {
+            sh 'pip install tox'
+            sh 'tox -e py37'
+          }
+
+        } // Python 3.7
 
       } // parallel
     } // build & test

@@ -1,5 +1,4 @@
-#
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
 #   Copyright 2018 Fetch.AI Limited
 #
@@ -15,12 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 
-from fetch.ledger.serialisation.stream_packing import pack, unpack
-from fetch.ledger.serialisation.primitive_types import *
-from fetch.ledger.serialisation.interfaces import DataWrapper, NativeDataWrapperInterface, NativeDataWrapper, Serialise
+from fetch.ledger.serialisation.primitives.types import *
+from fetch.ledger.serialisation.interfaces import NativeDataWrapperInterface, Serialise
 
 from struct import calcsize
 
@@ -84,53 +82,66 @@ class CharNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="c")
 
+
 class SignedCharNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="b")
+
 
 class UnsignedCharNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="B")
 
+
 class BoolNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="?")
+
 
 class SignedShortNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="h")
 
+
 class UnsignedShortNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="H")
+
 
 class SignedIntNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="i")
 
+
 class UnsignedIntNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="I")
+
 
 class SignedLongNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="l")
 
+
 class UnsignedLongNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="L")
+
 
 class SignedLongLongNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="q")
 
+
 class UnsignedLongLongNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="Q")
 
+
 class SignedSize_tNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="n")
+
 
 class Size_tNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
@@ -141,21 +152,26 @@ class Float16bNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="e")
 
+
 class Float32bNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="f")
+
 
 class Float64bNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="d")
 
+
 class PointerNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="P")
 
+
 class StringNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):
         NativeStaticArray.__init__(self, data=data, item_pack_format="s")
+
 
 class PascalStringNativeStaticArray(NativeStaticArray):
     def __init__(self, data=None):

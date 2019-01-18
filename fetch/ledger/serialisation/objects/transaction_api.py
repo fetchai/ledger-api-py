@@ -1,7 +1,6 @@
+# ------------------------------------------------------------------------------
 #
-#------------------------------------------------------------------------------
-#
-#   Copyright 2018 Fetch.AI Limited
+#   Copyright 2018-2019 Fetch.AI Limited
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,22 +14,22 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-#------------------------------------------------------------------------------
-
-from fetch.ledger.chain import Tx
-from fetch.ledger.crypto.signing import Signing
+# ------------------------------------------------------------------------------
 
 import base64
 import json
+
+from fetch.ledger.serialisation.objects.transaction import Tx
 
 
 def create_wealth_contract(address_to_bin, amount):
     contract = {
         "address": base64.b64encode(address_to_bin).decode(),
         "amount": amount
-        }
+    }
     contract_json_str = json.dumps(contract)
     return contract_json_str.encode()
+
 
 def decode_wealth_contract(contract_data):
     contract_json_str = contract_data.decode()
@@ -48,17 +47,18 @@ def create_transfer_contract(address_from_bin, address_to_bin, amount):
         "from": base64.b64encode(address_from_bin).decode(),
         "to": base64.b64encode(address_to_bin).decode(),
         "amount": amount
-        }
+    }
     contract_json_str = json.dumps(contract)
     return contract_json_str.encode()
+
 
 def decode_transfer_contract(contract_data):
     contract_json_str = contract_data.decode()
     contract = json.loads(contract_json_str)
 
     address_from_b64 = contract["from"]
-    address_to_b64   = contract["to"]
-    amount   = contract["amount"]
+    address_to_b64 = contract["to"]
+    amount = contract["amount"]
 
     address_from_bin = base64.b64decode(address_from_b64)
     address_to_bin = base64.b64decode(address_to_b64)

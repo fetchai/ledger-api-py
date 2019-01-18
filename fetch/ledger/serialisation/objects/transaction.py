@@ -1,7 +1,6 @@
+# ------------------------------------------------------------------------------
 #
-#------------------------------------------------------------------------------
-#
-#   Copyright 2018 Fetch.AI Limited
+#   Copyright 2018-2019 Fetch.AI Limited
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,20 +14,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-from fetch.ledger.crypto import Signing
-from fetch.ledger.serialisation import pack, unpack, Serialise, ByteArray, UnsignedLongLong, Dict, List, Set
-
-from fetch.ledger.chain import Identity
-from fetch.ledger.chain import Signature
-
-
-import ecdsa
-import binascii
 import base64
+import binascii
 import io
 import json
+
+import ecdsa
+
+from fetch.ledger.crypto import Signing
+from fetch.ledger.serialisation import Serialise, ByteArray, UnsignedLongLong, Dict, List, Set
+from fetch.ledger.serialisation.objects.identity import Identity
+from fetch.ledger.serialisation.objects.signature import Signature
 
 
 class Signatories(Dict):
@@ -48,7 +46,11 @@ class TxBase(Serialise):
         self.data = data
 
     def __str__(self, ):
-        return 'contract name: "{}",\nfee: {},\nresources: {},\ncontract data: {}'.format(self._contract_name, self._fee, [binascii.hexlify(res) for res in self._resources], self._data)
+        return 'contract name: "{}",\nfee: {},\nresources: {},\ncontract data: {}'.format(self._contract_name,
+                                                                                          self._fee,
+                                                                                          [binascii.hexlify(res) for res
+                                                                                           in self._resources],
+                                                                                          self._data)
 
     def __eq__(self, other):
         return self._contract_name == other._contract_name and \
@@ -60,7 +62,7 @@ class TxBase(Serialise):
         data_to_hash = (self._contract_name, self._fee, self._data)
         if self._resources is not None:
             data_to_hash += tuple(sorted(self._resources))
-        return hash( data_to_hash )
+        return hash(data_to_hash)
 
     def _invalidate(self):
         self._base_data_size = None
@@ -119,7 +121,7 @@ class TxBase(Serialise):
         self._base_hasher = Signing.digest()
         self._base_hasher.update(TxBase.serialised_tx_base_data(self))
 
-    def digestForSigning(self, public_key_data):
+    def digest_for_signing(self, public_key_data):
         self.update()
         identity = Identity(data=public_key_data)
         stream = io.BytesIO()
@@ -127,14 +129,15 @@ class TxBase(Serialise):
         data = stream.getvalue()
         resulting_hasher = self._base_hasher.copy()
         resulting_hasher.update(data)
-        #self._print_sign_data("", resulting_hasher.digest(), data)
+        # self._print_sign_data("", resulting_hasher.digest(), data)
         return resulting_hasher.digest(), identity
 
     def serialise(self, to_buffer):
         if self._is_invalidated:
             ByteArray(self._contract_name).serialise(to_buffer)
             UnsignedLongLong(self._fee).serialise(to_buffer)
-            List(type_of_value=ByteArray, collection=sorted(self._resources) if self._resources else []).serialise(to_buffer)
+            List(type_of_value=ByteArray, collection=sorted(self._resources) if self._resources else []).serialise(
+                to_buffer)
             ByteArray(self._data).serialise(to_buffer)
         else:
             to_buffer.write(TxBase.serialised_tx_base_data(self))
@@ -144,26 +147,32 @@ class TxBase(Serialise):
         self.fee = UnsignedLongLong().deserialise(from_buffer).data
         self.resources = Set(type_of_value=ByteArray).deserialise(from_buffer).data
         self.data = ByteArray().deserialise(from_buffer).data
-        #self.update()
+        # self.update()
 
     def _print_sign_data(self, prefix, digest, identity_serialised_data):
-        print('{}: digest[hex]={},\ntx_ser_data[hex]={}.\nidentity_ser_data[hex]={}\n'.format(prefix, binascii.hexlify(digest), binascii.hexlify(self._signing_io_stream.getvalue()), binascii.hexlify(identity_serialised_data)))
+        print('{}: digest[hex]={},\ntx_ser_data[hex]={}.\nidentity_ser_data[hex]={}\n'.format(prefix,
+                                                                                              binascii.hexlify(digest),
+                                                                                              binascii.hexlify(
+                                                                                                  self._signing_io_stream.getvalue()),
+                                                                                              binascii.hexlify(
+                                                                                                  identity_serialised_data)))
         stream = io.BytesIO()
         stream.write(self._signing_io_stream.getvalue())
         stream.write(identity_serialised_data)
         hash = Signing.digest()
         hash.update(stream.getvalue())
-        print('{}: digest[hex]={},\nhashed_data[hex]={}'.format(prefix, binascii.hexlify(hash.digest()), binascii.hexlify(stream.getvalue())))
+        print('{}: digest[hex]={},\nhashed_data[hex]={}'.format(prefix, binascii.hexlify(hash.digest()),
+                                                                binascii.hexlify(stream.getvalue())))
 
     def sign(self, private_key):
         if isinstance(private_key, ecdsa.SigningKey):
             priv_key = private_key
         elif isinstance(private_key, bytes):
-            priv_key = Signing.privKeyFromBin(private_key)
+            priv_key = Signing.create_private_key(private_key)
         else:
             raise TypeError("Input private key is neither `ecdsa.SigningKey` type nor `bytes` type.")
 
-        digest, identity = self.digestForSigning(priv_key.get_verifying_key().to_string())
+        digest, identity = self.digest_for_signing(priv_key.get_verifying_key().to_string())
 
         signature_data = priv_key.sign_digest(digest)
         signature = Signature(data=signature_data)
@@ -173,11 +182,11 @@ class TxBase(Serialise):
         if isinstance(public_key, ecdsa.VerifyingKey):
             pub_key = public_key
         elif isinstance(public_key, bytes):
-            pub_key = Signing.pubKeyFromBin(public_key)
+            pub_key = Signing.create_public_key(public_key)
         else:
             raise TypeError("Input public key is neither `ecdsa.VerifyingKey` type nor `bytes` type.")
 
-        digest, _ = self.digestForSigning(pub_key.to_string())
+        digest, _ = self.digest_for_signing(pub_key.to_string())
 
         try:
             pub_key.verify_digest(signature_data, digest)
@@ -187,12 +196,10 @@ class TxBase(Serialise):
 
         return False
 
-    def getMetadataDict(self):
-        metadata = {}
-        metadata["contract_name"] = self._contract_name.decode()
-        metadata["fee"] = self._fee
-        metadata["resources"] = [base64.b64encode(res).decode() for res in self._resources]
-        metadata["data"] = base64.b64encode(self._data).decode()
+    def get_metadata(self):
+        metadata = {"contract_name": self._contract_name.decode(), "fee": self._fee,
+                    "resources": [base64.b64encode(res).decode() for res in self._resources],
+                    "data": base64.b64encode(self._data).decode()}
         return metadata
 
 
@@ -202,7 +209,8 @@ class Tx(TxBase):
         self._signatories = None
 
     def __str__(self):
-        return '{},\nsignatories: {}'.format(TxBase.__str__(self), [(str(iden), str(sig)) for iden, sig, in self._signatories.items()])
+        return '{},\nsignatories: {}'.format(TxBase.__str__(self),
+                                             [(str(iden), str(sig)) for iden, sig, in self._signatories.items()])
 
     def __eq__(self, other):
         return TxBase.__eq__(self, other) and self._signatories == other._signatories
@@ -227,6 +235,7 @@ class Tx(TxBase):
             self._signatories = {}
         self._signatories[identity] = signature
 
+    # TODO(private issue 13): This doesn't match the base classs
     def verify(self):
         for identity, signature in self._signatories.items():
             if not TxBase.verify(self, signature.data, identity.data):
@@ -243,8 +252,8 @@ class Tx(TxBase):
         self._signatories = Signatories().deserialise(from_buffer).data
         return self
 
-    def getMetadataDict(self):
-        metadata = TxBase.getMetadataDict(self)
+    def get_metadata(self):
+        metadata = TxBase.get_metadata(self)
         signatories = {}
 
         stream = io.BytesIO()
@@ -266,10 +275,10 @@ class Tx(TxBase):
 
         return metadata
 
-    def toWireFormat(self, include_metadata=False):
-        wire_format = {"ver":"1.0"}
+    def to_wire_format(self, include_metadata=False):
+        wire_format = {"ver": "1.0"}
         if include_metadata:
-            wire_format["metadata"] = self.getMetadataDict()
+            wire_format["metadata"] = self.get_metadata()
 
         stream = io.BytesIO()
         self.serialise(stream)
@@ -280,7 +289,7 @@ class Tx(TxBase):
         return json.dumps(wire_format)
 
     @classmethod
-    def fromWireFormat(cls, tx_wire_format_data):
+    def from_wire_format(cls, tx_wire_format_data):
         wire_format = json.loads(tx_wire_format_data)
         tx_data_b64 = wire_format["data"]
         tx_data = base64.b64decode(tx_data_b64)

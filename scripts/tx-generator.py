@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
-#   Copyright 2018 Fetch.AI Limited
+#   Copyright 2018-2019 Fetch.AI Limited
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,20 +15,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-
-from fetch.ledger.chain import Tx, Identity
 from fetch.ledger.crypto import Signing
-from fetch.ledger.chain.transaction_api import create_transfer_tx, create_wealth_tx
+from fetch.ledger.serialisation.objects import Tx
+from fetch.ledger.serialisation.objects.transaction_api import create_transfer_tx, create_wealth_tx
 
-import json
 import base64
 import binascii
 import argparse
-from io import BytesIO
-from ecdsa import VerifyingKey
-from sys import argv
 
 
 def create_signed_transfer_transaction(priv_keys_from, address_to_bin, amount, fee):
@@ -102,7 +97,7 @@ def get_private_keys(b64_encoded_priv_keys):
     keys = []
     for pk in b64_encoded_priv_keys:
         dec_priv_key = decode(pk)
-        keys.append(Signing.privKeyFromBin(dec_priv_key))
+        keys.append(Signing.create_private_key(dec_priv_key))
     assert len(keys) == len(set(keys)), "Private keys in provided list are not unique (some of them are provided multiple times)."
     return keys
 
@@ -114,24 +109,24 @@ def main():
         if args.private_key:
             priv_keys = get_private_keys(args.private_key)
         else:
-            priv_keys = [Signing.generatePrivKey()]
+            priv_keys = [Signing.generate_private_key()]
 
         if args.public_key_to:
             pub_key_to_bin = decode(args.public_key_to)
         else:
-            pub_key_to_bin = Signing.generatePrivKey().get_verifying_key().to_string()
+            pub_key_to_bin = Signing.generate_private_key().get_verifying_key().to_string()
 
         tx = create_signed_transfer_transaction(priv_keys, pub_key_to_bin, amount=args.amount, fee=args.fee)
-        print(tx.toWireFormat(include_metadata=args.include_metadata))
+        print(tx.to_wire_format(include_metadata=args.include_metadata))
 
     elif args.subcommand == 'create-wealth-tx':
         if args.private_key:
             priv_keys = get_private_keys(args.private_key)
         else:
-            priv_keys = [Signing.generatePrivKey()]
+            priv_keys = [Signing.generate_private_key()]
 
         tx = create_signed_wealth_transaction(priv_keys, amount=args.amount, fee=args.fee)
-        print(tx.toWireFormat(include_metadata=args.include_metadata))
+        print(tx.to_wire_format(include_metadata=args.include_metadata))
 
     elif args.subcommand == 'verify-tx':
         if args.filename:
@@ -140,7 +135,7 @@ def main():
         else:
             wire_tx = args.tx_wire_format_string
 
-        tx = Tx.fromWireFormat(wire_tx)
+        tx = Tx.from_wire_format(wire_tx)
 
         if args.print_metadata:
             print(tx)

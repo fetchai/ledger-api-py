@@ -1,7 +1,6 @@
+# ------------------------------------------------------------------------------
 #
-#------------------------------------------------------------------------------
-#
-#   Copyright 2018 Fetch.AI Limited
+#   Copyright 2018-2019 Fetch.AI Limited
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,35 +14,29 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-
-from fetch.ledger.chain import Tx
-from fetch.ledger.crypto import Signing
-
-import pytest
+import base64
+import io
+import random
+import string
 import unittest
 
-import binascii
-import io
-import hashlib
-import base64
-import json
+from fetch.ledger.crypto import Signing
+from .transaction import Tx
 
-import string
-import random
 
 class TxTest(unittest.TestCase):
 
     def setUp(self):
-        self.private_key = Signing.privKeyFromBin(base64.b64decode("7fDTiiCsCKG43Z8YlNelveKGwir6EpCHUhrcHDbFBgg="))
+        self.private_key = Signing.create_private_key(base64.b64decode("7fDTiiCsCKG43Z8YlNelveKGwir6EpCHUhrcHDbFBgg="))
 
     @classmethod
     def generate_random_string(cls, size=6, chars=string.ascii_letters + string.digits):
-       return ''.join(random.choice(chars) for x in range(size))
+        return ''.join(random.choice(chars) for x in range(size))
 
     @classmethod
-    def generate_random_tx(cls, private_keys = None, resources_count=1):
+    def generate_random_tx(cls, private_keys=None, resources_count=1):
         tx = Tx()
         tx.contract_name = cls.generate_random_string(10).encode()
         tx.fee = random.randint(0, 10000)
@@ -56,8 +49,7 @@ class TxTest(unittest.TestCase):
         tx.data = cls.generate_random_string(10).encode()
 
         if private_keys is None:
-            private_keys=[]
-            private_keys.append(Signing.generatePrivKey().to_string())
+            private_keys = [Signing.generate_private_key().to_string()]
 
         for pk in private_keys:
             tx.sign(pk)
@@ -69,21 +61,21 @@ class TxTest(unittest.TestCase):
         if verbose_dbg_output:
             print("ORIG  Tx wire:\n{}".format(tx_in_wire_format))
 
-        tx = Tx.fromWireFormat(tx_in_wire_format)
+        tx = Tx.from_wire_format(tx_in_wire_format)
         if verbose_dbg_output:
             print("DESER Tx wire:\n{}".format(tx))
 
         is_verified = tx.verify()
         print("DESER Tx: verified = {}".format(is_verified))
 
-        #if not is_verified:
+        # if not is_verified:
         #    raise RuntimeError("Transaction failed to verify")
         return is_verified
 
     def test_basic_sign_verify_cycle(self):
         contract_name = b'contract name'
         fee = 2
-        resources = set([b'res 1', b'res 0'])
+        resources = {b'res 1', b'res 0'}
         data = b'contract data'
 
         tx = Tx(contract_name=contract_name, fee=fee, resources=resources, data=data)
@@ -104,14 +96,14 @@ class TxTest(unittest.TestCase):
     def test_basic_to_from_wire_format_cycle(self):
         contract_name = b'contract name'
         fee = 2
-        resources = set([b'res 1', b'res 0'])
+        resources = {b'res 1', b'res 0'}
         data = b'contract data'
 
         tx = Tx(contract_name=contract_name, fee=fee, resources=resources, data=data)
         tx.sign(private_key=self.private_key)
 
-        tx_wire = tx.toWireFormat(True)
-        tx_des = Tx.fromWireFormat(tx_wire)
+        tx_wire = tx.to_wire_format(True)
+        tx_des = Tx.from_wire_format(tx_wire)
 
         assert tx_des.verify, "Tx: {}".format(tx)
         assert tx_des == tx
@@ -119,30 +111,30 @@ class TxTest(unittest.TestCase):
     def test_sign_verify_cycle_for_random_generated_transactions(self):
         private_keys = []
 
-        for _ in range(0, random.randint(1,5)):
-            private_keys.append(Signing.generatePrivKey())
+        for _ in range(0, random.randint(1, 5)):
+            private_keys.append(Signing.generate_private_key())
 
         for _ in range(0, 5):
-            tx = self.generate_random_tx(private_keys=private_keys, resources_count=random.randint(1,5))
+            tx = self.generate_random_tx(private_keys=private_keys, resources_count=random.randint(1, 5))
             assert tx.verify(), "Tx: {}".format(tx)
 
     def test_sign_to_from_wire_verify_cycle_for_random_generated_transactions(self):
         private_keys = []
 
-        for _ in range(0, random.randint(1,5)):
-            private_keys.append(Signing.generatePrivKey())
+        for _ in range(0, random.randint(1, 5)):
+            private_keys.append(Signing.generate_private_key())
 
         for _ in range(0, 5):
-            tx = self.generate_random_tx(private_keys=private_keys, resources_count=random.randint(1,5))
-            tx_wire = tx.toWireFormat(include_metadata=True)
-            tx_des = Tx.fromWireFormat(tx_wire)
+            tx = self.generate_random_tx(private_keys=private_keys, resources_count=random.randint(1, 5))
+            tx_wire = tx.to_wire_format(include_metadata=True)
+            tx_des = Tx.from_wire_format(tx_wire)
 
             assert tx.verify(), "Tx: {}\n{}".format(tx, tx_wire)
             assert tx_des.verify(), "Tx: {}".format(tx_des)
             assert tx_des == tx, "Tx:\n{}\nTx des:\n{}".format(tx, tx_des)
 
     def test_verify_wire_transactions_generated_by_cpp_ecosystem(self):
-        transactions_generated_by_cpp_ecosystem =[
+        transactions_generated_by_cpp_ecosystem = [
             '{"ver": "1.0", "metadata": {"data": "MTE4MTQ2NTExNDAxMzM5NTQ4OTA=", "fee": 4112156764683907953, "contract_name": "14912597368893814985", "resources": ["MTI2MTUwMzI4MTMzMTg2OTA2Mzg=", "NzU3NDkwMTQ4OTA3NDM1MTk0", "ODU5MTM2MDg1ODYzNzMxOTg5Mw=="], "signatures": {"QAAAAAAAAAA8BdpMN2ATUoHaAb2NWXbvfVd17hAKDr+ndX8Yy47T8wbqc5LILj2EKExaelbaZmkqx6xNBYtgFHF8Q2cQ2LdaCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAABfSPcANBpCBhU9rhNXbGKY9eAVRcSM1fx1o+49FEDwiaJSlFCCOXM1c0D175uaC5LOiirHsUdNHA8D4ODqN7Q/CQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAACHTfIs9KiDPily2+TFWKZU9mSeXY/4H+/sGOLRt6ZjtHuaxnEcRtdFdyVGj5kyL1pGBs1VSK9p5b0vWeTe3koeCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAAAg/rQy4ivTnmECxsoUFZ+AvOvrYuV3hpzzNCKADWlJCBKBv9ZTh+3IUJ9sRNSj5iHqwFm53BryCGuB7t6YUV03CQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAACp7xDDz0kt+Mo9Mx3KIZIWotlgoGOkRgYNvW8cZF5X99NBwntlNU2FYWqg1NRHA9JQrug1xBNF6dmqWK2SHcDRCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAAA4pmjVfb9697+KlUms/AnIvmEUoqJE4m6ToH+QiIj0hc8oqzIyDOUTMIHjAA5LbAWaLrqHOrRNbF1F1+TEtfvbCQAAAAAAAABzZWNwMjU2azE="}}, "data": "FAAAAAAAAAAxNDkxMjU5NzM2ODg5MzgxNDk4NXEztFPKUBE5AwAAAAAAAAAUAAAAAAAAADEyNjE1MDMyODEzMzE4NjkwNjM4EgAAAAAAAAA3NTc0OTAxNDg5MDc0MzUxOTQTAAAAAAAAADg1OTEzNjA4NTg2MzczMTk4OTMUAAAAAAAAADExODE0NjUxMTQwMTMzOTU0ODkwAwAAAAAAAABAAAAAAAAAADwF2kw3YBNSgdoBvY1Zdu99V3XuEAoOv6d1fxjLjtPzBupzksguPYQoTFp6VtpmaSrHrE0Fi2AUcXxDZxDYt1oJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAAX0j3ADQaQgYVPa4TV2ximPXgFUXEjNX8daPuPRRA8ImiUpRQgjlzNXNA9e+bmguSzooqx7FHTRwPA+Dg6je0PwkAAAAAAAAAc2VjcDI1NmsxQAAAAAAAAACHTfIs9KiDPily2+TFWKZU9mSeXY/4H+/sGOLRt6ZjtHuaxnEcRtdFdyVGj5kyL1pGBs1VSK9p5b0vWeTe3koeCQAAAAAAAABzZWNwMjU2azFAAAAAAAAAACD+tDLiK9OeYQLGyhQVn4C86+ti5XeGnPM0IoANaUkIEoG/1lOH7chQn2xE1KPmIerAWbncGvIIa4Hu3phRXTcJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAAqe8Qw89JLfjKPTMdyiGSFqLZYKBjpEYGDb1vHGReV/fTQcJ7ZTVNhWFqoNTURwPSUK7oNcQTRenZqlitkh3A0QkAAAAAAAAAc2VjcDI1NmsxQAAAAAAAAAA4pmjVfb9697+KlUms/AnIvmEUoqJE4m6ToH+QiIj0hc8oqzIyDOUTMIHjAA5LbAWaLrqHOrRNbF1F1+TEtfvbCQAAAAAAAABzZWNwMjU2azE="}',
             '{"ver": "1.0", "metadata": {"data": "MTUzMjQ3NDU1Mzc4Mjg3Nzk5ODc=", "fee": 4766897333355450942, "contract_name": "18421452021857390625", "resources": ["MTM3MTYwMTE1OTM5ODIzNDUxMTM=", "Mjk4OTgyMTQxODA3MDkxNjk3Ng==", "NTQxNDI5ODYyNDE0ODUzNTMxOA=="], "signatures": {"QAAAAAAAAAAa1FgPdYNLGaW5uvQ4JydBplwYMoq29uCnY7a0Ds6ryOJu/LNfcraKtyjhyeHG0uLpOGcK7nQt5QfaoDB3Tp9vCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAAAk15j58nlfSJKNPtGyslGEHezRdTH2K2xmXMFZvnjfDOfmWUNGWFmQ4NLGu3KMALPsBr/6mDnybpEJGFI7bTzCCQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAAAL/K74/lEZeo9FY9NgiGht3Gl6H3/ycxOZi+wjyUEsHJYQ5J562nQsi10eQndDV/+TEDbbXi3Y3zPgE5mLEa+iCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAAByhwfHCgCDua2O2JDzIN2A8lGpNB73Eg/tq3W3rv+WRr6gGfkdoFJJ07tyqBMeZyVCYP672VFeE8ahopXl8bq8CQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAAAtRaKaxYpcBZV1L74QErKi/cBcic1q1I6ja0zECVMIsSV3O4Hv2+JnmMieVbTLPHMBS8GXNUccSS0WW4PJNZrsCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAABHW7upYMPFx9kGzRyCY0BjH1fe+38ffVR7JDiGqcQJtOn+xa+Qla9+ygwj2xig9Nfm4YK3ep2qOyiCAbMNMKY0CQAAAAAAAABzZWNwMjU2azE="}}, "data": "FAAAAAAAAAAxODQyMTQ1MjAyMTg1NzM5MDYyNT6SaFveaydCAwAAAAAAAAAUAAAAAAAAADEzNzE2MDExNTkzOTgyMzQ1MTEzEwAAAAAAAAAyOTg5ODIxNDE4MDcwOTE2OTc2EwAAAAAAAAA1NDE0Mjk4NjI0MTQ4NTM1MzE4FAAAAAAAAAAxNTMyNDc0NTUzNzgyODc3OTk4NwMAAAAAAAAAQAAAAAAAAAAa1FgPdYNLGaW5uvQ4JydBplwYMoq29uCnY7a0Ds6ryOJu/LNfcraKtyjhyeHG0uLpOGcK7nQt5QfaoDB3Tp9vCQAAAAAAAABzZWNwMjU2azFAAAAAAAAAACTXmPnyeV9Iko0+0bKyUYQd7NF1MfYrbGZcwVm+eN8M5+ZZQ0ZYWZDg0sa7cowAs+wGv/qYOfJukQkYUjttPMIJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAAC/yu+P5RGXqPRWPTYIhobdxpeh9/8nMTmYvsI8lBLByWEOSeetp0LItdHkJ3Q1f/kxA2214t2N8z4BOZixGvogkAAAAAAAAAc2VjcDI1NmsxQAAAAAAAAAByhwfHCgCDua2O2JDzIN2A8lGpNB73Eg/tq3W3rv+WRr6gGfkdoFJJ07tyqBMeZyVCYP672VFeE8ahopXl8bq8CQAAAAAAAABzZWNwMjU2azFAAAAAAAAAAC1FoprFilwFlXUvvhASsqL9wFyJzWrUjqNrTMQJUwixJXc7ge/b4meYyJ5VtMs8cwFLwZc1RxxJLRZbg8k1muwJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAAR1u7qWDDxcfZBs0cgmNAYx9X3vt/H31UeyQ4hqnECbTp/sWvkJWvfsoMI9sYoPTX5uGCt3qdqjsoggGzDTCmNAkAAAAAAAAAc2VjcDI1Nmsx"}',
             '{"ver": "1.0", "metadata": {"data": "MTIwNzM2ODk4MDgyMjg5NTU1OTc=", "fee": -3697178260140756712, "contract_name": "3152513236680486813", "resources": ["MTUxOTUxNTA4MTYzNjc0Nzg2MTk=", "Mjg5NjkwMjU0NDE5MDI1NTc3MQ==", "NDgyNjcyMzM3ODc4OTExODE3Mw=="], "signatures": {"QAAAAAAAAABx1UnZAQhqnn1VxYoa6jLP0IWL9/HsWrBLAAHQzBNBcbS2xyE5GvZMyJcqufWPGFCR4HCxiMoiPtHLJN2gbxXXCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAABJImo9Djdtbp74a4QIoSWubrRjqy7UPiOw5hGGzaotqFf28139dnG6TAwe3UafAdwuzKfAWY35zdWpjW71AmSrCQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAAC82RGc2HQL6PdH8gzHnOpmeStQ3JOVISkVavuOxaAlwvaF1kkiLCNJcu7tcCT1qP2XMUVoBBKnQTfI7Pg4XEG7CQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAADf0l/RUEIQeVrWajdcktGkVaSWxnJX4Tty1o20RNZLQ+wANRWteMvayNYo+zitcm9WsR/JH2eG3kI32YlE6CzpCQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAAAO/uhcVn1o/vUPXOT85IXrWzdfbLrd8GEDL5Jo3o+iwkBqL2ze5Yl59ouWlZMBVzzkhcTi7gtpL0Lm5MqCyhLJCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAABKz5UaQm1Nzb9m1ytzqPdSr+30S0J1l37L7RxO5BVmbZOAgmnLwZDLJqKw7g/UMNg3DkeqYKFDU8Q4Jr9tMbFuCQAAAAAAAABzZWNwMjU2azE="}}, "data": "EwAAAAAAAAAzMTUyNTEzMjM2NjgwNDg2ODEzGHED/fX7sMwDAAAAAAAAABQAAAAAAAAAMTUxOTUxNTA4MTYzNjc0Nzg2MTkTAAAAAAAAADI4OTY5MDI1NDQxOTAyNTU3NzETAAAAAAAAADQ4MjY3MjMzNzg3ODkxMTgxNzMUAAAAAAAAADEyMDczNjg5ODA4MjI4OTU1NTk3AwAAAAAAAABAAAAAAAAAAHHVSdkBCGqefVXFihrqMs/QhYv38exasEsAAdDME0FxtLbHITka9kzIlyq59Y8YUJHgcLGIyiI+0csk3aBvFdcJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAASSJqPQ43bW6e+GuECKElrm60Y6su1D4jsOYRhs2qLahX9vNd/XZxukwMHt1GnwHcLsynwFmN+c3VqY1u9QJkqwkAAAAAAAAAc2VjcDI1NmsxQAAAAAAAAAC82RGc2HQL6PdH8gzHnOpmeStQ3JOVISkVavuOxaAlwvaF1kkiLCNJcu7tcCT1qP2XMUVoBBKnQTfI7Pg4XEG7CQAAAAAAAABzZWNwMjU2azFAAAAAAAAAAN/SX9FQQhB5WtZqN1yS0aRVpJbGclfhO3LWjbRE1ktD7AA1Fa14y9rI1ij7OK1yb1axH8kfZ4beQjfZiUToLOkJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAADv7oXFZ9aP71D1zk/OSF61s3X2y63fBhAy+SaN6PosJAai9s3uWJefaLlpWTAVc85IXE4u4LaS9C5uTKgsoSyQkAAAAAAAAAc2VjcDI1NmsxQAAAAAAAAABKz5UaQm1Nzb9m1ytzqPdSr+30S0J1l37L7RxO5BVmbZOAgmnLwZDLJqKw7g/UMNg3DkeqYKFDU8Q4Jr9tMbFuCQAAAAAAAABzZWNwMjU2azE="}',
@@ -154,7 +146,7 @@ class TxTest(unittest.TestCase):
             assert self.verify_wire_tx(wire_tx), "Tx wire: {}".format(wire_tx)
 
     def test_altered_data_of_wire_transactions_fails_to_verify(self):
-        transactions_generated_by_cpp_ecosystem =[
+        transactions_generated_by_cpp_ecosystem = [
             '{"ver": "1.0", "metadata": {"data": "MTE4MTQ2NTExNDAxMzM5NTQ4OTA=", "fee": 4112156764683907953, "contract_name": "14912597368893814985", "resources": ["MTI2MTUwMzI4MTMzMTg2OTA2Mzg=", "NzU3NDkwMTQ4OTA3NDM1MTk0", "ODU5MTM2MDg1ODYzNzMxOTg5Mw=="], "signatures": {"QAAAAAAAAAA8BdpMN2ATUoHaAb2NWXbvfVd17hAKDr+ndX8Yy47T8wbqc5LILj2EKExaelbaZmkqx6xNBYtgFHF8Q2cQ2LdaCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAABfSPcANBpCBhU9rhNXbGKY9eAVRcSM1fx1o+49FEDwiaJSlFCCOXM1c0D175uaC5LOiirHsUdNHA8D4ODqN7Q/CQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAACHTfIs9KiDPily2+TFWKZU9mSeXY/4H+/sGOLRt6ZjtHuaxnEcRtdFdyVGj5kyL1pGBs1VSK9p5b0vWeTe3koeCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAAAg/rQy4ivTnmECxsoUFZ+AvOvrYuV3hpzzNCKADWlJCBKBv9ZTh+3IUJ9sRNSj5iHqwFm53BryCGuB7t6YUV03CQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAACp7xDDz0kt+Mo9Mx3KIZIWotlgoGOkRgYNvW8cZF5X99NBwntlNU2FYWqg1NRHA9JQrug1xBNF6dmqWK2SHcDRCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAAA4pmjVfb9697+KlUms/AnIvmEUoqJE4m6ToH+QiIj0hc8oqzIyDOUTMIHjAA5LbAWaLrqHOrRNbF1F1+TEtfvbCQAAAAAAAABzZWNwMjU2azE="}}, "data": "FAAAAAAAAAAxNDkxMiU5NzM2ODg5MzgxNDk4NXEztFPKUBE5AwAAAAAAAAAUAAAAAAAAADEyNjE1MDMyODEzMzE4NjkwNjM4EgAAAAAAAAA3NTc0OTAxNDg5MDc0MzUxOTQTAAAAAAAAADg1OTEzNjA4NTg2MzczMTk4OTMUAAAAAAAAADExODE0NjUxMTQwMTMzOTU0ODkwAwAAAAAAAABAAAAAAAAAADwF2kw3YBNSgdoBvY1Zdu99V3XuEAoOv6d1fxjLjtPzBupzksguPYQoTFp6VtpmaSrHrE0Fi2AUcXxDZxDYt1oJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAAX0j3ADQaQgYVPa4TV2ximPXgFUXEjNX8daPuPRRA8ImiUpRQgjlzNXNA9e+bmguSzooqx7FHTRwPA+Dg6je0PwkAAAAAAAAAc2VjcDI1NmsxQAAAAAAAAACHTfIs9KiDPily2+TFWKZU9mSeXY/4H+/sGOLRt6ZjtHuaxnEcRtdFdyVGj5kyL1pGBs1VSK9p5b0vWeTe3koeCQAAAAAAAABzZWNwMjU2azFAAAAAAAAAACD+tDLiK9OeYQLGyhQVn4C86+ti5XeGnPM0IoANaUkIEoG/1lOH7chQn2xE1KPmIerAWbncGvIIa4Hu3phRXTcJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAAqe8Qw89JLfjKPTMdyiGSFqLZYKBjpEYGDb1vHGReV/fTQcJ7ZTVNhWFqoNTURwPSUK7oNcQTRenZqlitkh3A0QkAAAAAAAAAc2VjcDI1NmsxQAAAAAAAAAA4pmjVfb9697+KlUms/AnIvmEUoqJE4m6ToH+QiIj0hc8oqzIyDOUTMIHjAA5LbAWaLrqHOrRNbF1F1+TEtfvbCQAAAAAAAABzZWNwMjU2azE="}',
             '{"ver": "1.0", "metadata": {"data": "MTUzMjQ3NDU1Mzc4Mjg3Nzk5ODc=", "fee": 4766897333355450942, "contract_name": "18421452021857390625", "resources": ["MTM3MTYwMTE1OTM5ODIzNDUxMTM=", "Mjk4OTgyMTQxODA3MDkxNjk3Ng==", "NTQxNDI5ODYyNDE0ODUzNTMxOA=="], "signatures": {"QAAAAAAAAAAa1FgPdYNLGaW5uvQ4JydBplwYMoq29uCnY7a0Ds6ryOJu/LNfcraKtyjhyeHG0uLpOGcK7nQt5QfaoDB3Tp9vCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAAAk15j58nlfSJKNPtGyslGEHezRdTH2K2xmXMFZvnjfDOfmWUNGWFmQ4NLGu3KMALPsBr/6mDnybpEJGFI7bTzCCQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAAAL/K74/lEZeo9FY9NgiGht3Gl6H3/ycxOZi+wjyUEsHJYQ5J562nQsi10eQndDV/+TEDbbXi3Y3zPgE5mLEa+iCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAAByhwfHCgCDua2O2JDzIN2A8lGpNB73Eg/tq3W3rv+WRr6gGfkdoFJJ07tyqBMeZyVCYP672VFeE8ahopXl8bq8CQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAAAtRaKaxYpcBZV1L74QErKi/cBcic1q1I6ja0zECVMIsSV3O4Hv2+JnmMieVbTLPHMBS8GXNUccSS0WW4PJNZrsCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAABHW7upYMPFx9kGzRyCY0BjH1fe+38ffVR7JDiGqcQJtOn+xa+Qla9+ygwj2xig9Nfm4YK3ep2qOyiCAbMNMKY0CQAAAAAAAABzZWNwMjU2azE="}}, "data": "FAAAAAAAAAAxODQyMTQ1MiAyMTg1NzM5MDYyNT6SaFveaydCAwAAAAAAAAAUAAAAAAAAADEzNzE2MDExNTkzOTgyMzQ1MTEzEwAAAAAAAAAyOTg5ODIxNDE4MDcwOTE2OTc2EwAAAAAAAAA1NDE0Mjk4NjI0MTQ4NTM1MzE4FAAAAAAAAAAxNTMyNDc0NTUzNzgyODc3OTk4NwMAAAAAAAAAQAAAAAAAAAAa1FgPdYNLGaW5uvQ4JydBplwYMoq29uCnY7a0Ds6ryOJu/LNfcraKtyjhyeHG0uLpOGcK7nQt5QfaoDB3Tp9vCQAAAAAAAABzZWNwMjU2azFAAAAAAAAAACTXmPnyeV9Iko0+0bKyUYQd7NF1MfYrbGZcwVm+eN8M5+ZZQ0ZYWZDg0sa7cowAs+wGv/qYOfJukQkYUjttPMIJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAAC/yu+P5RGXqPRWPTYIhobdxpeh9/8nMTmYvsI8lBLByWEOSeetp0LItdHkJ3Q1f/kxA2214t2N8z4BOZixGvogkAAAAAAAAAc2VjcDI1NmsxQAAAAAAAAAByhwfHCgCDua2O2JDzIN2A8lGpNB73Eg/tq3W3rv+WRr6gGfkdoFJJ07tyqBMeZyVCYP672VFeE8ahopXl8bq8CQAAAAAAAABzZWNwMjU2azFAAAAAAAAAAC1FoprFilwFlXUvvhASsqL9wFyJzWrUjqNrTMQJUwixJXc7ge/b4meYyJ5VtMs8cwFLwZc1RxxJLRZbg8k1muwJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAAR1u7qWDDxcfZBs0cgmNAYx9X3vt/H31UeyQ4hqnECbTp/sWvkJWvfsoMI9sYoPTX5uGCt3qdqjsoggGzDTCmNAkAAAAAAAAAc2VjcDI1Nmsx"}',
             '{"ver": "1.0", "metadata": {"data": "MTIwNzM2ODk4MDgyMjg5NTU1OTc=", "fee": -3697178260140756712, "contract_name": "3152513236680486813", "resources": ["MTUxOTUxNTA4MTYzNjc0Nzg2MTk=", "Mjg5NjkwMjU0NDE5MDI1NTc3MQ==", "NDgyNjcyMzM3ODc4OTExODE3Mw=="], "signatures": {"QAAAAAAAAABx1UnZAQhqnn1VxYoa6jLP0IWL9/HsWrBLAAHQzBNBcbS2xyE5GvZMyJcqufWPGFCR4HCxiMoiPtHLJN2gbxXXCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAABJImo9Djdtbp74a4QIoSWubrRjqy7UPiOw5hGGzaotqFf28139dnG6TAwe3UafAdwuzKfAWY35zdWpjW71AmSrCQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAAC82RGc2HQL6PdH8gzHnOpmeStQ3JOVISkVavuOxaAlwvaF1kkiLCNJcu7tcCT1qP2XMUVoBBKnQTfI7Pg4XEG7CQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAADf0l/RUEIQeVrWajdcktGkVaSWxnJX4Tty1o20RNZLQ+wANRWteMvayNYo+zitcm9WsR/JH2eG3kI32YlE6CzpCQAAAAAAAABzZWNwMjU2azE=", "QAAAAAAAAAAO/uhcVn1o/vUPXOT85IXrWzdfbLrd8GEDL5Jo3o+iwkBqL2ze5Yl59ouWlZMBVzzkhcTi7gtpL0Lm5MqCyhLJCQAAAAAAAABzZWNwMjU2azE=": "QAAAAAAAAABKz5UaQm1Nzb9m1ytzqPdSr+30S0J1l37L7RxO5BVmbZOAgmnLwZDLJqKw7g/UMNg3DkeqYKFDU8Q4Jr9tMbFuCQAAAAAAAABzZWNwMjU2azE="}}, "data": "EwAAAAAAAAAzMTUyNTEzMiM2NjgwNDg2ODEzGHED/fX7sMwDAAAAAAAAABQAAAAAAAAAMTUxOTUxNTA4MTYzNjc0Nzg2MTkTAAAAAAAAADI4OTY5MDI1NDQxOTAyNTU3NzETAAAAAAAAADQ4MjY3MjMzNzg3ODkxMTgxNzMUAAAAAAAAADEyMDczNjg5ODA4MjI4OTU1NTk3AwAAAAAAAABAAAAAAAAAAHHVSdkBCGqefVXFihrqMs/QhYv38exasEsAAdDME0FxtLbHITka9kzIlyq59Y8YUJHgcLGIyiI+0csk3aBvFdcJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAASSJqPQ43bW6e+GuECKElrm60Y6su1D4jsOYRhs2qLahX9vNd/XZxukwMHt1GnwHcLsynwFmN+c3VqY1u9QJkqwkAAAAAAAAAc2VjcDI1NmsxQAAAAAAAAAC82RGc2HQL6PdH8gzHnOpmeStQ3JOVISkVavuOxaAlwvaF1kkiLCNJcu7tcCT1qP2XMUVoBBKnQTfI7Pg4XEG7CQAAAAAAAABzZWNwMjU2azFAAAAAAAAAAN/SX9FQQhB5WtZqN1yS0aRVpJbGclfhO3LWjbRE1ktD7AA1Fa14y9rI1ij7OK1yb1axH8kfZ4beQjfZiUToLOkJAAAAAAAAAHNlY3AyNTZrMUAAAAAAAAAADv7oXFZ9aP71D1zk/OSF61s3X2y63fBhAy+SaN6PosJAai9s3uWJefaLlpWTAVc85IXE4u4LaS9C5uTKgsoSyQkAAAAAAAAAc2VjcDI1NmsxQAAAAAAAAABKz5UaQm1Nzb9m1ytzqPdSr+30S0J1l37L7RxO5BVmbZOAgmnLwZDLJqKw7g/UMNg3DkeqYKFDU8Q4Jr9tMbFuCQAAAAAAAABzZWNwMjU2azE="}',

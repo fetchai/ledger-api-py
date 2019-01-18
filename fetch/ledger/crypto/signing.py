@@ -1,7 +1,6 @@
+# ------------------------------------------------------------------------------
 #
-#------------------------------------------------------------------------------
-#
-#   Copyright 2018 Fetch.AI Limited
+#   Copyright 2018-2019 Fetch.AI Limited
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,23 +14,24 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 import ecdsa
 import hashlib
+
 
 class Signing(object):
     curve = ecdsa.SECP256k1
     digest = hashlib.sha256
 
     @classmethod
-    def generatePrivKey(cls):
+    def generate_private_key(cls):
         return ecdsa.SigningKey.generate(curve=cls.curve)
 
     @classmethod
-    def privKeyFromBin(cls, private_key_data):
+    def create_private_key(cls, private_key_data):
         return ecdsa.SigningKey.from_string(private_key_data, curve=cls.curve)
 
     @classmethod
-    def pubKeyFromBin(cls, public_key_data):
+    def create_public_key(cls, public_key_data):
         return ecdsa.VerifyingKey.from_string(public_key_data, curve=cls.curve)

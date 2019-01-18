@@ -1,5 +1,5 @@
 #
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
 #   Copyright 2018 Fetch.AI Limited
 #
@@ -15,13 +15,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-
-from fetch.ledger.serialisation.stream_packing import pack, unpack
-from fetch.ledger.serialisation.interfaces import DataWrapper, NativeDataWrapperInterface, NativeDataWrapper, Serialise
-from fetch.ledger.serialisation.primitive_types import *
-from fetch.ledger.serialisation.primitive_static_array import NativeStaticArray, StringNativeStaticArray
+from fetch.ledger.serialisation.primitives.types import *
+from fetch.ledger.serialisation.primitives.static_array import NativeStaticArray
 
 from struct import calcsize
 
@@ -64,7 +61,8 @@ class NativeDynamicArray(Serialise, NativeDataWrapperInterface):
 
     def deserialise(self, from_buffer):
         num_of_elements, = unpack(self._size_format, from_buffer)
-        self._native_static_array = NativeStaticArray(item_pack_format=self._native_static_array.item_pack_format, data=range(num_of_elements))
+        self._native_static_array = NativeStaticArray(item_pack_format=self._native_static_array.item_pack_format,
+                                                      data=range(num_of_elements))
         self._native_static_array.deserialise(from_buffer)
         return self
 
@@ -73,53 +71,66 @@ class CharNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="c")
 
+
 class SignedCharNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="b")
+
 
 class UnsignedCharNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="B")
 
+
 class BoolNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="?")
+
 
 class SignedShortNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="h")
 
+
 class UnsignedShortNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="H")
+
 
 class SignedIntNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="i")
 
+
 class UnsignedIntNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="I")
+
 
 class SignedLongNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="l")
 
+
 class UnsignedLongNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="L")
+
 
 class SignedLongLongNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="q")
 
+
 class UnsignedLongLongNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="Q")
 
+
 class SignedSize_tNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="n")
+
 
 class Size_tNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
@@ -130,24 +141,30 @@ class Float16bNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="e")
 
+
 class Float32bNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="f")
+
 
 class Float64bNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="d")
 
+
 class PointerNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="P")
+
 
 class StringNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):
         NativeDynamicArray.__init__(self, data=data, item_pack_format="s")
 
+
 class ByteArray(StringNativeDynamicArray):
     pass
+
 
 class PascalStringNativeDynamicArray(NativeDynamicArray):
     def __init__(self, data=None):

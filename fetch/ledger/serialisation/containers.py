@@ -1,7 +1,6 @@
+# ------------------------------------------------------------------------------
 #
-#------------------------------------------------------------------------------
-#
-#   Copyright 2018 Fetch.AI Limited
+#   Copyright 2018-2019 Fetch.AI Limited
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,15 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-#------------------------------------------------------------------------------
-
-
-from fetch.ledger.serialisation.stream_packing import pack, unpack
-from fetch.ledger.serialisation.interfaces import DataWrapper, NativeDataWrapperInterface, NativeDataWrapper, Serialise
-from fetch.ledger.serialisation.primitive_static_array import StringNativeStaticArray
-from fetch.ledger.serialisation.primitive_dynamic_array import NativeDynamicArray, StringNativeDynamicArray
-
-from struct import calcsize
+# ------------------------------------------------------------------------------
+from .stream import pack, unpack
+from .interfaces import DataWrapper, NativeDataWrapper, Serialise
+from .primitives.dynamic_array import NativeDynamicArray
 
 
 class Params(Serialise):
@@ -149,7 +143,6 @@ class Dict(Serialise):
             key.serialise(to_buffer)
             value.serialise(to_buffer)
 
-
     def deserialise(self, from_buffer):
         num_of_elements, = unpack(self.size_format, from_buffer)
         self._collection = {}
@@ -205,7 +198,6 @@ class Set(Serialise):
 
             value.serialise(to_buffer)
 
-
     def deserialise(self, from_buffer):
         num_of_elements, = unpack(self.size_format, from_buffer)
         self._collection = set()
@@ -224,4 +216,3 @@ class Set(Serialise):
     @property
     def data(self):
         return self._collection
-
