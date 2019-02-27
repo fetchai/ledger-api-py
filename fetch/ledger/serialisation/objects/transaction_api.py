@@ -30,6 +30,22 @@ def create_wealth_contract(address_to_bin, amount):
     contract_json_str = json.dumps(contract)
     return contract_json_str.encode()
 
+def create_initial_contract(address_to_bin, source_b64, hash_b64):
+    contract = {
+        "address": base64.b64encode(address_to_bin).decode(),
+        "contract_source_b64" : source_b64,
+        "contract_hash_b64" : hash_b64
+    }
+    contract_json_str = json.dumps(contract)
+    return contract_json_str.encode()
+
+def create_contract(contract_hash_b64):
+    contract = {
+        "contract_hash_b64" : contract_hash_b64
+    }
+    contract_json_str = json.dumps(contract)
+    return contract_json_str.encode()
+
 
 def decode_wealth_contract(contract_data):
     contract_json_str = contract_data.decode()
@@ -80,4 +96,28 @@ def create_transfer_tx(address_from_bin, address_to_bin, amount, fee=0):
     tx.data = create_transfer_contract(address_from_bin, address_to_bin, amount)
     tx.fee = fee
     tx.resources = [address_from_bin, address_to_bin]
+    return tx
+
+def create_initial_smart_contract_tx(address_of_issuer, source_b64, hash_b64):
+    tx = Tx()
+    tx.contract_name = b'fetch.smart_contract_manager.create_initial_contract'
+    tx.data = create_initial_contract(address_of_issuer, source_b64, hash_b64)
+    tx.fee = 10 # TODO(HUT): default fees?
+    tx.resources       = [address_of_issuer]
+    tx.contract_hashes = [hash_b64.encode()]
+    return tx
+
+def create_smart_contract_tx(contract_hash_b64, pubkey_b64, resources, function_name):
+    tx = Tx()
+    tx.contract_name = "{}.{}.{}".format(contract_hash_b64, pubkey_b64, function_name)
+    print("NAME: " + tx.contract_name)
+    tx.contract_name = tx.contract_name.encode()
+    tx.data = create_contract(contract_hash_b64)
+    tx.fee = 10 # TODO(HUT): default fees?
+    tx.resources = []
+
+    for res in resources:
+        tx.resources += [res.encode()]
+
+    tx.contract_hashes = [contract_hash_b64.encode()]
     return tx

@@ -1,0 +1,42 @@
+function main()
+
+ var s = State<Int32>('counter', 0);
+
+ Print('The first counter is now: ' + toString(s.get()));
+
+ if(!s.existed())
+   Print('This is the first time');
+ endif
+
+ Print("Writing back to state now.");
+ s.set(s.get() + 1);
+
+endfunction
+
+function second_fn()
+
+ var s = State<Int32>('counter2', 10);
+
+ Print('The second counter is now: ' + toString(s.get()));
+
+ if(!s.existed())
+   Print('This is the first time');
+ endif
+
+ s.set(s.get() - 1);
+
+endfunction
+
+function third_fn()
+
+ var s = State<Int32>('counter3', -30);
+
+ Print('The third counter is now: ' + toString(s.get()));
+
+ if(!s.existed())
+   Print('This is the first time');
+ endif
+
+ s.set(s.get() + 1);
+
+endfunction

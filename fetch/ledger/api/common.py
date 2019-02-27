@@ -20,7 +20,7 @@ import requests
 import json
 
 
-def format_contract_url(host, port, prefix, endpoint):
+def format_contract_url(host, port, *args):
     """
     Constructs a URL based on specified contract prefix and endpoint
 
@@ -30,10 +30,10 @@ def format_contract_url(host, port, prefix, endpoint):
     :param str endpoint: The dot separated name for the contract endpoint
     :return: The formatted URL
     """
-    if prefix is None:
+    if args is None:
         canonical_name = endpoint
     else:
-        canonical_name = '.'.join([prefix, endpoint])
+        canonical_name = '.'.join([*args])
 
     return 'http://{}:{}/api/contract/'.format(host, port) + canonical_name.replace('.', '/')
 
@@ -146,5 +146,35 @@ class ApiEndpoint(object):
 
         if not success:
             raise ApiError(
-                'Unable to fulfil transaction request {}.{}. Status Code {}'.format(self.API_PREFIX, endpoint,
-                                                                                    r.status_code))
+                    'Unable to fulfil transaction request {}.{}. Status Code {} Text: {}'.format(self.API_PREFIX, endpoint,
+                                                                                    r.status_code, r.text))
+
+    def _post_tx_speculative(self, transaction, endpoint):
+        """
+        Submits a speculative transaction to the ledger endpoint. That is,
+        submit the transaction and have the node run it to determine side effects
+
+        :param str transaction: The JSON encoded contract contents
+        :param str endpoint: The target endpoint of the contract
+        :return: True if the transaction was successfully submitted
+        """
+
+        headers = {
+            'content-type': 'application/vnd+fetch.transaction+json',
+        }
+
+        # format the URL
+        url = format_contract_url(self.host, self.port, 'speculative', self.API_PREFIX, endpoint)
+
+        print("heere")
+        print(url)
+
+        # make the request
+        r = self._session.post(url, data=transaction, headers=headers)
+        success = 200 <= r.status_code < 300
+
+        if not success:
+            raise ApiError(
+                    'Unable to fulfil transaction request {}.{}. Status Code {} Text: {}'.format(self.API_PREFIX, endpoint,
+                                                                                    r.status_code, r.text))
+        return r;
