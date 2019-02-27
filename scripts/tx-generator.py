@@ -17,9 +17,9 @@
 #
 # ------------------------------------------------------------------------------
 
-from fetch.ledger.crypto import Signing
-from fetch.ledger.serialisation.objects import Tx
-from fetch.ledger.serialisation.objects.transaction_api import create_transfer_tx, create_wealth_tx
+from fetchai.ledger.crypto import Signing
+from fetchai.ledger.serialisation.objects import Tx
+from fetchai.ledger.serialisation.objects.transaction_api import create_transfer_tx, create_wealth_tx
 
 import base64
 import binascii

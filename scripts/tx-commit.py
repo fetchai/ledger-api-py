@@ -17,7 +17,7 @@
 #
 # ------------------------------------------------------------------------------
 
-from fetch.ledger.api import submit_json_transaction
+from fetchai.ledger.api import submit_json_transaction
 
 import argparse
 import sys
