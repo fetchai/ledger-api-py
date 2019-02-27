@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='fetchai-ledger-api',
-    version='0.1.0a1',
+    version='0.1.0a2',
     description='Tools and utilities for interacting with the ledger on the fetch network',
     url='https://github.com/fetchai/ledger-api-py',
     author='Edward FitzGerald',
