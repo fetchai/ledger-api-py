@@ -17,8 +17,8 @@
 # ------------------------------------------------------------------------------
 
 
-from fetch.ledger.serialisation.primitives.types import *
-from fetch.ledger.serialisation.interfaces import NativeDataWrapperInterface, Serialise
+from fetchai.ledger.serialisation.primitives.types import *
+from fetchai.ledger.serialisation.interfaces import NativeDataWrapperInterface, Serialise
 
 from struct import calcsize
 

@@ -19,8 +19,8 @@
 import base64
 import unittest
 
-from fetch.ledger.crypto import Signing
-from fetch.ledger.serialisation.objects.transaction_api import create_transfer_contract, \
+from fetchai.ledger.crypto import Signing
+from fetchai.ledger.serialisation.objects.transaction_api import create_transfer_contract, \
     decode_transfer_contract, \
     create_wealth_contract, \
     decode_wealth_contract, \

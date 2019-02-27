@@ -16,9 +16,9 @@
 #
 # ------------------------------------------------------------------------------
 
-from fetch.ledger.api import ApiEndpoint, ApiError
-from fetch.ledger.serialisation.objects.transaction_api import create_wealth_tx, create_transfer_tx
-from fetch.ledger.crypto.signing import Signing
+from fetchai.ledger.api import ApiEndpoint, ApiError
+from fetchai.ledger.serialisation.objects.transaction_api import create_wealth_tx, create_transfer_tx
+from fetchai.ledger.crypto.signing import Signing
 
 
 class TokenApi(ApiEndpoint):
