@@ -24,22 +24,8 @@ import base64
 import hashlib
 import binascii
 
-def create_signed_wealth_transaction(priv_keys_to, amount, fee):
-    address_to_bin = priv_keys_to[0].get_verifying_key().to_string()
-
-    tx = create_wealth_tx(address_to_bin, amount, fee)
-
-    for pk in priv_keys_to:
-        tx.sign(pk)
-
-    return tx
-
 class SmartContractManager(ApiEndpoint):
     API_PREFIX = 'fetch.smart_contract_manager'
-    #API_PREFIX = 'fetch.token'
-
-    def recent_contracts(self):
-        print("recent_contracts")
 
     def add_contract(self, contract_source):
         """
@@ -52,7 +38,7 @@ class SmartContractManager(ApiEndpoint):
         contract_source_b64 = contract_source_b64.decode()
         contract_hash_b64   = contract_hash_b64.decode()
 
-        # Generate random pub-private key pair
+        # Generate random pub-private key pair for this submission
         priv_key = Signing.generate_private_key()
 
         address_to_bin = priv_key.get_verifying_key().to_string()
@@ -66,22 +52,24 @@ class SmartContractManager(ApiEndpoint):
         return contract_hash_b64
 
 class SmartContract(ApiEndpoint):
-    API_PREFIX = '???'
+    API_PREFIX = 'NOT_SET'
 
     def __init__(self, host, port, pubkey_b64, contract_hash_b64):
         ApiEndpoint.__init__(self, host, port)
 
         self._pubkey_b64      = pubkey_b64
         self._contract_hash_b64 = contract_hash_b64
-        contract_hash_hex = binascii.hexlify(contract_hash_b64.encode()).decode()
 
-        print(contract_hash_hex)
+        # For the http request, it is less error prone to send the contract reference as 0xHEX
+        contract_hash_hex = binascii.hexlify(contract_hash_b64.encode()).decode()
 
         self.API_PREFIX   = '0x{}.0x{}'.format(contract_hash_hex, pubkey_b64)
 
-        print("API : {}".format(self.API_PREFIX))
-
     def run_speculative(self, resources=None, function_name="main"):
+        """
+        Submit a call to a smart contract speculatively - this allows the user
+        to determine if signing, formatting, resource locking etc. will be successful.
+        """
         priv_key = Signing.generate_private_key()
 
         address_to_bin = priv_key.get_verifying_key().to_string()
@@ -94,6 +82,7 @@ class SmartContract(ApiEndpoint):
 
         return speculative_output.json()
 
+    # Create a TX that runs this smart contract, calling a specific function
     def run(self, resources=None, function_name="main"):
         priv_key = Signing.generate_private_key()
 
@@ -104,7 +93,3 @@ class SmartContract(ApiEndpoint):
         tx.sign(priv_key)
 
         self._post_tx(tx.to_wire_format(), function_name)
-
-    def output(self):
-        return "nothing"
-

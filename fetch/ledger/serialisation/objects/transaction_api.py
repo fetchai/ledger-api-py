@@ -30,6 +30,7 @@ def create_wealth_contract(address_to_bin, amount):
     contract_json_str = json.dumps(contract)
     return contract_json_str.encode()
 
+# Create an initial contract
 def create_initial_contract(address_to_bin, source_b64, hash_b64):
     contract = {
         "address": base64.b64encode(address_to_bin).decode(),

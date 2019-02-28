@@ -71,13 +71,6 @@ def parse_args(args=None):
     v_group.add_argument('-f', '--filename', type=str, help='Filename containing transaction in wire format.')
     verify_tx_parser.add_argument('-m', '--print_metadata', action='store_true', help='Include non-mandatory metadata section.')
 
-    add_sc_parser = subparsers.add_parser('add-smart-contract')
-    add_sc_parser.add_argument('-f', '--filename',required=True, type=str, help='Filename containing the smart contract.')
-    add_sc_parser.add_argument('-v', '--verbose', action='store_true', help='verbose mode', default=False)
-
-    #verify_tx_parser = subparsers.add_parser('invoke-smart-contract')
-    #verify_tx_parser.add_argument('-v', '--verbose', action='store_true', help='verbose mode', default=False)
-
     return parser.parse_args(args)
 
 
@@ -154,17 +147,6 @@ def main():
         else:
             msg = "FAILED to verify."
         print(msg)
-
-    if args.subcommand == 'add-smart-contract':
-
-        if args.verbose:
-            print(args.filename)
-
-        whole_file = open(args.filename, 'r').read()
-
-        if args.verbose:
-            print("file is: ")
-            print(whole_file)
 
 
 if __name__ == '__main__':

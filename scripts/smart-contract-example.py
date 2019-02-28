@@ -54,7 +54,8 @@ def main(index):
 
     smart_contract = SmartContract("localhost", "8000", "PUBKEY1", contract_hash_b64)
 
-    # These will be the only resources we allow setting/getting in our SC
+    # These will be the only resources we allow setting/getting in our SC - note the second fn
+    # in the smart contract example will fail for not locking counter2.
     resources = ["hello", "try", "this", "counter", "counter3"]
     fn_to_call = "main"
 

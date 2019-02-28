@@ -152,7 +152,9 @@ class ApiEndpoint(object):
     def _post_tx_speculative(self, transaction, endpoint):
         """
         Submits a speculative transaction to the ledger endpoint. That is,
-        submit the transaction and have the node run it to determine side effects
+        submit the transaction and have the node run it to determine side effects.
+        Basically identical to a normal submission except the server return code
+        will contain your print statements
 
         :param str transaction: The JSON encoded contract contents
         :param str endpoint: The target endpoint of the contract
@@ -166,8 +168,7 @@ class ApiEndpoint(object):
         # format the URL
         url = format_contract_url(self.host, self.port, 'speculative', self.API_PREFIX, endpoint)
 
-        print("heere")
-        print(url)
+        print("Making speculative call to: " + url)
 
         # make the request
         r = self._session.post(url, data=transaction, headers=headers)
