@@ -130,7 +130,7 @@ class ApiEndpoint(object):
 
         :param str transaction: The JSON encoded contract contents
         :param str endpoint: The target endpoint of the contract
-        :return: True if the transaction was successfully submitted
+        :return: The digest of the submitted transaction
         """
 
         headers = {
@@ -148,3 +148,11 @@ class ApiEndpoint(object):
             raise ApiError(
                 'Unable to fulfil transaction request {}.{}. Status Code {}'.format(self.API_PREFIX, endpoint,
                                                                                     r.status_code))
+
+        # parse the response
+        response = r.json()
+
+        # attempt to extract out the submitting transaction hash
+        tx_list = response.get('txs', [])
+        if len(tx_list):
+            return tx_list[0]

@@ -18,3 +18,4 @@
 
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .token import TokenApi
+from .tx import TransactionApi
