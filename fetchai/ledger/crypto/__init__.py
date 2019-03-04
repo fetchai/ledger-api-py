@@ -16,4 +16,5 @@
 #
 # ------------------------------------------------------------------------------
 
-from .signing import *
+from .signing import Signing
+from .identity import Identity
