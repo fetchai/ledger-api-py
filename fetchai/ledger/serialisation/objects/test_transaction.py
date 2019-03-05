@@ -22,7 +22,7 @@ import random
 import string
 import unittest
 
-from fetch.ledger.crypto import Signing
+from fetchai.ledger.crypto import Signing
 from .transaction import Tx
 
 

@@ -16,5 +16,5 @@
 #
 # ------------------------------------------------------------------------------
 
-from .common import ApiEndpoint, ApiError, submit_json_transaction
-from .token import TokenApi
+from .signing import Signing
+from .identity import Identity

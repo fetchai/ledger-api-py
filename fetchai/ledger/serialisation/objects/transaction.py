@@ -23,10 +23,10 @@ import json
 
 import ecdsa
 
-from fetch.ledger.crypto import Signing
-from fetch.ledger.serialisation import Serialise, ByteArray, UnsignedLongLong, Dict, List, Set
-from fetch.ledger.serialisation.objects.identity import Identity
-from fetch.ledger.serialisation.objects.signature import Signature
+from fetchai.ledger.crypto import Signing
+from fetchai.ledger.serialisation import Serialise, ByteArray, UnsignedLongLong, Dict, List, Set
+from fetchai.ledger.serialisation.objects.identity import Identity
+from fetchai.ledger.serialisation.objects.signature import Signature
 
 
 class Signatories(Dict):

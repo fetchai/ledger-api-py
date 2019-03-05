@@ -17,8 +17,8 @@
 #
 # ------------------------------------------------------------------------------
 
-from fetch.ledger.serialisation.stream import pack, unpack
-from fetch.ledger.serialisation.interfaces import DataWrapper, NativeDataWrapperInterface, NativeDataWrapper, Serialise
+from fetchai.ledger.serialisation.stream import pack, unpack
+from fetchai.ledger.serialisation.interfaces import DataWrapper, NativeDataWrapperInterface, NativeDataWrapper, Serialise
 
 from struct import calcsize
 

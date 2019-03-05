@@ -16,9 +16,9 @@
 #
 # ------------------------------------------------------------------------------
 
-from fetch.ledger.api import ApiEndpoint, ApiError
-from fetch.ledger.serialisation.objects.transaction_api import create_wealth_tx, create_transfer_tx
-from fetch.ledger.crypto.signing import Signing
+from fetchai.ledger.api import ApiEndpoint, ApiError
+from fetchai.ledger.serialisation.objects.transaction_api import create_wealth_tx, create_transfer_tx
+from fetchai.ledger.crypto.signing import Signing
 
 
 class TokenApi(ApiEndpoint):
@@ -56,7 +56,8 @@ class TokenApi(ApiEndpoint):
         :param private_key_bin: The bytes of the private key of the targeted address
         :param amount: The amount of wealth to be generated
         :param fee: The fee value to be used for the transaction
-        :return: True if successful, otherwise False
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
         """
 
         # extract keys
@@ -68,7 +69,7 @@ class TokenApi(ApiEndpoint):
         tx.sign(signing_key)
 
         # submit the transaction
-        self._post_tx(tx.to_wire_format(), 'wealth')
+        return self._post_tx(tx.to_wire_format(), 'wealth')
 
     def transfer(self, private_key_bin, to_address, amount, fee=0):
         """
@@ -78,7 +79,8 @@ class TokenApi(ApiEndpoint):
         :param to_address: The bytes of the targeted address to send funds to
         :param amount: The amount of funds being transfered
         :param fee: The fee associated with the transfer
-        :return: True if successful, otherwise False
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
         """
 
         # extract keys
@@ -90,5 +92,5 @@ class TokenApi(ApiEndpoint):
         tx.sign(signing_key)
 
         # submit the transaction
-        self._post_tx(tx.to_wire_format(), 'transfer')
+        return self._post_tx(tx.to_wire_format(), 'transfer')
 

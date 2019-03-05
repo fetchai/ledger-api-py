@@ -18,8 +18,8 @@
 
 import binascii
 
-from fetch.ledger.crypto import Signing
-from fetch.ledger.serialisation import Serialise, ByteArray
+from fetchai.ledger.crypto import Signing
+from fetchai.ledger.serialisation import Serialise, ByteArray
 
 
 class Identity(Serialise):

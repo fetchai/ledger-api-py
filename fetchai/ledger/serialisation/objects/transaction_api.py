@@ -19,7 +19,7 @@
 import base64
 import json
 
-from fetch.ledger.serialisation.objects.transaction import Tx
+from fetchai.ledger.serialisation.objects.transaction import Tx
 
 
 def create_wealth_contract(address_to_bin, amount):

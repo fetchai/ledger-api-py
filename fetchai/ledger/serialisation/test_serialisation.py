@@ -15,7 +15,7 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-from fetch.ledger.serialisation import *
+from fetchai.ledger.serialisation import *
 
 import unittest
 import io

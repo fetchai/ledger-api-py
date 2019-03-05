@@ -17,8 +17,8 @@
 #
 # ------------------------------------------------------------------------------
 
-from fetch.ledger.serialisation.primitives.types import *
-from fetch.ledger.serialisation.primitives.static_array import NativeStaticArray
+from fetchai.ledger.serialisation.primitives.types import *
+from fetchai.ledger.serialisation.primitives.static_array import NativeStaticArray
 
 from struct import calcsize
 
