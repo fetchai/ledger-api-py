@@ -27,7 +27,7 @@ PORT = 8000
 def main():
 
     # create the APIs
-    txs = TransactionApi(HOST, PORT)
+    tx_api = TransactionApi(HOST, PORT)
     tokens = TokenApi(HOST, PORT)
 
     # generate a random identity
@@ -35,27 +35,58 @@ def main():
 
     print('Balance Before:', tokens.balance(identity.public_key))
 
-    # create and send the transaction to the ledger capturing the tx hash
-    tx = tokens.wealth(identity.private_key_bytes, 1000)
-
-    # wait while we poll to see when this transaction has been completed
-    prev_status = None
     while True:
-        status = txs.status(tx)
 
-        # print the changes in tx status
-        if status != prev_status:
-            print('Current Status:', status)
-            prev_status = status
+        print('Batch send tx...')
 
-        # exit the wait loop once the transaction has been executed
-        if status == "Executed":
-            break
+        # send in a batch of transactions
+        txs = set()
+        for _ in range(100):
+            txs.add(tokens.wealth(identity.private_key_bytes, 1000))
 
-        time.sleep(1)
+        print('Waiting...')
 
-    # check the balance now
-    print('Balance After:', tokens.balance(identity.public_key))
+        # wait for all the transactions to be executed
+        while len(txs):
+
+            # wait for a bit
+            time.sleep(1)
+
+            # determine which of the transactions have been executed
+            completed = set()
+            for tx in txs:
+                status = tx_api.status(tx)
+                if status == 'Executed':
+                    completed.add(tx)
+
+            # update the pending set
+            txs = txs - completed
+
+
+
+    #
+    #
+    # # create and send the transaction to the ledger capturing the tx hash
+    # tx = tokens.wealth(identity.private_key_bytes, 1000)
+    #
+    # # wait while we poll to see when this transaction has been completed
+    # prev_status = None
+    # while True:
+    #     status = txs.status(tx)
+    #
+    #     # print the changes in tx status
+    #     if status != prev_status:
+    #         print('Current Status:', status)
+    #         prev_status = status
+    #
+    #     # exit the wait loop once the transaction has been executed
+    #     if status == "Executed":
+    #         break
+    #
+    #     time.sleep(1)
+    #
+    # # check the balance now
+    # print('Balance After:', tokens.balance(identity.public_key))
 
 
 if __name__ == '__main__':
