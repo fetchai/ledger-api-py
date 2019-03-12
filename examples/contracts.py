@@ -12,6 +12,16 @@ HOST = '127.0.0.1'
 PORT = 8000
 
 contract_source = """
+@on_init
+function on_init()
+  var state = State<Int32>("value", 9);
+  state.set(state.get());
+  Print("on_init triggered, setting to: " + toString(state.get()));
+
+  var other_state = State<Int32>("value", 33);
+  Print("we see:" + toString(other_state.get()));
+endfunction
+
 @action
 function increment()
   var state = State<Int32>("value", 10);
@@ -20,7 +30,8 @@ endfunction
 
 @query
 function value() : Int32
-  var state = State<Int32>("value", 10);
+  var state = State<Int32>("value", 12);
+  Print("query triggered. State: "+ toString(state.get()));
   return state.get();
 endfunction
 
@@ -31,8 +42,7 @@ identity = Identity()
 status_api = TransactionApi(HOST, PORT)
 contract_api = ContractsApi(HOST, PORT)
 
-
-create_tx = contract_api.create(identity, contract_source)
+create_tx = contract_api.create(identity, contract_source, init_resources = ["value"])
 
 print('CreateTX:', create_tx)
 

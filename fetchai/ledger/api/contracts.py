@@ -8,7 +8,7 @@ from .common import ApiEndpoint
 class ContractsApi(ApiEndpoint):
     API_PREFIX = 'fetch.contract'
 
-    def create(self, identity, source):
+    def create(self, identity, source, init_resources = []):
         source = source.encode()
 
         hash_func = hashlib.sha256()
@@ -21,11 +21,13 @@ class ContractsApi(ApiEndpoint):
             'digest': source_digest,
         }
 
+        all_resources = [source_digest, *init_resources]
+
         # create the tx
         tx = create_json_tx(
             contract_name=self.API_PREFIX + '.create',
             json_data=data,
-            resources=[source_digest],
+            resources=all_resources
         )
 
         # sign the transaction contents
