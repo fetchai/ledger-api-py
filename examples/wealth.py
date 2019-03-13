@@ -41,16 +41,17 @@ def main():
     # wait while we poll to see when this transaction has been completed
     prev_status = None
     while True:
-        status = txs.status(tx)
+        if tx is not None:
+            status = txs.status(tx)
 
-        # print the changes in tx status
-        if status != prev_status:
-            print('Current Status:', status)
-            prev_status = status
+            # print the changes in tx status
+            if status != prev_status:
+                print('Current Status:', status)
+                prev_status = status
 
-        # exit the wait loop once the transaction has been executed
-        if status == "Executed":
-            break
+            # exit the wait loop once the transaction has been executed
+            if status == "Executed":
+                break
 
         time.sleep(1)
 
