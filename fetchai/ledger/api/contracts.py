@@ -21,13 +21,15 @@ class ContractsApi(ApiEndpoint):
             'digest': source_digest,
         }
 
-        all_resources = [source_digest, *init_resources]
+        # Need to construct the raw resources needed for SC creation init.
+        init_resources_appended = [source_digest+"."+identity.public_key+".state."+x for x in init_resources]
 
         # create the tx
         tx = create_json_tx(
             contract_name=self.API_PREFIX + '.create',
             json_data=data,
-            resources=all_resources
+            resources=[source_digest],
+            contract_hashes=[source_digest, *init_resources_appended],
         )
 
         # sign the transaction contents

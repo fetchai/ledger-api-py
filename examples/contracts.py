@@ -3,6 +3,7 @@ import time
 import hashlib
 import json
 import binascii
+import msgpack
 
 from fetchai.ledger.serialisation.objects.transaction_api import create_json_tx
 from fetchai.ledger.api import ContractsApi, TransactionApi, submit_json_transaction
@@ -23,9 +24,11 @@ function on_init()
 endfunction
 
 @action
-function increment()
+function increment(a : Int32, b : Int32, c : Int32)
   var state = State<Int32>("value", 10);
-  state.set(state.get() + 3000);
+  Print("Increment triggering");
+  Print(toString(c));
+  state.set(state.get() + 1000 + c);
 endfunction
 
 @query
@@ -63,8 +66,9 @@ source_digest = base64.b64encode(hash_func.digest()).decode()
 # create the tx
 tx = create_json_tx(
     contract_name=source_digest + '.' + identity.public_key + '.increment',
-    json_data={},
+    json_data=msgpack.packb([10, 20, 30], use_bin_type=True),
     resources=['value'],
+    contract_hashes=[source_digest],
 )
 
 # sign the transaction contents
