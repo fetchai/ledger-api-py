@@ -83,7 +83,7 @@ def create_transfer_tx(address_from_bin, address_to_bin, amount, fee=0):
     return tx
 
 
-def create_json_tx(contract_name, json_data, resources=None, contract_hashes=None, fee=None):
+def create_json_tx(contract_name, json_data, resources=None, raw_resources=None, fee=None):
     resources = resources or []
 
     # format the transaction
@@ -97,5 +97,5 @@ def create_json_tx(contract_name, json_data, resources=None, contract_hashes=Non
 
     tx.fee = int(fee or 0)
     tx.resources = [x.encode() for x in resources]
-    tx.contract_hashes = [x.encode() for x in contract_hashes]
+    tx.raw_resources = [x.encode() for x in raw_resources]
     return tx

@@ -29,7 +29,7 @@ class ContractsApi(ApiEndpoint):
             contract_name=self.API_PREFIX + '.create',
             json_data=data,
             resources=[source_digest],
-            contract_hashes=[source_digest, *init_resources_appended],
+            raw_resources=[source_digest, *init_resources_appended],
         )
 
         # sign the transaction contents

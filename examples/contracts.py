@@ -68,7 +68,7 @@ tx = create_json_tx(
     contract_name=source_digest + '.' + identity.public_key + '.increment',
     json_data=msgpack.packb([10, 20, 30], use_bin_type=True),
     resources=['value'],
-    contract_hashes=[source_digest],
+    raw_resources=[source_digest],
 )
 
 # sign the transaction contents
