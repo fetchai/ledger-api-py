@@ -1,3 +1,73 @@
+contract_source = """
+@on_init
+function on_init(owner : Address)
+  var state = State<Int32>("value", 100000);
+  state.set(state.get());
+  Print("on_init triggered, setting value to: " + toString(state.get()));
+
+  Print("on_init triggered, owner is: " + owner.AsString());
+
+  var default = Address();
+  Print("Here1");
+  var owner_state = State<Address>("owner", default);
+  Print("Setting state!");
+  owner_state.set(owner);
+
+  var balances = State<Int32>(owner.AsString(), 1);
+  balances.set(2001);
+endfunction
+
+@action
+function increment(input_a : Int32, input_b : Int32, input_c : Int32)
+  var state = State<Int32>("value", 10);
+  Print("Increment triggering");
+  Print(toString(input_c));
+  state.set(state.get() + 1000 + input_c);
+
+  var default2 = Address();
+  Print("CONS.");
+  var owner_state = State<Address>("owner", default2);
+  Print("CONS2.");
+  Print("We recognise owner as: " + owner_state.get().AsString());
+endfunction
+
+@action
+function transfer(from : Address, to : Address, amount : Int32)
+  var default = Address();
+  var owner_state = State<Address>("owner", default);
+
+  if(owner_state.get().AsString() == from.AsString())
+    Print("Owner making the call");
+  else
+    Print("Owner not making the call");
+  endif
+
+  Print("Transferring from "+ from.AsString() + " to: " + to.AsString());
+
+  var balance_from = State<Int32>(from.AsString(), 0);
+  var balance_to   = State<Int32>(to.AsString(), 0);
+
+  Print("Initial balance: " + toString(balance_from.get()));
+
+  balance_from.set(balance_from.get() - amount);
+  balance_to.set(balance_to.get() + amount);
+
+  Print("Final balance: " + toString(balance_from.get()));
+
+  Print("Success!");
+
+  //return 0;
+endfunction
+
+@query
+function value() : Int32
+  var state = State<Int32>("value", 12);
+  Print("query triggered.");
+  return state.get();
+endfunction
+
+"""
+
 import base64
 import time
 import hashlib
@@ -12,40 +82,14 @@ from fetchai.ledger.crypto import Identity
 HOST = '127.0.0.1'
 PORT = 8000
 
-contract_source = """
-@on_init
-function on_init()
-  var state = State<Int32>("value", 9);
-  state.set(state.get());
-  Print("on_init triggered, setting to: " + toString(state.get()));
-
-  var other_state = State<Int32>("value", 33);
-  Print("we see:" + toString(other_state.get()));
-endfunction
-
-@action
-function increment(a : Int32, b : Int32, c : Int32)
-  var state = State<Int32>("value", 10);
-  Print("Increment triggering");
-  Print(toString(c));
-  state.set(state.get() + 1000 + c);
-endfunction
-
-@query
-function value() : Int32
-  var state = State<Int32>("value", 12);
-  Print("query triggered. State: "+ toString(state.get()));
-  return state.get();
-endfunction
-
-"""
 
 identity = Identity()
+next_identity = Identity()
 
 status_api = TransactionApi(HOST, PORT)
 contract_api = ContractsApi(HOST, PORT)
 
-create_tx = contract_api.create(identity, contract_source, init_resources = ["value"])
+create_tx = contract_api.create(identity, contract_source, init_resources = ["value", "owner", identity.public_key])
 
 print('CreateTX:', create_tx)
 
@@ -67,7 +111,7 @@ source_digest = base64.b64encode(hash_func.digest()).decode()
 tx = create_json_tx(
     contract_name=source_digest + '.' + identity.public_key + '.increment',
     json_data=msgpack.packb([10, 20, 30], use_bin_type=True),
-    resources=['value'],
+    resources=['value', 'owner'],
     raw_resources=[source_digest],
 )
 
@@ -82,7 +126,6 @@ code, response = submit_json_transaction(HOST, PORT, wire_fmt)
 
 print(code)
 print(response)
-
 
 while True:
     status = status_api.status(response['txs'][0])
@@ -104,3 +147,29 @@ print(url)
 r = status_api._session.post(url, json={})
 print(r.status_code)
 print(r.json())
+
+print('transfer N times')
+
+for index in range(50):
+
+    # create the tx
+    tx = create_json_tx(
+        contract_name=source_digest + '.' + identity.public_key + '.transfer',
+        json_data=msgpack.packb([msgpack.ExtType(77, identity.public_key_bytes), msgpack.ExtType(77, next_identity.public_key_bytes), 1000 + index]),
+        resources=['owner', identity.public_key, next_identity.public_key],
+        raw_resources=[source_digest],
+    )
+
+    # sign the transaction contents
+    tx.sign(identity.signing_key)
+
+    wire_fmt = json.loads(tx.to_wire_format())
+    print(wire_fmt)
+
+    # # submit that transaction
+    code, response = submit_json_transaction(HOST, PORT, wire_fmt)
+
+    print(code)
+    print(response)
+
+    time.sleep(5)
