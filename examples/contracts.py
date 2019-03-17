@@ -11,17 +11,12 @@ function on_init(owner : Address)
 
   // Set the balance of the owner
   var balances = State<Int32>(owner.AsString(), 1);
-  balances.set(2002);
-
-  // aside - write to 'value' so as to later test query functionality
-  var state = State<Int32>("value", 100000);
-  state.set(state.get());
+  balances.set(2009);
 endfunction
 
 @action
 function transfer(from : Address, to : Address, amount : Int32) : Int32
-  var default = Address();
-  var owner_state = State<Address>("owner", default);
+  var owner_state = State<Address>("owner", Address());
 
   Print("From address is signed? : " + toString(from.signed_tx()));
   Print("To address is signed? : " + toString(to.signed_tx()));
@@ -52,32 +47,20 @@ function transfer(from : Address, to : Address, amount : Int32) : Int32
   balance_to.set(balance_to.get() + amount);
 
   Print("Final balance: " + toString(balance_from.get()));
-
   Print("Success!");
 
   return 0;
 endfunction
 
-// Test arbitrary numbers of parameters, incrementing state
-@action
-function increment(input_a : Int32, input_b : Int32, input_c : Int32)
-  var state = State<Int32>("value", 10);
-  Print("Increment triggering");
-  Print(toString(input_c));
-  state.set(state.get() + 1000 + input_c);
-
-  var default = Address();
-  Print("CONS.");
-  var owner_state = State<Address>("owner", default);
-  Print("CONS2.");
-  Print("We recognise owner as: " + owner_state.get().AsString());
-endfunction
-
+// Allow clients to query the amount the owner has
 @query
-function value() : Int32
-  var state = State<Int32>("value", 12);
-  Print("query triggered.");
-  return state.get();
+function owner_funds() : Int32
+
+  var balance = State<Int32>(State<Address>("owner", Address()).get().AsString(), 0);
+  var bal = balance.get();
+
+  Print("query triggered for owner balance: " + toString(bal));
+  return bal;
 endfunction
 
 """
@@ -103,7 +86,7 @@ next_identity = Identity()
 status_api = TransactionApi(HOST, PORT)
 contract_api = ContractsApi(HOST, PORT)
 
-create_tx = contract_api.create(identity, contract_source, init_resources = ["value", "owner", identity.public_key])
+create_tx = contract_api.create(identity, contract_source, init_resources = ["owner", identity.public_key])
 
 print('CreateTX:', create_tx)
 
@@ -121,50 +104,9 @@ hash_func = hashlib.sha256()
 hash_func.update(contract_source.encode())
 source_digest = base64.b64encode(hash_func.digest()).decode()
 
-# create the tx
-tx = create_json_tx(
-    contract_name=source_digest + '.' + identity.public_key + '.increment',
-    json_data=msgpack.packb([10, 20, 30], use_bin_type=True),
-    resources=['value', 'owner'],
-    raw_resources=[source_digest],
-)
-
-# sign the transaction contents
-tx.sign(identity.signing_key)
-
-wire_fmt = json.loads(tx.to_wire_format())
-print(wire_fmt)
-
-# # submit that transaction
-code, response = submit_json_transaction(HOST, PORT, wire_fmt)
-
-print(code)
-print(response)
-
-while True:
-    status = status_api.status(response['txs'][0])
-
-    print(status)
-    if status == "Executed":
-        break
-
-    time.sleep(1)
-
-print('Query')
-
-source_digest_hex = binascii.hexlify(base64.b64decode(source_digest)).decode()
-
-url = 'http://{}:{}/api/contract/{}/{}/value'.format(HOST, PORT, source_digest_hex, identity.public_key_hex)
-
-print(url)
-
-r = status_api._session.post(url, json={})
-print(r.status_code)
-print(r.json())
-
 print('transfer N times')
 
-for index in range(50):
+for index in range(3):
 
     # create the tx
     tx = create_json_tx(
@@ -187,3 +129,15 @@ for index in range(50):
     print(response)
 
     time.sleep(5)
+
+print('Query for owner funds')
+
+source_digest_hex = binascii.hexlify(base64.b64decode(source_digest)).decode()
+
+url = 'http://{}:{}/api/contract/{}/{}/owner_funds'.format(HOST, PORT, source_digest_hex, identity.public_key_hex)
+
+print(url)
+
+r = status_api._session.post(url, json={})
+print(r.status_code)
+print(r.json())
