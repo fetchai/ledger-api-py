@@ -1,40 +1,31 @@
 contract_source = """
+
+// On init triggered on the creation of a smart contract - will set the owner.
 @on_init
 function on_init(owner : Address)
-  var state = State<Int32>("value", 100000);
-  state.set(state.get());
-  Print("on_init triggered, setting value to: " + toString(state.get()));
-
   Print("on_init triggered, owner is: " + owner.AsString());
 
-  var default = Address();
-  Print("Here1");
-  var owner_state = State<Address>("owner", default);
-  Print("Setting state!");
+  // Set the owner
+  var owner_state = State<Address>("owner", Address());
   owner_state.set(owner);
 
+  // Set the balance of the owner
   var balances = State<Int32>(owner.AsString(), 1);
-  balances.set(2001);
+  balances.set(2002);
+
+  // aside - write to 'value' so as to later test query functionality
+  var state = State<Int32>("value", 100000);
+  state.set(state.get());
 endfunction
 
 @action
-function increment(input_a : Int32, input_b : Int32, input_c : Int32)
-  var state = State<Int32>("value", 10);
-  Print("Increment triggering");
-  Print(toString(input_c));
-  state.set(state.get() + 1000 + input_c);
-
-  var default2 = Address();
-  Print("CONS.");
-  var owner_state = State<Address>("owner", default2);
-  Print("CONS2.");
-  Print("We recognise owner as: " + owner_state.get().AsString());
-endfunction
-
-@action
-function transfer(from : Address, to : Address, amount : Int32)
+function transfer(from : Address, to : Address, amount : Int32) : Int32
   var default = Address();
   var owner_state = State<Address>("owner", default);
+
+  Print("From address is signed? : " + toString(from.signed_tx()));
+  Print("To address is signed? : " + toString(to.signed_tx()));
+  Print("Transferring " + toString(amount) +" from "+ from.AsString() + " to: " + to.AsString());
 
   if(owner_state.get().AsString() == from.AsString())
     Print("Owner making the call");
@@ -42,12 +33,20 @@ function transfer(from : Address, to : Address, amount : Int32)
     Print("Owner not making the call");
   endif
 
-  Print("Transferring from "+ from.AsString() + " to: " + to.AsString());
+  if(!from.signed_tx())
+    Print("*** From address not verified! Quitting. ***");
+    return 1;
+  endif
 
   var balance_from = State<Int32>(from.AsString(), 0);
   var balance_to   = State<Int32>(to.AsString(), 0);
 
   Print("Initial balance: " + toString(balance_from.get()));
+
+  if(balance_from.get() < amount)
+    Print("Failed! Not enough funds");
+    return 1;
+  endif
 
   balance_from.set(balance_from.get() - amount);
   balance_to.set(balance_to.get() + amount);
@@ -56,7 +55,22 @@ function transfer(from : Address, to : Address, amount : Int32)
 
   Print("Success!");
 
-  //return 0;
+  return 0;
+endfunction
+
+// Test arbitrary numbers of parameters, incrementing state
+@action
+function increment(input_a : Int32, input_b : Int32, input_c : Int32)
+  var state = State<Int32>("value", 10);
+  Print("Increment triggering");
+  Print(toString(input_c));
+  state.set(state.get() + 1000 + input_c);
+
+  var default = Address();
+  Print("CONS.");
+  var owner_state = State<Address>("owner", default);
+  Print("CONS2.");
+  Print("We recognise owner as: " + owner_state.get().AsString());
 endfunction
 
 @query
