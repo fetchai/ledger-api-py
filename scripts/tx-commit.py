@@ -21,6 +21,7 @@ from fetchai.ledger.api import submit_json_transaction
 
 import argparse
 import sys
+import json
 
 
 def parse_args(args=None):
@@ -57,8 +58,9 @@ def main():
         # should not get into this case
         assert False
 
+    wire_tx_dic = json.loads(wire_tx)
     # submit the transaction
-    submit_json_transaction(host, port, wire_tx)
+    submit_json_transaction(host, port, wire_tx_dic)
 
 
 if __name__ == '__main__':
