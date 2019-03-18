@@ -62,7 +62,7 @@ def submit_json_transaction(host, port, tx_data, session=None):
     r = session.post(uri, json=tx_data, headers=headers)
 
     # check the status code
-    return 200 <= r.status_code < 300, r.json()
+    return 200 <= r.status_code < 300
 
 
 def submit_native_transactions(host, port, native_tx, session=None):

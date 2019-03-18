@@ -123,10 +123,9 @@ for index in range(3):
     print(wire_fmt)
 
     # # submit that transaction
-    code, response = submit_json_transaction(HOST, PORT, wire_fmt)
+    code = submit_json_transaction(HOST, PORT, wire_fmt)
 
     print(code)
-    print(response)
 
     time.sleep(5)
 
