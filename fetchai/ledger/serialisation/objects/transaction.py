@@ -35,7 +35,7 @@ class Signatories(Dict):
 
 
 class TxBase(Serialise):
-    def __init__(self, contract_name=None, fee=None, resources=None, data=None):
+    def __init__(self, contract_name=None, fee=None, resources=None, raw_resources=None, data=None):
         self._signing_io_stream = io.BytesIO()
         self._base_data_size = None
         self._base_hasher = None
@@ -43,25 +43,31 @@ class TxBase(Serialise):
         self.contract_name = contract_name
         self.fee = fee
         self.resources = resources
+        self.raw_resources = raw_resources
         self.data = data
 
     def __str__(self, ):
-        return 'contract name: "{}",\nfee: {},\nresources: {},\ncontract data: {}'.format(self._contract_name,
+        return 'contract name: "{}",\nfee: {},\nresources: {},\nraw_resources: {},\ncontract data: {}'.format(self._contract_name,
                                                                                           self._fee,
                                                                                           [binascii.hexlify(res) for res
                                                                                            in self._resources],
+                                                                                          [binascii.hexlify(res) for res
+                                                                                           in self._raw_resources],
                                                                                           self._data)
 
     def __eq__(self, other):
         return self._contract_name == other._contract_name and \
                self._fee == other._fee and \
                self._resources == other._resources and \
+               self._raw_resources == other._raw_resources and \
                self._data == other._data
 
     def __hash__(self):
         data_to_hash = (self._contract_name, self._fee, self._data)
         if self._resources is not None:
             data_to_hash += tuple(sorted(self._resources))
+        if self._raw_resources is not None:
+            data_to_hash += tuple(sorted(self._raw_resources))
         return hash(data_to_hash)
 
     def _invalidate(self):
@@ -93,9 +99,18 @@ class TxBase(Serialise):
     def resources(self):
         return self._resources
 
+    @property
+    def raw_resources(self):
+        return self._raw_resources
+
     @resources.setter
     def resources(self, value):
         self._resources = value
+        self._invalidate()
+
+    @raw_resources.setter
+    def raw_resources(self, value):
+        self._raw_resources = value
         self._invalidate()
 
     @property
@@ -136,8 +151,8 @@ class TxBase(Serialise):
         if self._is_invalidated:
             ByteArray(self._contract_name).serialise(to_buffer)
             UnsignedLongLong(self._fee).serialise(to_buffer)
-            List(type_of_value=ByteArray, collection=sorted(self._resources) if self._resources else []).serialise(
-                to_buffer)
+            List(type_of_value=ByteArray, collection=sorted(self._resources) if self._resources else []).serialise( to_buffer)
+            List(type_of_value=ByteArray, collection=sorted(self._raw_resources) if self._raw_resources else []).serialise( to_buffer)
             ByteArray(self._data).serialise(to_buffer)
         else:
             to_buffer.write(TxBase.serialised_tx_base_data(self))
@@ -146,6 +161,7 @@ class TxBase(Serialise):
         self.contract_name = ByteArray().deserialise(from_buffer).data
         self.fee = UnsignedLongLong().deserialise(from_buffer).data
         self.resources = Set(type_of_value=ByteArray).deserialise(from_buffer).data
+        self.raw_resources = Set(type_of_value=ByteArray).deserialise(from_buffer).data
         self.data = ByteArray().deserialise(from_buffer).data
         # self.update()
 
@@ -199,13 +215,14 @@ class TxBase(Serialise):
     def get_metadata(self):
         metadata = {"contract_name": self._contract_name.decode(), "fee": self._fee,
                     "resources": [base64.b64encode(res).decode() for res in self._resources],
+                    "raw_resources": [base64.b64encode(res).decode() for res in self._raw_resources],
                     "data": base64.b64encode(self._data).decode()}
         return metadata
 
 
 class Tx(TxBase):
-    def __init__(self, contract_name=None, fee=None, resources=None, data=None, signatories=None):
-        TxBase.__init__(self, contract_name=contract_name, fee=fee, resources=resources, data=data)
+    def __init__(self, contract_name=None, fee=None, resources=None, raw_resources=None, data=None, signatories=None):
+        TxBase.__init__(self, contract_name=contract_name, fee=fee, resources=resources, raw_resources=raw_resources, data=data)
         self._signatories = None
 
     def __str__(self):
