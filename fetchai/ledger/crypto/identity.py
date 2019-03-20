@@ -47,7 +47,3 @@ class Identity:
     @property
     def private_key_bytes(self):
         return self._private_key_bytes
-
-    @property
-    def signing_key(self):
-        return self._signing_key

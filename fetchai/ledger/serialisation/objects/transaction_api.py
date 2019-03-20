@@ -81,21 +81,3 @@ def create_transfer_tx(address_from_bin, address_to_bin, amount, fee=0):
     tx.fee = fee
     tx.resources = [address_from_bin, address_to_bin]
     return tx
-
-
-def create_json_tx(contract_name, json_data, resources=None, raw_resources=None, fee=None):
-    resources = resources or []
-
-    # format the transaction
-    tx = Tx()
-    tx.contract_name = contract_name.encode()
-
-    if isinstance(json_data, dict):
-        tx.data = json.dumps(json_data).encode()
-    else:
-        tx.data = json_data
-
-    tx.fee = int(fee or 0)
-    tx.resources = [x.encode() for x in resources]
-    tx.raw_resources = [x.encode() for x in raw_resources]
-    return tx
