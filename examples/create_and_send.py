@@ -1,6 +1,3 @@
-#
-# How to send transactions over HTTP using the Python SDK
-#
 # ------------------------------------------------------------------------------
 #
 #   Copyright 2018-2019 Fetch.AI Limited
@@ -18,6 +15,9 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+
+#
+# How to send transactions over HTTP using the Python SDK
 #
 
 import time
@@ -27,8 +27,6 @@ from fetchai.ledger.crypto import Identity
 
 HOST = '127.0.0.1'
 PORT = 8000
-
-
 
 
 def wait_for_tx(txs: TransactionApi, tx: str):
@@ -62,7 +60,7 @@ def main():
 
     print('Balance 1:', tokens.balance(your_identity.public_key))
     print('Balance 2:', tokens.balance(other_identity.public_key))
-    
+
     print('Balance After:', tokens.balance(your_identity.public_key))
 
 
