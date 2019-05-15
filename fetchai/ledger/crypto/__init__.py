@@ -16,5 +16,6 @@
 #
 # ------------------------------------------------------------------------------
 
-from .signing import Signing
 from .identity import Identity
+from .entity import Entity
+from .address import Address

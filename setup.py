@@ -8,7 +8,7 @@ setup(
     author='Edward FitzGerald',
     author_email='edward.fitzgerald@fetch.ai',
     packages=find_packages(exclude=['contrib', 'docs', 'tests', 'scripts']),
-    install_requires=['requests', 'ecdsa', 'msgpack'],
+    install_requires=['requests', 'ecdsa', 'msgpack', 'base58'],
     extras_require={
         'dev': ['check-manifest'],
         'test': ['coverage', 'pytest'],

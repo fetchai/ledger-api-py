@@ -15,16 +15,21 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+from typing import Union
 
 from fetchai.ledger.api import ApiEndpoint, ApiError
-from fetchai.ledger.serialisation.objects.transaction_api import create_wealth_tx, create_transfer_tx
-from fetchai.ledger.crypto.signing import Signing
+from fetchai.ledger.crypto import Address, Entity, Identity
+from fetchai.ledger.bitvector import BitVector
+from fetchai.ledger.transaction import Transaction
+from fetchai.ledger.serialisation import encode_transaction
+
+AddressLike = Union[Address,Identity,str,bytes]
 
 
 class TokenApi(ApiEndpoint):
     API_PREFIX = 'fetch.token'
 
-    def balance(self, address):
+    def balance(self, address: AddressLike):
         """
         Query the balance for a given address from the remote node
 
@@ -33,15 +38,18 @@ class TokenApi(ApiEndpoint):
         :raises: ApiError on any failures
         """
 
+        # convert the input to an address
+        address = Address(address)
+
         # format and make the request
         request = {
-            'address': address
+            'address': str(address)
         }
         success, data = self._post_json('balance', request)
 
         # check for error cases
         if not success:
-            raise ApiError('Failed to request balance for address ' + address)
+            raise ApiError('Failed to request balance for address ' + str(address))
 
         if 'balance' not in data:
             raise ApiError('Malformed response from server')
@@ -49,7 +57,7 @@ class TokenApi(ApiEndpoint):
         # return the balance
         return int(data['balance'])
 
-    def wealth(self, private_key_bin, amount, fee=0):
+    def wealth(self, entity: Entity, amount: int):
         """
         Creates wealth for specified account
 
@@ -59,19 +67,36 @@ class TokenApi(ApiEndpoint):
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
         """
+        ENDPOINT = 'wealth'
 
-        # extract keys
-        signing_key = Signing.create_private_key(private_key_bin)
-        verifying_key = signing_key.get_verifying_key()
+        # format the data to be closed by the transaction
 
-        # format and sign the transaction
-        tx = create_wealth_tx(verifying_key.to_string(), amount, fee)
-        tx.sign(signing_key)
+        # wildcard for the moment
+        shard_mask = BitVector()
+
+        # build up the basic transaction information
+        tx = Transaction()
+        tx.from_address = Address(entity)
+        tx.valid_until = 100
+        tx.charge_rate = 1
+        tx.charge_limit = 10
+        tx.target_chain_code(self.API_PREFIX, shard_mask)
+        tx.action = 'wealth'
+        tx.add_signer(entity)
+
+        # format the transaction payload
+        tx.data = self._encode_json({
+            'address': entity.public_key,
+            'amount': amount
+        })
+
+        # encode and sign the transaction
+        encoded_tx = encode_transaction(tx, [entity])
 
         # submit the transaction
-        return self._post_tx(tx.to_wire_format(), 'wealth')
+        return self._post_tx_json(encoded_tx, ENDPOINT)
 
-    def transfer(self, private_key_bin, to_address, amount, fee=0):
+    def transfer(self, entity: Entity, to: AddressLike, amount: int, fee: int):
         """
         Transfers wealth from one account to another account
 
@@ -82,15 +107,25 @@ class TokenApi(ApiEndpoint):
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
         """
+        ENDPOINT = 'transfer'
 
-        # extract keys
-        signing_key = Signing.create_private_key(private_key_bin)
-        verifying_key = signing_key.get_verifying_key()
+        # format the data to be closed by the transaction
 
-        # format the sign the transaction
-        tx = create_transfer_tx(verifying_key.to_string(), to_address, amount, fee=fee)
-        tx.sign(signing_key)
+        # wildcard for the moment
+        shard_mask = BitVector()
+
+        # build up the basic transaction information
+        tx = Transaction()
+        tx.from_address = Address(entity)
+        tx.valid_until = 100
+        tx.charge_rate = 1
+        tx.charge_limit = fee
+        tx.add_transfer(to, amount)
+        tx.add_signer(entity)
+
+        # encode and sign the transaction
+        encoded_tx = encode_transaction(tx, [entity])
 
         # submit the transaction
-        return self._post_tx(tx.to_wire_format(), 'transfer')
+        return self._post_tx_json(encoded_tx, ENDPOINT)
 

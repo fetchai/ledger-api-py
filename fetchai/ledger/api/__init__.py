@@ -15,8 +15,35 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+import time
+from datetime import datetime, timedelta
+
 
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .token import TokenApi
 from .contracts import ContractsApi
 from .tx import TransactionApi
+
+
+class LedgerApi:
+    def __init__(self, host, port):
+        self.tokens = TokenApi(host, port)
+        self.contracts = ContractsApi(host, port)
+        self.tx = TransactionApi(host, port)
+
+    def sync(self, tx):
+        limit = timedelta(minutes=2)
+        start = datetime.now()
+        while True:
+
+            # normal exit mode
+            status = self.tx.status(tx)
+            if status == "Executed":
+                break
+
+            # time out mode
+            delta_time = datetime.now() - start
+            if delta_time >= limit:
+                raise RuntimeError('Timeout waiting for ledger operation state: ' + str(status))
+
+            time.sleep(1)

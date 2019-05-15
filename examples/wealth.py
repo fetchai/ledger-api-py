@@ -18,27 +18,13 @@
 import time
 
 from fetchai.ledger.api import TokenApi, TransactionApi
-from fetchai.ledger.crypto import Identity
+from fetchai.ledger.crypto import Entity
 
 HOST = '127.0.0.1'
 PORT = 8000
 
 
-def main():
-
-    # create the APIs
-    txs = TransactionApi(HOST, PORT)
-    tokens = TokenApi(HOST, PORT)
-
-    # generate a random identity
-    identity = Identity()
-
-    print('Balance Before:', tokens.balance(identity.public_key))
-
-    # create and send the transaction to the ledger capturing the tx hash
-    tx = tokens.wealth(identity.private_key_bytes, 1000)
-
-    # wait while we poll to see when this transaction has been completed
+def wait_for_tx(txs: TransactionApi, tx: str):
     prev_status = None
     while True:
         status = txs.status(tx)
@@ -54,8 +40,40 @@ def main():
 
         time.sleep(1)
 
-    # check the balance now
-    print('Balance After:', tokens.balance(identity.public_key))
+
+def main():
+
+    miner_address = 'yqjE1nCKLYRS3DUeFPmumR4sjQJFRYvKU2KQhdUFKQgkVUr6y'
+
+    # create the APIs
+    txs = TransactionApi(HOST, PORT)
+    tokens = TokenApi(HOST, PORT)
+
+    # generate a random identity
+    entity1 = Entity()
+    entity2 = Entity()
+
+    entity1_balance = tokens.balance(entity1)
+    entity2_balance = tokens.balance(entity2)
+    miner_balance = tokens.balance(miner_address)
+    print('Balance @ T==0 -> e1: {} e2: {} miner: {}'.format(entity1_balance, entity2_balance, miner_balance))
+
+    # create and send the transaction to the ledger capturing the tx hash
+    tx = tokens.wealth(entity1, 1000, 100)
+    wait_for_tx(txs, tx)
+
+    entity1_balance = tokens.balance(entity1)
+    entity2_balance = tokens.balance(entity2)
+    miner_balance = tokens.balance(miner_address)
+    print('Balance @ T==1 -> e1: {} e2: {} miner: {}'.format(entity1_balance, entity2_balance, miner_balance))
+
+    tx = tokens.transfer(entity1, entity2, 500, 100)
+    wait_for_tx(txs, tx)
+
+    entity1_balance = tokens.balance(entity1)
+    entity2_balance = tokens.balance(entity2)
+    miner_balance = tokens.balance(miner_address)
+    print('Balance @ T==2 -> e1: {} e2: {} miner: {}'.format(entity1_balance, entity2_balance, miner_balance))
 
 
 if __name__ == '__main__':
