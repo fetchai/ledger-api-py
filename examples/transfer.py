@@ -39,10 +39,10 @@ def main():
 
     # submit and wait for the transfer to be complete
     print('Submitting transfer...')
-    api.sync(api.tokens.transfer(identity1, identity2, 250))
+    api.sync(api.tokens.transfer(identity1, identity2, 250, 20))
 
-    print('Balance 1:', api.tokens.balance(identity1.public_key))
-    print('Balance 2:', api.tokens.balance(identity2.public_key))
+    print('Balance 1:', api.tokens.balance(identity1))
+    print('Balance 2:', api.tokens.balance(identity2))
 
 
 if __name__ == '__main__':
