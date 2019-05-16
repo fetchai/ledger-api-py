@@ -43,7 +43,7 @@ def main():
 
     # submit and wait for the transfer to be complete
     print('Submitting transfer...')
-    api.sync(api.tokens.transfer(your_identity, other_identity, 250))
+    api.sync(api.tokens.transfer(your_identity, other_identity, 250, 20))
 
     print('Balance 1:', api.tokens.balance(your_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
