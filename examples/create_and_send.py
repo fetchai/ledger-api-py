@@ -20,48 +20,33 @@
 # How to send transactions over HTTP using the Python SDK
 #
 
-import time
-
-from fetchai.ledger.api import TokenApi, TransactionApi
-from fetchai.ledger.crypto import Identity
+from fetchai.ledger.api import LedgerApi
+from fetchai.ledger.crypto import Identity, Entity
 
 HOST = '127.0.0.1'
 PORT = 8000
 
 
-def wait_for_tx(txs: TransactionApi, tx: str):
-    while True:
-        if txs.status(tx) == "Executed":
-            break
-        else:
-        	print('Current Status:', txs.status(tx))
-        time.sleep(1)
-
-
 def main():
     # create the APIs
-    txs = TransactionApi(HOST, PORT)
-    tokens = TokenApi(HOST, PORT)
+    api = LedgerApi(HOST, PORT)
 
     # generate a random identity
-    your_identity = Identity()
-    other_identity = Identity()
-    print('Balance Before:', tokens.balance(your_identity.public_key))
-    print (dir(your_identity))
+    your_identity = Entity()
+    other_identity = Entity()
+    print('Balance Before:', api.tokens.balance(your_identity))
 
     # create the balance
     print('Submitting wealth creation...')
-    wait_for_tx(txs, tokens.wealth(your_identity.private_key_bytes, 1000))
-    print('Balance after wealth:', tokens.balance(your_identity.public_key))
+    api.sync(api.tokens.wealth(your_identity, 1000))
+    print('Balance after wealth:', api.tokens.balance(your_identity))
 
     # submit and wait for the transfer to be complete
     print('Submitting transfer...')
-    wait_for_tx(txs, tokens.transfer(your_identity.private_key_bytes, other_identity.public_key_bytes, 250))
+    api.sync(api.tokens.transfer(your_identity, other_identity, 250))
 
-    print('Balance 1:', tokens.balance(your_identity.public_key))
-    print('Balance 2:', tokens.balance(other_identity.public_key))
-
-    print('Balance After:', tokens.balance(your_identity.public_key))
+    print('Balance 1:', api.tokens.balance(your_identity))
+    print('Balance 2:', api.tokens.balance(other_identity))
 
 
 if __name__ == '__main__':

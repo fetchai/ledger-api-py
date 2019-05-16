@@ -15,6 +15,7 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+from typing import List
 
 from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.contract import SmartContract
@@ -53,50 +54,46 @@ endfunction
 """
 
 
-def main():
-    # create our private / public key pair
-    entity = Entity()
-    address = Address(entity)
+def print_address_balances(api: LedgerApi, contract: SmartContract, addresses: List[Address]):
+    for idx, address in enumerate(addresses):
+        print('Address{}: {:<6d} bFET {:<10d} TOK'.format(idx, api.tokens.balance(address),
+                                                          contract.query(api, 'balance', address=address)))
+    print()
 
-    # create another address
-    other = Entity()
-    other_address = Address(other)
+
+def main():
+
+    # create our first private key pair
+    entity1 = Entity()
+    address1 = Address(entity1)
+
+    # create a second private key pair
+    entity2 = Entity()
+    address2 = Address(entity2)
 
     # build the ledger API
     api = LedgerApi('127.0.0.1', 8000)
 
-    # ensure that we have some funds for the time being
-    api.sync(api.tokens.wealth(entity, 10000))
-
-    print('Entity1:', api.tokens.balance(address))
-    print('Entity2:', api.tokens.balance(other_address))
+    # create wealth so that we have the funds to be able to create contracts on the network
+    api.sync(api.tokens.wealth(entity1, 10000))
 
     # create the smart contract
     contract = SmartContract(CONTRACT_TEXT)
 
     # deploy the contract to the network
-    api.sync(api.contracts.create(entity, contract, 2000))
+    api.sync(api.contracts.create(entity1, contract, 2000))
 
-    # interact with the contract
-    balance1 = contract.query(api, 'balance', address=address)
-    balance2 = contract.query(api, 'balance', address=other_address)
-    print('Balance1: {}'.format(balance1))
-    print('Balance2: {}'.format(balance2))
-
-    print('Entity1:', api.tokens.balance(entity))
-    print('Entity2:', api.tokens.balance(other))
+    # print the current status of all the tokens
+    print('-- BEFORE --')
+    print_address_balances(api, contract, [address1, address2])
 
     # transfer from one to the other using our newly deployed contract
-    api.sync(contract.action(api, 'transfer', 40, [entity], address, other_address, 200))
+    tok_transfer_amount = 200
+    fet_tx_fee = 40
+    api.sync(contract.action(api, 'transfer', fet_tx_fee, [entity1], address1, address2, tok_transfer_amount))
 
-    # interact with the contract
-    balance1 = contract.query(api, 'balance', address=address)
-    balance2 = contract.query(api, 'balance', address=other_address)
-    print('Balance1: {}'.format(balance1))
-    print('Balance2: {}'.format(balance2))
-
-    print('Entity1:', api.tokens.balance(entity))
-    print('Entity2:', api.tokens.balance(other))
+    print('-- BEFORE --')
+    print_address_balances(api, contract, [address1, address2])
 
 
 if __name__ == '__main__':

@@ -99,3 +99,12 @@ class IntegerSerialisationTests(SerialisationUnitTest):
         encoded = self._from_hex('D3EDEFABCD01234567')
         self.assertEqual(decode(encoded), -0xEDEFABCD01234567)
 
+    # Error cases
+
+    def test_invalid_large_integer(self):
+        too_big = 1 << 64
+        buffer = io.BytesIO()
+        with self.assertRaises(RuntimeError):
+            encode(buffer, too_big)
+
+

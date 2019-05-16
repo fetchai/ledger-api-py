@@ -17,39 +17,32 @@
 # ------------------------------------------------------------------------------
 import time
 
-from fetchai.ledger.api import TokenApi, TransactionApi
-from fetchai.ledger.crypto import Identity
+from fetchai.ledger.api import LedgerApi
+from fetchai.ledger.crypto import Entity
 
 HOST = '127.0.0.1'
 PORT = 8000
 
 
-def wait_for_tx(txs: TransactionApi, tx: str):
-    while True:
-        if txs.status(tx) == "Executed":
-            break
-        time.sleep(1)
-
-
 def main():
     # create the APIs
-    txs = TransactionApi(HOST, PORT)
-    tokens = TokenApi(HOST, PORT)
+    api = LedgerApi(HOST, PORT)
 
     # generate a random identity
-    identity1 = Identity()
-    identity2 = Identity()
+    identity1 = Entity()
+    identity2 = Entity()
+    print('Balance Before:', api.tokens.balance(identity1))
 
     # create the balance
     print('Submitting wealth creation...')
-    wait_for_tx(txs, tokens.wealth(identity1.private_key_bytes, 1000))
+    api.sync(api.tokens.wealth(identity1, 1000))
 
     # submit and wait for the transfer to be complete
     print('Submitting transfer...')
-    wait_for_tx(txs, tokens.transfer(identity1.private_key_bytes, identity2.public_key_bytes, 250))
+    api.sync(api.tokens.transfer(identity1, identity2, 250))
 
-    print('Balance 1:', tokens.balance(identity1.public_key))
-    print('Balance 2:', tokens.balance(identity2.public_key))
+    print('Balance 1:', api.tokens.balance(identity1.public_key))
+    print('Balance 2:', api.tokens.balance(identity2.public_key))
 
 
 if __name__ == '__main__':

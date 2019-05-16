@@ -53,3 +53,21 @@ class IdentityTests(unittest.TestCase):
         self.assertIn(identity1, identity_set)
         self.assertIn(identity2, identity_set)
         self.assertIn(identity3, identity_set)
+
+    def test_not_equal(self):
+        entity1 = Entity()
+        entity2 = Entity()
+        self.assertNotEqual(entity1, entity2)
+
+    def test_invalid_contrstruction(self):
+        with self.assertRaises(RuntimeError):
+            _ = Identity(str())
+
+    def test_construction_from_strings(self):
+        ref = Entity()
+
+        test1 = Identity.from_hex(ref.public_key_hex)
+        self.assertEqual(ref, test1)
+
+        test2 = Identity.from_base64(ref.public_key)
+        self.assertEqual(ref, test2)

@@ -28,6 +28,9 @@ class IdentitySerialisationTests(SerialisationUnitTest):
 
         self.assertEqual(identity, entity)
 
+    def test_invalid_identity(self):
+        invalid_encoding = bytes([0x20])
 
-
-
+        buffer = io.BytesIO(invalid_encoding)
+        with self.assertRaises(RuntimeError):
+            decode(buffer)

@@ -40,7 +40,6 @@ class EntityTests(unittest.TestCase):
         self.assertEqual(reference.public_key, other.public_key)
         self.assertEqual(reference.public_key_hex, other.public_key_hex)
 
-
     def test_signing_verifying_cycle(self):
         entity = Entity()
 
@@ -60,3 +59,17 @@ class EntityTests(unittest.TestCase):
         # also ensure a different payload is not verifiable
         self.assertFalse(entity.verify('foo bar is not a baz'.encode(), signature))
 
+    def test_construction_from_base64(self):
+        ref = Entity()
+        ref_key = ref.private_key
+
+        other = Entity.from_base64(ref_key)
+        self.assertEqual(ref.private_key_bytes, other.private_key_bytes)
+
+    def test_invalid_construction(self):
+        with self.assertRaises(RuntimeError):
+            _ = Entity(str())
+
+    def test_signing_key(self):
+        entity = Entity()
+        self.assertIsInstance(entity.signing_key, ecdsa.SigningKey)

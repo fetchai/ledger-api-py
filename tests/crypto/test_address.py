@@ -1,5 +1,6 @@
 import hashlib
 import unittest
+import binascii
 
 import base58
 
@@ -55,3 +56,34 @@ class AddressTests(unittest.TestCase):
         address2 = Address(address1)
 
         self.assertEqual(bytes(address1), bytes(address2))
+
+    def test_invalid_length_bytes(self):
+        with self.assertRaises(RuntimeError):
+            _ = Address(bytes())
+
+    def test_invalid_length_string(self):
+        with self.assertRaises(RuntimeError):
+            _ = Address(str())
+
+    def test_invalid_type(self):
+        with self.assertRaises(RuntimeError):
+            _ = Address(int(42))
+
+    def test_invalid_display(self):
+        entity = Entity()
+        address = Address(entity)
+        address_bytes = bytes(address)
+        invalid_checksum = bytes([0] * Address.CHECKSUM_SIZE)
+        invalid_display = base58.b58encode(address_bytes + invalid_checksum).decode()
+
+        with self.assertRaises(RuntimeError):
+            _ = Address(invalid_display)
+
+    def test_hex_display(self):
+        entity = Entity()
+        address = Address(entity)
+
+        address_bytes = bytes(address)
+        hex_address = binascii.hexlify(address_bytes).decode()
+
+        self.assertEqual(hex_address, address.to_hex())

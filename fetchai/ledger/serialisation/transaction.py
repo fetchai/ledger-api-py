@@ -184,15 +184,6 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
     # decode the address from the thread
     tx.from_address = address.decode(stream)
 
-    # print('version.................:', version)
-    # print('charge_unit_flag........:', charge_unit_flag)
-    # print('transfer_flag...........:', transfer_flag)
-    # print('multiple_transfers_flag.:', multiple_transfers_flag)
-    # print('valid_from_flag.........:', valid_from_flag)
-    # print('contract_type...........:', contract_type)
-    # print('signature_count_minus1..:', signature_count_minus1)
-    # print('from....................:', from_address)
-
     if transfer_flag:
 
         # determine the number of transfers that are present in the transaction
@@ -201,28 +192,19 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
         else:
             transfer_count = 1
 
-        # print('num transfers...........:', transfer_count)
-
         for n in range(transfer_count):
             to = address.decode(stream)
             amount = integer.decode(stream)
 
             tx.add_transfer(to, amount)
 
-            # print(' >=> from: {} to: {} amount: {}'.format(from_address, to, amount))
-
     if valid_from_flag:
         tx.valid_from = integer.decode(stream)
-        # print('valid from..............:', parse_integer(stream))
 
     tx.valid_until = integer.decode(stream)
     tx.charge_rate = integer.decode(stream)
 
     assert not charge_unit_flag, "Currently the charge unit field is not supported"
-
-    # if charge_unit_flag:
-    #     print('charge unit.............:', parse_integer(stream))
-    # print('charge limit............:', parse_integer(stream))
 
     tx.charge_limit = integer.decode(stream)
 
@@ -268,34 +250,22 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
             tx.target_chain_code(encoded_chain_code_name.decode('ascii'), shard_mask)
 
         else:
-            assert False
+            # this is mostly a guard against a desync between this function and `_map_contract_mode`
+            raise RuntimeError("Unhandled contract type")
 
         tx.action = bytearray.decode(stream).decode('ascii')
         tx.data = bytearray.decode(stream)
 
     if signature_count_minus1 == 0x3F:
         additional_signatures = integer.decode(stream)
-
-        # print('additional signatures...:', additional_signatures)
-
         num_signatures += additional_signatures
-
-    # print('num signatures..........:', num_signatures)
-    #
-    # print('identities..............:')
 
     # extract all the signing public keys from the stream
     public_keys = [identity.decode(stream) for _ in range(num_signatures)]
-    # for n in range(num_signatures):
-    #     public_key =
-    #     public_keys.append()
-    #
-    #     print(' - {:2} -> {}'.format(n, public_key))
 
     # extract full copy of the payload
     payload_bytes = stream.getvalue()[:stream.tell()]
 
-    # print('signatures..............:')
     verified = []
     for ident in public_keys:
 
