@@ -1,11 +1,11 @@
-import io
 import binascii
+import io
 import unittest
 
 from fetchai.ledger.bitvector import BitVector
-from fetchai.ledger.transaction import Transaction
-from fetchai.ledger.crypto import Entity, Address, Identity
+from fetchai.ledger.crypto import Entity, Identity
 from fetchai.ledger.serialisation import encode_transaction, decode_transaction, bytearray
+from fetchai.ledger.transaction import Transaction
 
 _PRIVATE_KEYS = (
     '1411d53f88e736eac7872430dbe5b55ac28c17a3e648c388e0bd1b161ab04427',
@@ -186,7 +186,6 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTrue(success)
         self.assertTxAreEqual(payload, tx)
 
-
     def test_contract_with_4bit_shard_mask(self):
         EXPECTED_PAYLOAD = "a12180532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42401c0b666f6f2e6261722e62617a066c61756e6368000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
 
@@ -268,7 +267,6 @@ class TransactionSerialisation(unittest.TestCase):
             _, _ = decode_transaction(buffer)
 
     def assertIsExpectedTx(self, payload: Transaction, transaction_bytes: bytes, expected_hex_payload: str):
-
         # a payload needs at least one signee
         self.assertGreater(len(payload.signers), 0)
 
@@ -287,7 +285,6 @@ class TransactionSerialisation(unittest.TestCase):
         # loop through and verify all the signatures
         buffer = io.BytesIO(transaction_bytes[expected_payload_end:])
         for signee in payload.signers:
-
             # extract the signature from the stream
             signature = bytearray.decode(buffer)
 
@@ -295,7 +292,6 @@ class TransactionSerialisation(unittest.TestCase):
             self.assertTrue(signee.verify(payload_bytes, signature))
 
     def assertTxAreEqual(self, reference: Transaction, other: Transaction):
-
         self.assertEqual(reference.from_address, other.from_address)
         self.assertEqual(reference.transfers, other.transfers)
         self.assertEqual(reference.valid_from, other.valid_from)
@@ -309,4 +305,3 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertEqual(reference.shard_mask, other.shard_mask)
         self.assertEqual(reference.data, other.data)
         self.assertEqual(reference.signers.keys(), other.signers.keys())
-

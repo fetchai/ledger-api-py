@@ -48,7 +48,8 @@ class Identity:
         elif isinstance(public_key, ecdsa.VerifyingKey):
             self._verifying_key = public_key
         elif isinstance(public_key, bytes):
-            self._verifying_key = ecdsa.VerifyingKey.from_string(public_key, curve=self.curve, hashfunc=self.hash_function)
+            self._verifying_key = ecdsa.VerifyingKey.from_string(public_key, curve=self.curve,
+                                                                 hashfunc=self.hash_function)
         else:
             raise RuntimeError('Failed')
 

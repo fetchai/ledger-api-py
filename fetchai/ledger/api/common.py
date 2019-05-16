@@ -15,10 +15,11 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-from typing import Optional
-import requests
-import json
 import base64
+import json
+from typing import Optional
+
+import requests
 
 
 def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: Optional[str]):

@@ -1,15 +1,13 @@
 from typing import List
-import base64
-import hashlib
-import json
+
 import msgpack
 
-# from fetchai.ledger.serialisation.objects.transaction_api import create_json_tx
-from .common import ApiEndpoint
-from fetchai.ledger.transaction import Transaction
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity
 from fetchai.ledger.serialisation import encode_transaction
+from fetchai.ledger.transaction import Transaction
+# from fetchai.ledger.serialisation.objects.transaction_api import create_json_tx
+from .common import ApiEndpoint
 
 EntityList = List[Entity]
 
@@ -51,7 +49,8 @@ class ContractsApi(ApiEndpoint):
         prefix = '{}.{}'.format(contract_digest.to_hex(), str(contract_owner))
         return self._post_json(query, prefix=prefix, data=self._encode_json_payload(**kwargs))
 
-    def action(self, contract_digest: Address, contract_owner: Address, action: str, fee: int, signers: EntityList, *args):
+    def action(self, contract_digest: Address, contract_owner: Address, action: str, fee: int, signers: EntityList,
+               *args):
         shard_mask = BitVector()
 
         # build up the basic transaction information
@@ -87,7 +86,7 @@ class ContractsApi(ApiEndpoint):
     def _encode_json_payload(cls, **kwargs):
         params = {}
         for key, value in cls._clean_items(**kwargs):
-            assert isinstance(key, str) # should always be the case
+            assert isinstance(key, str)  # should always be the case
 
             if cls._is_primitive(value):
                 params[key] = value

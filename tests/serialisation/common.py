@@ -1,8 +1,7 @@
-from typing import Union
-
-import io
 import binascii
+import io
 import unittest
+from typing import Union
 
 
 class SerialisationUnitTest(unittest.TestCase):
@@ -12,7 +11,7 @@ class SerialisationUnitTest(unittest.TestCase):
         elif isinstance(encoded, bytes):
             data_bytes = encoded
         else:
-            assert False # knwo
+            assert False  # knwo
 
         self.assertEqual(binascii.hexlify(data_bytes).decode().lower(), expected_hex.lower())
 

@@ -18,12 +18,12 @@
 from typing import Union
 
 from fetchai.ledger.api import ApiEndpoint, ApiError
-from fetchai.ledger.crypto import Address, Entity, Identity
 from fetchai.ledger.bitvector import BitVector
-from fetchai.ledger.transaction import Transaction
+from fetchai.ledger.crypto import Address, Entity, Identity
 from fetchai.ledger.serialisation import encode_transaction
+from fetchai.ledger.transaction import Transaction
 
-AddressLike = Union[Address,Identity,str,bytes]
+AddressLike = Union[Address, Identity, str, bytes]
 
 
 class TokenApi(ApiEndpoint):
@@ -77,7 +77,7 @@ class TokenApi(ApiEndpoint):
         # build up the basic transaction information
         tx = Transaction()
         tx.from_address = Address(entity)
-        tx.valid_until = 100
+        tx.valid_until = 10000
         tx.charge_rate = 1
         tx.charge_limit = 10
         tx.target_chain_code(self.API_PREFIX, shard_mask)
@@ -117,7 +117,7 @@ class TokenApi(ApiEndpoint):
         # build up the basic transaction information
         tx = Transaction()
         tx.from_address = Address(entity)
-        tx.valid_until = 100
+        tx.valid_until = 10000
         tx.charge_rate = 1
         tx.charge_limit = fee
         tx.add_transfer(to, amount)
@@ -128,4 +128,3 @@ class TokenApi(ApiEndpoint):
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
-

@@ -16,8 +16,9 @@
 #
 # ------------------------------------------------------------------------------
 
-import hashlib
 import binascii
+import hashlib
+
 import base58
 
 from .identity import Identity

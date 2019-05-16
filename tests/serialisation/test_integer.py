@@ -1,8 +1,6 @@
-import binascii
 import io
 
 from fetchai.ledger.serialisation.integer import encode, decode
-
 from .common import SerialisationUnitTest
 
 
@@ -106,5 +104,3 @@ class IntegerSerialisationTests(SerialisationUnitTest):
         buffer = io.BytesIO()
         with self.assertRaises(RuntimeError):
             encode(buffer, too_big)
-
-

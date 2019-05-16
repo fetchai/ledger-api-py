@@ -1,6 +1,6 @@
+import binascii
 import hashlib
 import unittest
-import binascii
 
 import base58
 

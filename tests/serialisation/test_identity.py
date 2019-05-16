@@ -1,6 +1,6 @@
 import io
 
-from fetchai.ledger.crypto import Entity, Identity
+from fetchai.ledger.crypto import Entity
 from fetchai.ledger.serialisation.identity import encode, decode
 from .common import SerialisationUnitTest
 

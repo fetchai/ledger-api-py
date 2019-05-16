@@ -6,7 +6,7 @@ from fetchai.ledger.crypto.identity import Identity
 
 class IdentityTests(unittest.TestCase):
     def test_construction_from_verifying_key(self):
-        entity = Entity() # create a private / public key pair
+        entity = Entity()  # create a private / public key pair
 
         # create the identity from the identity (copy)
         identity = Identity(entity.verifying_key)
@@ -15,7 +15,7 @@ class IdentityTests(unittest.TestCase):
         self.assertEqual(identity.public_key_bytes, entity.public_key_bytes)
 
     def test_construction_from_bytes(self):
-        entity = Entity() # create a private / public key pair
+        entity = Entity()  # create a private / public key pair
 
         # create the identity from the identity (copy)
         identity = Identity(entity.public_key_bytes)

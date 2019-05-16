@@ -1,10 +1,10 @@
-from typing import Union
 from collections import OrderedDict
+from typing import Union
 
-from .crypto import Address, Identity
 from .bitvector import BitVector
+from .crypto import Address, Identity
 
-Identifier = Union[Address,Identity]
+Identifier = Union[Address, Identity]
 
 
 class Transaction:

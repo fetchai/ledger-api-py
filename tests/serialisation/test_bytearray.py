@@ -1,6 +1,5 @@
 import io
 
-from fetchai.ledger.crypto import Address
 from fetchai.ledger.serialisation.bytearray import encode, decode
 from .common import SerialisationUnitTest
 

@@ -34,7 +34,6 @@ def _map_contract_mode(payload: Transaction):
 
 
 def encode_payload(buffer: io.BytesIO, payload: Transaction):
-
     num_transfers = len(payload.transfers)
     num_signatures = len(payload.signers)
 
@@ -106,7 +105,6 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
                 buffer.write(_byte(contract_header))
                 buffer.write(shard_mask_bytes)
 
-
         if SMART_CONTRACT == contract_mode:
             address.encode(buffer, payload.contract_digest)
             address.encode(buffer, payload.contract_address)
@@ -130,7 +128,6 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
 
 
 def encode_transaction(payload: Transaction, signers: List[Entity]):
-
     # encode the contents of the transaction
     buffer = io.BytesIO()
     encode_payload(buffer, payload)
@@ -154,7 +151,6 @@ def encode_transaction(payload: Transaction, signers: List[Entity]):
 
 
 def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
-
     # ensure the at the magic is correctly configured
     magic = stream.read(1)[0]
     if magic != MAGIC:
@@ -233,7 +229,7 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
                 bit_length = 1 << ((contract_header & 0x3F) + 3)
                 byte_length = bit_length // 8
 
-                assert (bit_length % 8) == 0 # this should be enforced as part of the spec
+                assert (bit_length % 8) == 0  # this should be enforced as part of the spec
 
                 # extract the mask from the next N bytes
                 shard_mask = BitVector.from_bytes(stream.read(byte_length), bit_length)
@@ -268,8 +264,7 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
 
     verified = []
     for ident in public_keys:
-
-    # for n in range(num_signatures):
+        # for n in range(num_signatures):
 
         # extract the signature from the stream
         signature = bytearray.decode(stream)

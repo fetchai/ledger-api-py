@@ -2,7 +2,6 @@ import io
 
 from fetchai.ledger.crypto import Address
 from fetchai.ledger.serialisation.address import encode, decode
-
 from .common import SerialisationUnitTest
 
 
@@ -27,4 +26,3 @@ class AddressSerialisationTests(SerialisationUnitTest):
 
         # ensure it matches our expectations
         self.assertEqual(bytes(address), expected_raw_address)
-

@@ -18,10 +18,9 @@
 import time
 from datetime import datetime, timedelta
 
-
 from .common import ApiEndpoint, ApiError, submit_json_transaction
-from .token import TokenApi
 from .contracts import ContractsApi
+from .token import TokenApi
 from .tx import TransactionApi
 
 

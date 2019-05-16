@@ -1,14 +1,10 @@
-from typing import TextIO, Union, List
-import json
-import hashlib
-import binascii
 import base64
+import hashlib
 import re
-import msgpack
+from typing import Union, List
 
 from .api import ContractsApi, LedgerApi
-from .crypto import Entity, Identity, Address
-
+from .crypto import Entity, Address
 
 ContractsApiLike = Union[ContractsApi, LedgerApi]
 
@@ -30,7 +26,8 @@ class SmartContract:
             raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
 
         if name not in self._actions:
-            raise RuntimeError('{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
+            raise RuntimeError(
+                '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
 
         return self._api(api).action(self._digest, self._owner, name, fee, signers, *args)
 
@@ -40,7 +37,8 @@ class SmartContract:
             raise RuntimeError('Contract has no owner, unable to perform any queries. Did you deploy it?')
 
         if name not in self._queries:
-            raise RuntimeError('{} is not an valid query name. Valid options are: {}'.format(name, ','.join(list(self._queries))))
+            raise RuntimeError(
+                '{} is not an valid query name. Valid options are: {}'.format(name, ','.join(list(self._queries))))
 
         # make the required query on the API
         success, response = self._api(api).query(self._digest, self._owner, name, **kwargs)
@@ -83,5 +81,3 @@ class SmartContract:
             return api.contracts
         else:
             assert False
-
-

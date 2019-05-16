@@ -31,3 +31,22 @@ class BitVectorSerialisationTests(unittest.TestCase):
         self.assertEqual(bits.get(5), 0)
         self.assertEqual(bits.get(6), 1)
         self.assertEqual(bits.get(7), 1)
+
+    def test_equal(self):
+        bits1 = BitVector.from_hex_string('c8')
+        bits2 = BitVector.from_hex_string('c8')
+        self.assertEqual(bits1, bits2)
+
+    def test_copy_construct(self):
+        bits1 = BitVector.from_hex_string('c8')
+        bits2 = BitVector(bits1)
+        self.assertEqual(bits1, bits2)
+
+    def test_not_equal(self):
+        bits1 = BitVector.from_hex_string('c8')
+        bits2 = BitVector.from_hex_string('c9c8')
+        self.assertFalse(bits1 == bits2)
+
+    def test_binary(self):
+        bits = BitVector.from_bytes(bytes([0x1f]), 8)
+        self.assertEqual('00011111', bits.as_binary())
