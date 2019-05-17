@@ -15,30 +15,39 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+import base64
+import json
+from typing import Optional
 
 import requests
-import json
 
 
-def format_contract_url(host, port, prefix, endpoint):
+def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: Optional[str]):
     """
     Constructs a URL based on specified contract prefix and endpoint
 
-    :param str host: The target host
-    :param int port: The target port
-    :param str prefix: The dot separated prefix for the contract
-    :param str endpoint: The dot separated name for the contract endpoint
+    :param host: The target host
+    :param port: The target port
+    :param prefix: The dot separated prefix for the contract
+    :param endpoint: The dot separated name for the contract endpoint
     :return: The formatted URL
     """
-    if prefix is None:
-        canonical_name = endpoint
+
+    if endpoint is None:
+        url = 'http://{}:{}/api/contract/submit'.format(host, port)
+
     else:
-        canonical_name = '.'.join([prefix, endpoint])
+        if prefix is None:
+            canonical_name = endpoint
+        else:
+            canonical_name = '.'.join([prefix, endpoint])
 
-    return 'http://{}:{}/api/contract/'.format(host, port) + canonical_name.replace('.', '/')
+        url = 'http://{}:{}/api/contract/'.format(host, port) + canonical_name.replace('.', '/')
+
+    return url
 
 
-def submit_json_transaction(host, port, tx_data, session=None):
+def submit_json_transaction(host: str, port: int, tx_data, session=None):
     """
     Submit a JSON transaction to the target onde
 
@@ -89,7 +98,15 @@ class ApiEndpoint(object):
     def port(self):
         return self._port
 
-    def _post_json(self, endpoint, data=None):
+    @classmethod
+    def _format_chain_code(cls, endpoint):
+        return cls.API_PREFIX + '.' + endpoint
+
+    @classmethod
+    def _encode_json(cls, obj):
+        return json.dumps(obj).encode('ascii')
+
+    def _post_json(self, endpoint, data=None, prefix=None):
         """
         Submits a query request to a ledger endpoint
 
@@ -107,7 +124,7 @@ class ApiEndpoint(object):
             endpoint = endpoint[1:]
 
         # format and make the request
-        url = format_contract_url(self.host, self.port, self.API_PREFIX, endpoint)
+        url = format_contract_url(self.host, self.port, prefix or self.API_PREFIX, endpoint)
 
         # define the request headers
         headers = {
@@ -124,12 +141,12 @@ class ApiEndpoint(object):
 
         return False, None
 
-    def _post_tx(self, transaction, endpoint):
+    def _post_tx_json(self, tx_data: bytes, endpoint: Optional[str]):
         """
         Submits a transaction to the a ledger endpoint
 
-        :param str transaction: The JSON encoded contract contents
-        :param str endpoint: The target endpoint of the contract
+        :param tx_data: The binary encoded transaction
+        :param endpoint: The target endpoint of the contract
         :return: The digest of the submitted transaction
         """
 
@@ -137,11 +154,13 @@ class ApiEndpoint(object):
             'content-type': 'application/vnd+fetch.transaction+json',
         }
 
+        tx_payload = dict(ver="1.2", data=base64.b64encode(tx_data).decode())
+
         # format the URL
         url = format_contract_url(self.host, self.port, self.API_PREFIX, endpoint)
 
         # make the request
-        r = self._session.post(url, data=transaction, headers=headers)
+        r = self._session.post(url, json=tx_payload, headers=headers)
         success = 200 <= r.status_code < 300
 
         if not success:

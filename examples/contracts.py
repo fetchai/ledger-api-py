@@ -1,142 +1,100 @@
-contract_source = """
+# ------------------------------------------------------------------------------
+#
+#   Copyright 2018-2019 Fetch.AI Limited
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+# ------------------------------------------------------------------------------
+from typing import List
 
-// On init triggered on the creation of a smart contract - will set the owner.
-@on_init
-function on_init(owner : Address)
-  Print("on_init triggered, owner is: " + owner.AsString());
+from fetchai.ledger.api import LedgerApi
+from fetchai.ledger.contract import SmartContract
+from fetchai.ledger.crypto import Entity, Address
 
-  // Set the owner
-  var owner_state = State<Address>("owner", Address());
-  owner_state.set(owner);
-
-  // Set the balance of the owner
-  var balances = State<Int32>(owner.AsString(), 1);
-  balances.set(2009);
+CONTRACT_TEXT = """
+@init
+function setup(owner : Address)
+  var owner_balance = State<UInt64>(owner, 0u64);
+  owner_balance.set(1000000u64);
 endfunction
 
 @action
-function transfer(from : Address, to : Address, amount : Int32) : Int32
-  var owner_state = State<Address>("owner", Address());
+function transfer(from: Address, to: Address, amount: UInt64)
 
-  Print("From address is signed? : " + toString(from.signed_tx()));
-  Print("To address is signed? : " + toString(to.signed_tx()));
-  Print("Transferring " + toString(amount) +" from "+ from.AsString() + " to: " + to.AsString());
+  // define the accounts
+  var from_account = State<UInt64>(from, 0u64);
+  var to_account = State<UInt64>(to, 0u64); // if new sets to 0u
 
-  if(owner_state.get().AsString() == from.AsString())
-    Print("Owner making the call");
-  else
-    Print("Owner not making the call");
+  // Check if the sender has enough balance to proceed
+  if (from_account.get() >= amount)
+  
+    // update the account balances
+    from_account.set(from_account.get() - amount);
+    to_account.set(to_account.get() + amount);
   endif
 
-  if(!from.signed_tx())
-    Print("*** From address not verified! Quitting. ***");
-    return 1;
-  endif
-
-  var balance_from = State<Int32>(from.AsString(), 0);
-  var balance_to   = State<Int32>(to.AsString(), 0);
-
-  Print("Initial balance: " + toString(balance_from.get()));
-
-  if(balance_from.get() < amount)
-    Print("Failed! Not enough funds");
-    return 1;
-  endif
-
-  balance_from.set(balance_from.get() - amount);
-  balance_to.set(balance_to.get() + amount);
-
-  Print("Final balance: " + toString(balance_from.get()));
-  Print("Success!");
-
-  return 0;
 endfunction
 
-// Allow clients to query the amount the owner has
 @query
-function owner_funds() : Int32
-
-  var balance = State<Int32>(State<Address>("owner", Address()).get().AsString(), 0);
-  var bal = balance.get();
-
-  Print("query triggered for owner balance: " + toString(bal));
-  return bal;
+function balance(address: Address) : UInt64
+    var account = State<UInt64>(address, 0u64);
+    return account.get();
 endfunction
 
 """
 
-import base64
-import time
-import hashlib
-import json
-import binascii
-import msgpack
 
-from fetchai.ledger.serialisation.objects.transaction_api import create_json_tx
-from fetchai.ledger.api import ContractsApi, TransactionApi, submit_json_transaction
-from fetchai.ledger.crypto import Identity
-
-HOST = '127.0.0.1'
-PORT = 8000
+def print_address_balances(api: LedgerApi, contract: SmartContract, addresses: List[Address]):
+    for idx, address in enumerate(addresses):
+        print('Address{}: {:<6d} bFET {:<10d} TOK'.format(idx, api.tokens.balance(address),
+                                                          contract.query(api, 'balance', address=address)))
+    print()
 
 
-identity = Identity()
-next_identity = Identity()
+def main():
 
-status_api = TransactionApi(HOST, PORT)
-contract_api = ContractsApi(HOST, PORT)
+    # create our first private key pair
+    entity1 = Entity()
+    address1 = Address(entity1)
 
-create_tx = contract_api.create(identity, contract_source, init_resources = ["owner", identity.public_key])
+    # create a second private key pair
+    entity2 = Entity()
+    address2 = Address(entity2)
 
-print('CreateTX:', create_tx)
+    # build the ledger API
+    api = LedgerApi('127.0.0.1', 8100)
 
-while True:
-    status = status_api.status(create_tx)
+    # create wealth so that we have the funds to be able to create contracts on the network
+    api.sync(api.tokens.wealth(entity1, 10000))
 
-    print(status)
-    if status == "Executed":
-        break
+    # create the smart contract
+    contract = SmartContract(CONTRACT_TEXT)
 
-    time.sleep(1)
+    # deploy the contract to the network
+    api.sync(api.contracts.create(entity1, contract, 2000))
 
-# re-calc the digest
-hash_func = hashlib.sha256()
-hash_func.update(contract_source.encode())
-source_digest = base64.b64encode(hash_func.digest()).decode()
+    # print the current status of all the tokens
+    print('-- BEFORE --')
+    print_address_balances(api, contract, [address1, address2])
 
-print('transfer N times')
+    # transfer from one to the other using our newly deployed contract
+    tok_transfer_amount = 200
+    fet_tx_fee = 40
+    api.sync(contract.action(api, 'transfer', fet_tx_fee, [entity1], address1, address2, tok_transfer_amount))
 
-for index in range(3):
+    print('-- BEFORE --')
+    print_address_balances(api, contract, [address1, address2])
 
-    # create the tx
-    tx = create_json_tx(
-        contract_name=source_digest + '.' + identity.public_key + '.transfer',
-        json_data=msgpack.packb([msgpack.ExtType(77, identity.public_key_bytes), msgpack.ExtType(77, next_identity.public_key_bytes), 1000 + index]),
-        resources=['owner', identity.public_key, next_identity.public_key],
-        raw_resources=[source_digest],
-    )
 
-    # sign the transaction contents
-    tx.sign(identity.signing_key)
-
-    wire_fmt = json.loads(tx.to_wire_format())
-    print(wire_fmt)
-
-    # # submit that transaction
-    code = submit_json_transaction(HOST, PORT, wire_fmt)
-
-    print(code)
-
-    time.sleep(5)
-
-print('Query for owner funds')
-
-source_digest_hex = binascii.hexlify(base64.b64decode(source_digest)).decode()
-
-url = 'http://{}:{}/api/contract/{}/{}/owner_funds'.format(HOST, PORT, source_digest_hex, identity.public_key_hex)
-
-print(url)
-
-r = status_api._session.post(url, json={})
-print(r.status_code)
-print(r.json())
+if __name__ == '__main__':
+    main()

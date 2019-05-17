@@ -16,7 +16,4 @@
 #
 # ------------------------------------------------------------------------------
 
-from .stream import *
-from .interfaces import *
-from .primitives import *
-from .containers import *
+from .transaction import encode_transaction, decode_transaction
