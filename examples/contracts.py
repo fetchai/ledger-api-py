@@ -72,7 +72,7 @@ def main():
     address2 = Address(entity2)
 
     # build the ledger API
-    api = LedgerApi('127.0.0.1', 8100)
+    api = LedgerApi('127.0.0.1', 8000)
 
     # create wealth so that we have the funds to be able to create contracts on the network
     api.sync(api.tokens.wealth(entity1, 10000))
