@@ -17,11 +17,23 @@
 # ------------------------------------------------------------------------------
 import time
 from datetime import datetime, timedelta
+from typing import Sequence, Union
 
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .contracts import ContractsApi
+from .synergetic import SynergeticApi
 from .token import TokenApi
 from .tx import TransactionApi
+
+Transactions = Union[str, Sequence[str]]
+
+
+def _iterable(value):
+    try:
+        _ = iter(value)
+        return True
+    except TypeError:
+        pass
 
 
 class LedgerApi:
@@ -29,20 +41,35 @@ class LedgerApi:
         self.tokens = TokenApi(host, port)
         self.contracts = ContractsApi(host, port)
         self.tx = TransactionApi(host, port)
+        self.synergetic = SynergeticApi(host, port)
 
-    def sync(self, tx):
+    def sync(self, txs: Transactions):
+
+        # given the inputs make sure that we correctly for the input set of values
+        if isinstance(txs, str):
+            remaining = {txs}
+        elif _iterable(txs):
+            remaining = set(txs)
+        else:
+            raise TypeError('Unknown argument type')
+
         limit = timedelta(minutes=2)
         start = datetime.now()
         while True:
 
-            # normal exit mode
-            status = self.tx.status(tx)
-            if status == "Executed":
+            # loop through all the remaining digests and poll them creating a set of completed in this round
+            remaining -= set([digest for digest in remaining if self._poll(digest)])
+
+            # once we have completed all the outstanding transactions
+            if len(remaining) == 0:
                 break
 
             # time out mode
             delta_time = datetime.now() - start
             if delta_time >= limit:
-                raise RuntimeError('Timeout waiting for ledger operation state: ' + str(status))
+                raise RuntimeError('Timeout waiting for txs: {}'.format(', '.join(list(remaining))))
 
             time.sleep(1)
+
+    def _poll(self, digest):
+        return self.tx.status(digest) in ('Executed', 'Submitted')

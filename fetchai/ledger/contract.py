@@ -9,11 +9,42 @@ from .crypto import Entity, Address
 ContractsApiLike = Union[ContractsApi, LedgerApi]
 
 
-class SmartContract:
+def _compute_digest(source) -> Address:
+    hash_func = hashlib.sha256()
+    hash_func.update(source.encode('ascii'))
+    return Address(hash_func.digest())
+
+
+class Contract:
+    TYPE = None
+
     def __init__(self, source: str):
-        self._owner = None
         self._source = str(source)
-        self._digest = self._compute_digest()
+        self._digest = _compute_digest(self._source)
+
+    def type(self):
+        raise NotImplementedError()
+
+    @property
+    def source(self):
+        return self._source
+
+    @property
+    def digest(self):
+        return self._digest
+
+    @property
+    def encoded_source(self):
+        return base64.b64encode(self.source.encode('ascii')).decode()
+
+
+class SmartContract(Contract):
+    TYPE = 'smart'
+
+    def __init__(self, source: str):
+        super(SmartContract, self).__init__(source)
+
+        self._owner = None
 
         # Quick and easy method to inspecting the contract source and generating a set of action and query names. To
         # be replaced in the future with a more fault tolerant approach
@@ -56,23 +87,6 @@ class SmartContract:
     def owner(self, owner):
         self._owner = Address(owner)
 
-    @property
-    def source(self):
-        return self._source
-
-    @property
-    def encoded_source(self):
-        return base64.b64encode(self.source.encode('ascii')).decode()
-
-    @property
-    def digest(self):
-        return self._digest
-
-    def _compute_digest(self):
-        hash_func = hashlib.sha256()
-        hash_func.update(self._source.encode('ascii'))
-        return Address(hash_func.digest())
-
     @staticmethod
     def _api(api: ContractsApiLike):
         if isinstance(api, ContractsApi):
@@ -81,3 +95,13 @@ class SmartContract:
             return api.contracts
         else:
             assert False
+
+
+class SynergeticContract(Contract):
+    TYPE = 'synergetic'
+
+    def __init__(self, source: str):
+        super(SynergeticContract, self).__init__(source)
+
+        # parse the source to find all the actions and do some validation
+
