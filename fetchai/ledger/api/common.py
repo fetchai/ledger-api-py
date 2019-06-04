@@ -147,7 +147,7 @@ class ApiEndpoint(object):
 
         :param tx_data: The binary encoded transaction
         :param endpoint: The target endpoint of the contract
-        :return: The digest of the submitted transaction
+        :return: The hexadecimal digest of the submitted transaction
         """
 
         headers = {
