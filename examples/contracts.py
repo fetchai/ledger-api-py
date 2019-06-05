@@ -92,7 +92,7 @@ def main():
     fet_tx_fee = 40
     api.sync(contract.action(api, 'transfer', fet_tx_fee, [entity1], address1, address2, tok_transfer_amount))
 
-    print('-- BEFORE --')
+    print('-- AFTER --')
     print_address_balances(api, contract, [address1, address2])
 
 
