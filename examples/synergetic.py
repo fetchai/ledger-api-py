@@ -1,4 +1,6 @@
 import os
+import random
+import json
 
 from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.crypto import Entity, Address
@@ -6,26 +8,28 @@ from fetchai.ledger.contract import SynergeticContract
 
 CONTRACT_TEXT = """
 @problem
-function dagState() : Int32
-    return 0;
+function createProblem(data : Array<StructuredData>) : Int32
+  var value = 0;
+  for (i in 0:data.count() - 1)
+    value += data[i].getInt32("value");
+  endfor
+  return value;
 endfunction
 
 @objective
-function proofOfWork(problem : Int32, solution : Int32 ) : Int64 
-    return abs(toInt64(problem) - toInt64(solution));
+function evaluateWork(problem : Int32, solution : Int32 ) : Int64
+  return abs(toInt64(problem) - toInt64(solution));
+endfunction
+
+@work
+function doWork(problem : Int32, nonce : BigUInt) :  Int32
+  return nonce.toInt32();
 endfunction
 
 @clear
 function applyWork(problem : Int32, solution : Int32)
-endfunction
-
-@work
-function mineWork(problem : Int32, nonce : BigUInt) :  Int32
-  return nonce.toInt32();
-endfunction
-
-@generator
-function makeDAGnode(epoch : Int32, entropy : BigUInt)
+  var result = State<Int32>("solution", 0);
+  result.set(solution);
 endfunction
 
 """
@@ -48,8 +52,8 @@ def main():
     api.sync(api.contracts.create(entity, synergy_contract, 4096))
 
     # create a whole series of random data to submit to the DAG
-    random_data = ['foo bar is a baz {}'.format(n).encode('ascii') for n in range(1)]
-    api.sync([api.synergetic.submit_data(entity, synergy_contract.digest, data) for data in random_data])
+    random_ints = [random.randint(0, 200) for _ in range(4000)]
+    api.sync([api.synergetic.submit_data(entity, synergy_contract.digest, value=value) for value in random_ints])
 
 
 if __name__ == '__main__':

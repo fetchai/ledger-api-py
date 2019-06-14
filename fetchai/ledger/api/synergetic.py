@@ -5,7 +5,7 @@ from fetchai.ledger.serialisation import encode_transaction
 
 
 class SynergeticApi(ApiEndpoint):
-    def submit_data(self, entity: Entity, digest: Address, data: bytes):
+    def submit_data(self, entity: Entity, digest: Address, **kwargs):
 
         # build up the basic transaction information
         tx = Transaction()
@@ -15,7 +15,7 @@ class SynergeticApi(ApiEndpoint):
         tx.charge_rate = 1
         tx.charge_limit = 1
         tx.action = 'data'
-        tx.data = data
+        tx.data = self._encode_json(dict(**kwargs))
         tx.add_signer(entity)
 
         # encode the transaction
