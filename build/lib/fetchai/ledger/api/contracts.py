@@ -92,8 +92,6 @@ class ContractsApi(ApiEndpoint):
                 params[key] = value
             elif isinstance(value, Address):
                 params[key] = str(value)
-            elif isinstance(value, dict):
-                params[key] = cls._encode_json_payload(**value)
             else:
                 raise RuntimeError('Unknown item to pack: ' + value.__class__.__name__)
         return params
