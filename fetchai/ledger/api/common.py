@@ -139,7 +139,14 @@ class ApiEndpoint(object):
             response = json.loads(raw_response.text)
             return True, response
 
-        return False, None
+        # Allow for additional data to be transferred
+        response = None
+        try:
+            response = json.loads(raw_response.text)            
+        except:
+            pass
+
+        return False, response
 
     def _post_tx_json(self, tx_data: bytes, endpoint: Optional[str]):
         """
