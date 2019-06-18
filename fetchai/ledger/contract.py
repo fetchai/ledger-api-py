@@ -54,7 +54,10 @@ class SmartContract:
         success, response = self._api(api).query(self._digest, self._owner, name, **kwargs)
 
         if not success:
-            raise RuntimeError('Failed to make requested query')
+            if not response is None and "msg" in response:
+                raise RuntimeError('Failed to make requested query: ' + response["msg"])
+            else:
+                raise RuntimeError('Failed to make requested query with no error message.')
 
         return response['result']
 
