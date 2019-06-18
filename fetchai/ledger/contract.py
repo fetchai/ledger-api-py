@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import json
 import re
 from typing import Union, List
 
@@ -10,6 +11,15 @@ ContractsApiLike = Union[ContractsApi, LedgerApi]
 
 
 class SmartContract:
+
+    @classmethod
+    def loads(cls, s):
+        return cls._from_json_object(json.loads(s))
+
+    @classmethod
+    def load(cls, fp):
+        return cls._from_json_object(json.load(fp))
+
     def __init__(self, source: str):
         self._owner = None
         self._source = str(source)
@@ -51,6 +61,12 @@ class SmartContract:
 
         return response['result']
 
+    def dumps(self):
+        return json.dumps(self._to_json_object())
+
+    def dump(self, fp):
+        return json.dump(self._to_json_object(), fp)
+
     @property
     def owner(self):
         return self._owner
@@ -84,3 +100,20 @@ class SmartContract:
             return api.contracts
         else:
             assert False
+
+    def _to_json_object(self):
+        return {
+            'owner': None if self._owner is None else str(self._owner),
+            'source': self.encoded_source,
+        }
+
+    @classmethod
+    def _from_json_object(self, obj):
+        source = base64.b64decode(obj['source']).decode()
+
+        sc = SmartContract(source)
+        owner = obj['owner']
+        if owner is not None:
+            sc.owner = owner
+
+        return sc
