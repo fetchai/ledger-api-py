@@ -17,6 +17,7 @@
 # ------------------------------------------------------------------------------
 
 import base64
+import json
 import binascii
 
 import ecdsa
@@ -29,12 +30,20 @@ class Entity(Identity):
     An entity is a full private/public key pair.
     """
 
+    @classmethod
+    def loads(cls, s):
+        return cls._from_json_object(json.loads(s))
+
+    @classmethod
+    def load(cls, fp):
+        return cls._from_json_object(json.load(fp))
+
     @staticmethod
     def from_hex(private_key_hex: str):
         return Entity(binascii.unhexlify(private_key_hex))
 
-    @staticmethod
-    def from_base64(private_key_base64: str):
+    @classmethod
+    def from_base64(cls, private_key_base64: str):
         return Entity(base64.b64decode(private_key_base64))
 
     def __init__(self, private_key_bytes=None):
@@ -73,3 +82,18 @@ class Entity(Identity):
 
     def sign(self, message: bytes):
         return self._signing_key.sign(message)
+
+    def dumps(self):
+        return json.dumps(self._to_json_object())
+
+    def dump(self, fp):
+        return json.dump(self._to_json_object(), fp)
+
+    def _to_json_object(self):
+        return {
+            'privateKey': base64.b64encode(self._private_key_bytes).decode()
+        }
+
+    @classmethod
+    def _from_json_object(cls, obj):
+        return cls.from_base64(obj['privateKey'])
