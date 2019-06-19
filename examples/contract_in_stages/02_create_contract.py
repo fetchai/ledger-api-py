@@ -15,16 +15,15 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-from typing import List
 
 from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.contract import SmartContract
-from fetchai.ledger.crypto import Entity, Address
+from fetchai.ledger.crypto import Entity
 
 CONTRACT_TEXT = """
 @init
 function setup(owner : Address)
-  var owner_balance = State<UInt64>(owner, 0u64);
+  var owner_balance = State<UInt64>(owner);
   owner_balance.set(1000000u64);
 endfunction
 
@@ -32,68 +31,54 @@ endfunction
 function transfer(from: Address, to: Address, amount: UInt64)
 
   // define the accounts
-  var from_account = State<UInt64>(from, 0u64);
-  var to_account = State<UInt64>(to, 0u64); // if new sets to 0u
+  var from_account = State<UInt64>(from);
+  var to_account = State<UInt64>(to); // if new sets to 0u
 
   // Check if the sender has enough balance to proceed
   if (from_account.get() >= amount)
-  
+
     // update the account balances
     from_account.set(from_account.get() - amount);
-    to_account.set(to_account.get() + amount);
+    to_account.set(to_account.get(0u64) + amount);
   endif
 
 endfunction
 
 @query
 function balance(address: Address) : UInt64
-    var account = State<UInt64>(address, 0u64);
-    return account.get();
+    var account = State<UInt64>(address);
+    return account.get(0u64);
 endfunction
 
 """
 
 
-def print_address_balances(api: LedgerApi, contract: SmartContract, addresses: List[Address]):
-    for idx, address in enumerate(addresses):
-        print('Address{}: {:<6d} bFET {:<10d} TOK'.format(idx, api.tokens.balance(address),
-                                                          contract.query(api, 'balance', address=address)))
-    print()
-
-
 def main():
 
-    # create our first private key pair
-    entity1 = Entity()
-    address1 = Address(entity1)
+    print('Loading private key...')
 
-    # create a second private key pair
-    entity2 = Entity()
-    address2 = Address(entity2)
+    # load up the previously created private key
+    with open('private.key', 'r') as private_key_file:
+        entity1 = Entity.load(private_key_file)
+
+    print('Loading private key...complete')
 
     # build the ledger API
     api = LedgerApi('127.0.0.1', 8000)
 
-    # create wealth so that we have the funds to be able to create contracts on the network
-    api.sync(api.tokens.wealth(entity1, 10000))
-
     # create the smart contract
     contract = SmartContract(CONTRACT_TEXT)
+
+    print('Deploying contract...')
 
     # deploy the contract to the network
     api.sync(api.contracts.create(entity1, contract, 2000))
 
-    # print the current status of all the tokens
-    print('-- BEFORE --')
-    print_address_balances(api, contract, [address1, address2])
+    print('Deploying contract...complete')
 
-    # transfer from one to the other using our newly deployed contract
-    tok_transfer_amount = 200
-    fet_tx_fee = 40
-    api.sync(contract.action(api, 'transfer', fet_tx_fee, [entity1], address1, address2, tok_transfer_amount))
-
-    print('-- AFTER --')
-    print_address_balances(api, contract, [address1, address2])
+    # save the contract to the disk
+    with open('sample.contract', 'w') as contract_file:
+        contract.dump(contract_file)
 
 
 if __name__ == '__main__':

@@ -1,3 +1,10 @@
+import json
+from typing import Union
+
+from .api import ContractsApi, LedgerApi
+
+ContractsApiLike = Union[ContractsApi, LedgerApi]
+
 import base64
 import hashlib
 import re
@@ -22,8 +29,11 @@ class Contract:
         self._source = str(source)
         self._digest = _compute_digest(self._source)
 
-    def type(self):
-        raise NotImplementedError()
+    def dumps(self):
+        return json.dumps(self._to_json_object())
+
+    def dump(self, fp):
+        return json.dump(self._to_json_object(), fp)
 
     @property
     def source(self):
@@ -37,9 +47,20 @@ class Contract:
     def encoded_source(self):
         return base64.b64encode(self.source.encode('ascii')).decode()
 
+    def _to_json_object(self):
+        raise NotImplementedError()
+
 
 class SmartContract(Contract):
     TYPE = 'smart'
+
+    @classmethod
+    def loads(cls, s):
+        return cls._from_json_object(json.loads(s))
+
+    @classmethod
+    def load(cls, fp):
+        return cls._from_json_object(json.load(fp))
 
     def __init__(self, source: str):
         super(SmartContract, self).__init__(source)
@@ -96,12 +117,53 @@ class SmartContract(Contract):
         else:
             assert False
 
+    @classmethod
+    def _from_json_object(cls, obj):
+        assert obj['version'] == 1
+        assert obj['type'] == cls.TYPE
+
+        source = base64.b64decode(obj['source']).decode()
+
+        sc = SmartContract(source)
+        owner = obj['owner']
+        if owner is not None:
+            sc.owner = owner
+
+        return sc
+
+    def _to_json_object(self):
+        return {
+            'version': 1,
+            'type': self.TYPE,
+            'owner': None if self._owner is None else str(self._owner),
+            'source': self.encoded_source,
+        }
+
 
 class SynergeticContract(Contract):
     TYPE = 'synergetic'
 
+    @classmethod
+    def loads(cls, s):
+        return cls._from_json_object(json.loads(s))
+
+    @classmethod
+    def load(cls, fp):
+        return cls._from_json_object(json.load(fp))
+
     def __init__(self, source: str):
         super(SynergeticContract, self).__init__(source)
 
-        # parse the source to find all the actions and do some validation
+    @classmethod
+    def _from_json_object(cls, obj):
+        assert obj['version'] == 1
+        assert obj['type'] == cls.TYPE
+        source = base64.b64decode(obj['source']).decode()
+        return SynergeticContract(source)
 
+    def _to_json_object(self):
+        return {
+            'version': 1,
+            'type': self.TYPE,
+            'source': self.encoded_source,
+        }
