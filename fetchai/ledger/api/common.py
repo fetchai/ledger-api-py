@@ -110,7 +110,7 @@ class ApiEndpoint(object):
     def _encode_json(cls, obj):
         return json.dumps(obj).encode('ascii')
 
-    def _create_skeleton_tx(self, fee: int, validity_period: Optional[int]):
+    def _create_skeleton_tx(self, fee: int, validity_period: Optional[int] = None):
         validity_period = validity_period or DEFAULT_BLOCK_VALIDITY_PERIOD
 
         # query what the current block number is on the node
