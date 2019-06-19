@@ -21,7 +21,6 @@ from fetchai.ledger.api import ApiEndpoint, ApiError
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity, Identity
 from fetchai.ledger.serialisation import encode_transaction
-from fetchai.ledger.transaction import Transaction
 
 AddressLike = Union[Address, Identity, str, bytes]
 
@@ -61,9 +60,8 @@ class TokenApi(ApiEndpoint):
         """
         Creates wealth for specified account
 
-        :param private_key_bin: The bytes of the private key of the targeted address
+        :param entity: The entity object for the
         :param amount: The amount of wealth to be generated
-        :param fee: The fee value to be used for the transaction
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
         """
@@ -75,11 +73,8 @@ class TokenApi(ApiEndpoint):
         shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = Transaction()
+        tx = self._create_skeleton_tx(1)
         tx.from_address = Address(entity)
-        tx.valid_until = 10000
-        tx.charge_rate = 1
-        tx.charge_limit = 10
         tx.target_chain_code(self.API_PREFIX, shard_mask)
         tx.action = 'wealth'
         tx.add_signer(entity)
@@ -115,11 +110,8 @@ class TokenApi(ApiEndpoint):
         shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = Transaction()
+        tx = self._create_skeleton_tx(fee)
         tx.from_address = Address(entity)
-        tx.valid_until = 10000
-        tx.charge_rate = 1
-        tx.charge_limit = fee
         tx.add_transfer(to, amount)
         tx.add_signer(entity)
 

@@ -21,6 +21,8 @@ from typing import Optional
 
 import requests
 
+from fetchai.ledger.transaction import Transaction
+
 
 def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: Optional[str]):
     """
@@ -105,6 +107,39 @@ class ApiEndpoint(object):
     @classmethod
     def _encode_json(cls, obj):
         return json.dumps(obj).encode('ascii')
+
+    def _create_skeleton_tx(self, fee: int):
+        valid_until = self._current_block_number() + 100
+
+        # build up the basic transaction information
+        tx = Transaction()
+        tx.valid_until = valid_until
+        tx.charge_rate = 1
+        tx.charge_limit = fee
+
+        return tx
+
+    def _current_block_number(self):
+        success, data = self._get_json('status/chain', size=1)
+        block_number = -1
+        if success:
+            block_number = data['chain'][0]['blockNumber']
+        return block_number
+
+    def _get_json(self, path, **kwargs):
+        args = dict(**kwargs)
+        params = args if len(args) > 0 else None
+        url = 'http://{}:{}/api/{}'.format(self._host, self._port, path)
+
+        # make the request
+        raw_response = self._session.get(url, params=params)
+
+        # check the status code
+        if 200 <= raw_response.status_code < 300:
+            response = json.loads(raw_response.text)
+            return True, response
+
+        return False, None
 
     def _post_json(self, endpoint, data=None, prefix=None):
         """
