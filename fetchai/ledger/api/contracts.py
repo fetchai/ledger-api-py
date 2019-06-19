@@ -31,6 +31,7 @@ class ContractsApi(ApiEndpoint):
             'text': contract.encoded_source,
             'digest': contract.digest.to_hex(),
         })
+        tx.add_signer(owner)
 
         # encode and sign the transaction
         encoded_tx = encode_transaction(tx, [owner])
