@@ -23,11 +23,8 @@ class ContractsApi(ApiEndpoint):
         shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = Transaction()
+        tx = self._create_skeleton_tx(fee)
         tx.from_address = Address(owner)
-        tx.valid_until = 10000
-        tx.charge_rate = 1
-        tx.charge_limit = fee
         tx.target_chain_code(self.API_PREFIX, shard_mask)
         tx.action = ENDPOINT
         tx.data = self._encode_json({
@@ -54,11 +51,8 @@ class ContractsApi(ApiEndpoint):
         shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = Transaction()
+        tx = self._create_skeleton_tx(fee)
         tx.from_address = Address(contract_owner)
-        tx.valid_until = 10000
-        tx.charge_rate = 1
-        tx.charge_limit = int(fee)
         tx.target_contract(contract_digest, contract_owner, shard_mask)
         tx.action = str(action)
         tx.data = self._encode_msgpack_payload(*args)
