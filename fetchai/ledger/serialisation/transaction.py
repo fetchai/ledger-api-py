@@ -12,6 +12,7 @@ VERSION = 1
 NO_CONTRACT = 0
 SMART_CONTRACT = 1
 CHAIN_CODE = 2
+SYNERGETIC = 3
 
 
 def _log2(value: int) -> int:
@@ -28,7 +29,11 @@ def _byte(value: int) -> bytes:
 
 def _map_contract_mode(payload: Transaction):
     if payload.action:
-        return CHAIN_CODE if payload.chain_code else SMART_CONTRACT
+        if payload.chain_code:
+            return CHAIN_CODE
+        assert payload.contract_digest is not None
+
+        return SMART_CONTRACT if payload.contract_address else SYNERGETIC
     else:
         return NO_CONTRACT
 
@@ -111,6 +116,8 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
         elif CHAIN_CODE == contract_mode:
             encoded_chain_code = payload.chain_code.encode('ascii')
             bytearray.encode(buffer, encoded_chain_code)
+        elif SYNERGETIC == contract_mode:
+            address.encode(buffer, payload.contract_digest)
         else:
             assert False
 

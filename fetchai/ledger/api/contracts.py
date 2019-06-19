@@ -15,7 +15,7 @@ EntityList = List[Entity]
 class ContractsApi(ApiEndpoint):
     API_PREFIX = 'fetch.contract'
 
-    def create(self, owner: Entity, contract: 'SmartContract', fee: int):
+    def create(self, owner: Entity, contract: 'Contract', fee: int):
         ENDPOINT = 'create'
         # format the data to be closed by the transaction
 
@@ -30,6 +30,7 @@ class ContractsApi(ApiEndpoint):
         tx.data = self._encode_json({
             'text': contract.encoded_source,
             'digest': contract.digest.to_hex(),
+            'type': contract.TYPE,
         })
         tx.add_signer(owner)
 
