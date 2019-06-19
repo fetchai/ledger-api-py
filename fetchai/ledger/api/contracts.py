@@ -24,6 +24,7 @@ class ContractsApi(ApiEndpoint):
 
         # build up the basic transaction information
         tx = self._create_skeleton_tx(fee)
+        tx.from_address = Address(owner)
         tx.target_chain_code(self.API_PREFIX, shard_mask)
         tx.action = ENDPOINT
         tx.data = self._encode_json({
