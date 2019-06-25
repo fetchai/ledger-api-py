@@ -8,7 +8,7 @@ PORT = 8000
 
 
 def main():
-    key_path = '/Users/ed/Code/Cpp/ledger/cmake-build-debug/nodes/node2/p2p.key'
+    key_path = '/Users/nhutton/repos/ledger/build_debug/node1/p2p.key'
 
     with open(key_path, 'rb') as key_file:
         key_bytes = key_file.read()
@@ -26,6 +26,7 @@ def main():
     api.sync(api.tokens.wealth(entity, 10000))
 
     print('Balance:', api.tokens.balance(entity))
+
     print('Stake..:', api.tokens.stake(entity))
 
     # submit and wait for the transfer to be complete
@@ -34,9 +35,16 @@ def main():
 
     while True:
 
-        print('Balance:', api.tokens.balance(entity))
-        print('Stake..:', api.tokens.stake(entity))
+        print('Balance............:', api.tokens.balance(entity))
+        print('Stake..............:', api.tokens.stake(entity))
+        print('Stake on cooldown..:', api.tokens.stake_cooldown(entity))
 
+        # De-stake half of the staked balance
+        to_destake = int(api.tokens.stake(entity)/2)
+        api.sync(api.tokens.de_stake(entity, to_destake, 500))
+
+        # Collect cooled down stakes
+        api.sync(api.tokens.collect_stake(entity, 500))
         time.sleep(1)
 
 
