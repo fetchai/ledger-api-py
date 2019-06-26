@@ -56,11 +56,67 @@ class TokenApi(ApiEndpoint):
         # return the balance
         return int(data['balance'])
 
+    def stake(self, address: AddressLike):
+        """
+        Query the stake for a given address from the remote node
+
+        :param address: The base64 encoded string containing the address of the node
+        :return: The balance value retried
+        :raises: ApiError on any failures
+        """
+
+        # convert the input to an address
+        address = Address(address)
+
+        # format and make the request
+        request = {
+            'address': str(address)
+        }
+        success, data = self._post_json('stake', request)
+
+        # check for error cases
+        if not success:
+            raise ApiError('Failed to request balance for address ' + str(address))
+
+        if 'stake' not in data:
+            raise ApiError('Malformed response from server')
+
+        # return the balance
+        return int(data['stake'])
+
+    def stake_cooldown(self, address: AddressLike):
+        """
+        Query the stake on cooldown for a given address from the remote node
+
+        :param address: The base64 encoded string containing the address of the node
+        :return: The balance value retried
+        :raises: ApiError on any failures
+        """
+
+        # convert the input to an address
+        address = Address(address)
+
+        # format and make the request
+        request = {
+            'address': str(address)
+        }
+        success, data = self._post_json('cooldownStake', request)
+
+        # check for error cases
+        if not success:
+            raise ApiError('Failed to request cooldown stake for address ' + str(address))
+
+        if 'cooldownStake' not in data:
+            raise ApiError('Malformed response from server')
+
+        # return the result
+        return data
+
     def wealth(self, entity: Entity, amount: int):
         """
         Creates wealth for specified account
 
-        :param entity: The entity object for the
+        :param entity: The entity object to create wealth for
         :param amount: The amount of wealth to be generated
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
@@ -113,6 +169,105 @@ class TokenApi(ApiEndpoint):
         tx = self._create_skeleton_tx(fee)
         tx.from_address = Address(entity)
         tx.add_transfer(to, amount)
+        tx.add_signer(entity)
+
+        # encode and sign the transaction
+        encoded_tx = encode_transaction(tx, [entity])
+
+        # submit the transaction
+        return self._post_tx_json(encoded_tx, ENDPOINT)
+
+    def add_stake(self, entity: Entity, amount: int, fee: int):
+        """
+        Stakes a specific amount of
+
+        :param entity: The entity object that desires to stake
+        :param amount: The amount to stake
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+        ENDPOINT = 'addStake'
+
+        # format the data to be closed by the transaction
+
+        # wildcard for the moment
+        shard_mask = BitVector()
+
+        # build up the basic transaction information
+        tx = self._create_skeleton_tx(fee)
+        tx.from_address = Address(entity)
+        tx.target_chain_code(self.API_PREFIX, shard_mask)
+        tx.action = 'addStake'
+        tx.add_signer(entity)
+
+        # format the transaction payload
+        tx.data = self._encode_json({
+            'address': entity.public_key,
+            'amount': amount
+        })
+
+        # encode and sign the transaction
+        encoded_tx = encode_transaction(tx, [entity])
+
+        # submit the transaction
+        return self._post_tx_json(encoded_tx, ENDPOINT)
+
+    def de_stake(self, entity: Entity, amount: int, fee: int):
+        """
+        Destakes a specific amount of tokens from a staking miner. This will put the
+        tokens in a cool down period
+
+        :param entity: The entity object that desires to destake
+        :param amount: The amount of tokens to destake
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+        ENDPOINT = 'deStake'
+
+        # format the data to be closed by the transaction
+
+        # wildcard for the moment
+        shard_mask = BitVector()
+
+        # build up the basic transaction information
+        tx = self._create_skeleton_tx(fee)
+        tx.from_address = Address(entity)
+        tx.target_chain_code(self.API_PREFIX, shard_mask)
+        tx.action = 'deStake'
+        tx.add_signer(entity)
+
+        # format the transaction payload
+        tx.data = self._encode_json({
+            'address': entity.public_key,
+            'amount': amount
+        })
+
+        # encode and sign the transaction
+        encoded_tx = encode_transaction(tx, [entity])
+
+        # submit the transaction
+        return self._post_tx_json(encoded_tx, ENDPOINT)
+
+    def collect_stake(self, entity: Entity, fee: int):
+        """
+        Collect all stakes that have reached the end of the cooldown period
+
+        :param entity: The entity object that desires to collect
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+        ENDPOINT = 'collectStake'
+
+        # format the data to be closed by the transaction
+
+        # wildcard for the moment
+        shard_mask = BitVector()
+
+        # build up the basic transaction information
+        tx = self._create_skeleton_tx(fee)
+        tx.from_address = Address(entity)
+        tx.target_chain_code(self.API_PREFIX, shard_mask)
+        tx.action = 'collectStake'
         tx.add_signer(entity)
 
         # encode and sign the transaction
