@@ -48,7 +48,7 @@ class ContractsApi(ApiEndpoint):
         return self._post_json(query, prefix=prefix, data=self._encode_json_payload(**kwargs))
 
     def action(self, contract_digest: Address, contract_owner: Address, action: str, fee: int, signers: EntityList,
-               fee_payer_addr: Address = None, *args):
+               *args, fee_payer_addr: Address = None):
         shard_mask = BitVector()
 
         if fee_payer_addr is None:
