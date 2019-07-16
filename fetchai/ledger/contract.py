@@ -73,7 +73,8 @@ class SmartContract(Contract):
         self._actions = set(re.findall(r'@action function (\w+)\(', ugly))
         self._queries = set(re.findall(r'@query function (\w+)\(', ugly))
 
-    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args):
+    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], fee_payer_addr: Address = None,
+               *args):
         if self._owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
 
@@ -81,7 +82,7 @@ class SmartContract(Contract):
             raise RuntimeError(
                 '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
 
-        return self._api(api).action(self._digest, self._owner, name, fee, signers, *args)
+        return self._api(api).action(self._digest, self._owner, name, fee, signers, fee_payer_addr, *args)
 
     def query(self, api: ContractsApiLike, name: str, **kwargs):
 
