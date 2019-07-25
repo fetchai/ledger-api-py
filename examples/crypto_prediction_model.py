@@ -22,7 +22,9 @@ from fetchai.ledger.contract import SmartContract
 from fetchai.ledger.crypto import Entity, Address
 
 # TODO - modify BuildModel to be simply load a graphSaveParams
-# TODO -
+# TODO - calling AddData on dataloader every time we call train might be expensive; we need to add a method for update train data/labels
+# TODO - writing dataloader & optimiser to state
+# TODO - implement scalar normalisation
 #
 #
 
@@ -33,14 +35,8 @@ function setup(owner : Address)
   owner_balance.set(1000000u64);
 endfunction
 
-@query
-function balance(address: Address) : UInt64
-    var account = State<UInt64>(address);
-    return account.get(0u64);
-endfunction
-
 @action
-function buildModel()
+function buildModel(owner : Address)
     // set up the computation graph
     var g = Graph();
     
@@ -86,14 +82,14 @@ function buildModel()
 endfunction
 
 @action
-function train(train_data: train_data, train_labels: train_labels)
+function train(owner : Address, train_data: Tensor, train_labels: Tensor)
 
     // retrieve dataloader and set up the training data and labels
-    var data_loader = (State<Dataloader>("data_loader")).get();
+    var data_loader = (State<Dataloader>(owner + "data_loader")).get();
     data_loader.addData("tensor", train_data, train_labels);
     
     // retrieve the optimiser
-    var optimiser = (State<Optimiser>("optimiser")).get();
+    var optimiser = (State<Optimiser>(owner + "optimiser")).get();
 
     var training_iterations = 10;
     var batch_size = 8u64;
@@ -102,8 +98,14 @@ function train(train_data: train_data, train_labels: train_labels)
     endfor
 endfunction
 
-@action
-function predict()
+@query
+function predict(owner : Address, test_data: Tensor)
+
+    // retrieve graph
+    var graph = (State<Graph>(owner + "graph")).get();
+    
+    graph.setInput("Input", test_data);
+    return graph.evaluate("Output");
 
 endfunction
 
@@ -136,7 +138,7 @@ def main():
     contract = SmartContract(CONTRACT_TEXT)
 
     # deploy the contract to the network
-    api.sync(api.contracts.create(entity1, contract, 4000))
+    api.sync(api.contracts.create(entity1, contract, 200))
 
     # # print the current status of all the tokens
     # print('-- BEFORE --')
