@@ -36,7 +36,7 @@ function setup(owner : Address)
 endfunction
 
 @action
-function buildModel(owner : Address)
+function buildModel()
     // set up the computation graph
     var g = Graph();
     
@@ -52,57 +52,57 @@ function buildModel(owner : Address)
     var conv1D_2_kernel_size    = 48;
     var conv1D_2_stride         = 2;
     
-    graph.addPlaceholder("Input");
-    graph.addPlaceholder("Label");
+    g.addPlaceholder("Input");
+    g.addPlaceholder("Label");
     
-    graph.addConv1D("hidden_conv1D_1", "Input", conv1D_1_filters, conv1D_1_input_channels,
+    g.addConv1D("hidden_conv1D_1", "Input", conv1D_1_filters, conv1D_1_input_channels,
                     conv1D_1_kernel_size, conv1D_1_stride);
-    graph.addRelu("relu_1", "hidden_conv1D_1");
+    g.addRelu("relu_1", "hidden_conv1D_1");
     
-    graph.addDropout("dropout_1", "relu_1", keep_prob_1);
+    g.addDropout("dropout_1", "relu_1", keep_prob_1);
     
-    graph.addConv1D("Output", "dropout_1", conv1D_2_filters, conv1D_2_input_channels,
+    g.addConv1D("Output", "dropout_1", conv1D_2_filters, conv1D_2_input_channels,
                             conv1D_2_kernel_size, conv1D_2_stride);
     
-    graph.addMeanSquareErrorLoss("Error", "Output", "Label");
+    g.addMeanSquareErrorLoss("Error", "Output", "Label");
     
-    var graph_state = State<Graph>(owner + "graph");
-    graph_state.set(graph);
-    
-    // set up dataloader
-    var  = DataLoader();
-    var dataloader_state = State<data_loader>(owner + "data_loader");
-    dataloader_state.set(data_loader);
-    
-    // set up optimiser
-    var optimiser = Optimiser("sgd", graph, "Input", "Label", "Error");
-    var optimiser_state = State<optimiser>(owner + "optimiser");
-    optimiser_state.set(optimiser);
+    var graph_state = State<Graph>("graph");
+    graph_state.set(g);
+
+//     // set up dataloader
+//     var data_loader = DataLoader();
+//     var dataloader_state = State<DataLoader>("dataloader");
+//     dataloader_state.set(data_loader);
+//     
+//     // set up optimiser
+//     var optimiser = Optimiser("sgd", g, "Input", "Label", "Error");
+//     var optimiser_state = State<Optimiser>("optimiser");
+//     optimiser_state.set(optimiser);
 
 endfunction
 
-@action
-function train(owner : Address, train_data: Tensor, train_labels: Tensor)
-
-    // retrieve dataloader and set up the training data and labels
-    var data_loader = (State<Dataloader>(owner + "data_loader")).get();
-    data_loader.addData("tensor", train_data, train_labels);
-    
-    // retrieve the optimiser
-    var optimiser = (State<Optimiser>(owner + "optimiser")).get();
-
-    var training_iterations = 10;
-    var batch_size = 8u64;
-    for(i in 0:training_iterations)
-        var loss = optimiser.run(data_loader, batch_size);
-    endfor
-endfunction
+// @action
+// function train(train_data: Tensor, train_labels: Tensor)
+// 
+//     // retrieve dataloader and set up the training data and labels
+//     var data_loader = (State<DataLoader>("dataloader")).get();
+//     data_loader.addData("tensor", train_data, train_labels);
+//     
+//     // retrieve the optimiser
+//     var optimiser = (State<Optimiser>("optimiser")).get();
+// 
+//     var training_iterations = 10;
+//     var batch_size = 8u64;
+//     for(i in 0:training_iterations)
+//         var loss = optimiser.run(data_loader, batch_size);
+//     endfor
+// endfunction
 
 @query
-function predict(owner : Address, test_data: Tensor)
+function predict(graph_address : Address, test_data: Tensor) : Tensor
 
     // retrieve graph
-    var graph = (State<Graph>(owner + "graph")).get();
+    var graph = (State<Graph>("graph")).get();
     
     graph.setInput("Input", test_data);
     return graph.evaluate("Output");
@@ -122,7 +122,6 @@ def print_address_balances(api: LedgerApi, contract: SmartContract, addresses: L
 def main():
     # create our first private key pair
     entity1 = Entity()
-    address1 = Address(entity1)
 
     # # create a second private key pair
     # entity2 = Entity()
@@ -132,23 +131,19 @@ def main():
     api = LedgerApi('127.0.0.1', 8000)
 
     # create wealth so that we have the funds to be able to create contracts on the network
-    api.sync(api.tokens.wealth(entity1, 1000000))
+    api.sync(api.tokens.wealth(entity1, 100000))
 
     # create the smart contract
     contract = SmartContract(CONTRACT_TEXT)
 
     # deploy the contract to the network
-    api.sync(api.contracts.create(entity1, contract, 200))
-
-    # # print the current status of all the tokens
-    # print('-- BEFORE --')
-    # print_address_balances(api, contract, [address1, address2])
+    api.sync(api.contracts.create(entity1, contract, 5048))
 
     # transfer from one to the other using our newly deployed contract
-    # tok_transfer_amount = 200
-    fet_tx_fee = 10000
-    # api.sync(contract.action(api, 'transfer', fet_tx_fee, [entity1], address1, address2, tok_transfer_amount))
+    fet_tx_fee = 40
     api.sync(contract.action(api, 'buildModel', fet_tx_fee, [entity1]))
+
+
 
     # print('-- AFTER --')
     # print_address_balances(api, contract, [address1, address2])
