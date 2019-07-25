@@ -21,6 +21,11 @@ from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.contract import SmartContract
 from fetchai.ledger.crypto import Entity, Address
 
+# TODO - modify BuildModel to be simply load a graphSaveParams
+# TODO -
+#
+#
+
 CONTRACT_TEXT = """
 @init
 function setup(owner : Address)
@@ -36,8 +41,8 @@ endfunction
 
 @action
 function buildModel()
-    
-    var g = Graph
+    // set up the computation graph
+    var g = Graph();
     
     var conv1D_1_filters        = 16;
     var conv1D_1_input_channels = 1;
@@ -62,12 +67,44 @@ function buildModel()
     
     graph.addConv1D("Output", "dropout_1", conv1D_2_filters, conv1D_2_input_channels,
                             conv1D_2_kernel_size, conv1D_2_stride);
-                            
-                            
+    
+    graph.addMeanSquareErrorLoss("Error", "Output", "Label");
+    
+    var graph_state = State<Graph>(owner + "graph");
+    graph_state.set(graph);
+    
+    // set up dataloader
+    var  = DataLoader();
+    var dataloader_state = State<data_loader>(owner + "data_loader");
+    dataloader_state.set(data_loader);
+    
+    // set up optimiser
+    var optimiser = Optimiser("sgd", graph, "Input", "Label", "Error");
+    var optimiser_state = State<optimiser>(owner + "optimiser");
+    optimiser_state.set(optimiser);
+
 endfunction
 
 @action
-function createModel()
+function train(train_data: train_data, train_labels: train_labels)
+
+    // retrieve dataloader and set up the training data and labels
+    var data_loader = (State<Dataloader>("data_loader")).get();
+    data_loader.addData("tensor", train_data, train_labels);
+    
+    // retrieve the optimiser
+    var optimiser = (State<Optimiser>("optimiser")).get();
+
+    var training_iterations = 10;
+    var batch_size = 8u64;
+    for(i in 0:training_iterations)
+        var loss = optimiser.run(data_loader, batch_size);
+    endfor
+endfunction
+
+@action
+function predict()
+
 endfunction
 
 """
