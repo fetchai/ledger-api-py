@@ -69,15 +69,15 @@ function buildModel()
     var graph_state = State<Graph>("graph");
     graph_state.set(g);
 
-//     // set up dataloader
-//     var data_loader = DataLoader();
-//     var dataloader_state = State<DataLoader>("dataloader");
-//     dataloader_state.set(data_loader);
+//    // set up dataloader
+//    var data_loader = DataLoader();
+//    var dataloader_state = State<DataLoader>("dataloader");
+//    dataloader_state.set(data_loader);
 //     
-//     // set up optimiser
-//     var optimiser = Optimiser("sgd", g, "Input", "Label", "Error");
-//     var optimiser_state = State<Optimiser>("optimiser");
-//     optimiser_state.set(optimiser);
+//    // set up optimiser
+//    var optimiser = Optimiser("sgd", g, "Input", "Label", "Error");
+//    var optimiser_state = State<Optimiser>("optimiser");
+//    optimiser_state.set(optimiser);
 
 endfunction
 
@@ -112,11 +112,11 @@ endfunction
 """
 
 
-def print_address_balances(api: LedgerApi, contract: SmartContract, addresses: List[Address]):
-    for idx, address in enumerate(addresses):
-        print('Address{}: {:<6d} bFET {:<10d} TOK'.format(idx, api.tokens.balance(address),
-                                                          contract.query(api, 'balance', address=address)))
-    print()
+# def print_address_balances(api: LedgerApi, contract: SmartContract, addresses: List[Address]):
+#     for idx, address in enumerate(addresses):
+#         print('Address{}: {:<6d} bFET {:<10d} TOK'.format(idx, api.tokens.balance(address),
+#                                                           contract.query(api, 'balance', address=address)))
+#     print()
 
 
 def main():
@@ -128,19 +128,19 @@ def main():
     # address2 = Address(entity2)
 
     # build the ledger API
-    api = LedgerApi('127.0.0.1', 8000)
+    api = LedgerApi('127.0.0.1', 8100)
 
     # create wealth so that we have the funds to be able to create contracts on the network
-    api.sync(api.tokens.wealth(entity1, 100000))
+    api.sync(api.tokens.wealth(entity1, 10000000000))
 
     # create the smart contract
     contract = SmartContract(CONTRACT_TEXT)
 
     # deploy the contract to the network
-    api.sync(api.contracts.create(entity1, contract, 5048))
+    api.sync(api.contracts.create(entity1, contract, 10000000))
 
     # transfer from one to the other using our newly deployed contract
-    fet_tx_fee = 40
+    fet_tx_fee = 1000000
     api.sync(contract.action(api, 'buildModel', fet_tx_fee, [entity1]))
 
 
