@@ -21,12 +21,6 @@ from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.contract import SmartContract
 from fetchai.ledger.crypto import Entity, Address
 
-# TODO - modify BuildModel to be simply load a graphSaveParams
-# TODO - calling AddData on dataloader every time we call train might be expensive; we need to add a method for update train data/labels
-# TODO - implement scalar normalisation
-#
-#
-
 CONTRACT_TEXT = """
 
 persistent graph_state : Graph;
