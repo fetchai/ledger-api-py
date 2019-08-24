@@ -30,6 +30,10 @@ persistent dataloader_state : DataLoader;
 persistent optimiser_state : Optimiser;
 persistent historics_state : Tensor;
 
+// Smart contract initialisation sets up our graph, dataloader, and optimiser
+// in this example we hard-code some values such as the expected input data size
+// we could, however, easily add new methods that overwrite these values and 
+// update the dataloader/optimiser as necessary
 @init
 function setup(owner : Address)
 
@@ -61,15 +65,14 @@ function setup(owner : Address)
   tensor_shape[2] = 1u64;                 // batch size == 1
   var historics = historics_state.get(Tensor(tensor_shape));
   historics_state.set(historics);
-
-  print("############################################################ finished init");
   
 endfunction
 
+// Method initial graph setup (we could forgo adding ops/layers
+// if the graph would later be set via a call to updateGraph)
 function graphSetup(g : Graph)
 
     // set up the computation graph
-    
     var conv1D_1_filters        = 16;
     var conv1D_1_input_channels = 1;
     var conv1D_1_kernel_size    = 377;
@@ -91,9 +94,9 @@ function graphSetup(g : Graph)
     g.addConv1D("Output", "dropout_1", conv1D_2_filters, conv1D_2_input_channels,
                             conv1D_2_kernel_size, conv1D_2_stride);
     g.addMeanSquareErrorLoss("Error", "Output", "Label");
-
 endfunction
 
+// Method to set new historics as data changes
 @action
 function setHistorics(new_historics: String)
     use historics_state;
@@ -102,6 +105,7 @@ function setHistorics(new_historics: String)
     historics_state.set(historics);
 endfunction
 
+// Method to make a single prediction based on currently set historics
 @action
 function makePrediction() : String
     use graph_state;
@@ -112,24 +116,44 @@ function makePrediction() : String
 
     g.setInput("Input", historics);
     var prediction = g.evaluate("Output");
+    
+    prediction.squeeze();
 
     return prediction.toString();
 
 endfunction
 
+// Method for overwriting the current graph
+// this can be used either to update the weights
+// or to replace with a totally new model
 @action
-function train(train_data: Tensor, train_labels: Tensor)
+function updateGraph(g : Graph)
+    use graph_state;
+    graph_state.set(g);
+endfunction
 
+// method to train the existing graph with current historics data
+// labels must be provided
+@action
+function train(train_labels_string: String)
+    use historics_state;
     use graph_state;
     use dataloader_state;
     use optimiser_state;
     
     // retrieve the latest graph
     var g = graph_state.get();
+    
+    // retrieve the historics
+    var historics = historics_state.get();
  
-    // retrieve dataloader and set up the training data and labels
+    // retrieve dataloader
     var dataloader = dataloader_state.get();
-    dataloader.addData(train_data, train_labels);
+    
+    // add the historics as training data, and add provided labels
+    var train_labels : Tensor;
+    train_labels.fromString(train_labels_string);
+    dataloader.addData(historics, train_labels);
      
     // retrieve the optimiser
     var optimiser = optimiser_state.get();
@@ -163,14 +187,15 @@ def main():
     # deploy the contract to the network
     api.sync(api.contracts.create(entity1, contract, 1000000000))
 
-    # set random historics
+    # set one real example input data set
     fet_tx_fee = 100000000
-    api.sync(contract.action(api, 'setHistorics', fet_tx_fee, [entity1], "this is a string, hello!!!!"))
-    # api.sync(contract.action(api, 'setHistorics', fet_tx_fee, [entity1]))
-    #
-    # # make a prediction
-    # fet_tx_fee = 1000000000
-    # api.sync(contract.action(api, 'makePrediction', fet_tx_fee, [entity1]))
+    api.sync(contract.action(api, 'setHistorics', fet_tx_fee, [entity1], EXAMPLE_INPUT_HISTORICS))
+
+    # make a prediction
+    fet_tx_fee = 1000000000
+
+    # TODO - how to get return value here?
+    api.sync(contract.action(api, 'makePrediction', fet_tx_fee, [entity1]))
 
 if __name__ == '__main__':
     main()
