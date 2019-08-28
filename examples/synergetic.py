@@ -22,13 +22,13 @@ function evaluateWork(problem : Int32, solution : Int32 ) : Int64
 endfunction
 
 @work
-function doWork(problem : Int32, nonce : BigUInt) :  Int32
+function doWork(problem : Int32, nonce : UInt256) :  Int32
   return nonce.toInt32();
 endfunction
 
 @clear
 function applyWork(problem : Int32, solution : Int32)
-  var result = State<Int32>("solution", 0);
+  var result = State<Int32>("solution");
   result.set(solution);
 endfunction
 
@@ -52,7 +52,7 @@ def main():
     api.sync(api.contracts.create(entity, synergy_contract, 4096))
 
     # create a whole series of random data to submit to the DAG
-    random_ints = [random.randint(0, 200) for _ in range(4000)]
+    random_ints = [random.randint(0, 200) for _ in range(10)]
     api.sync([api.synergetic.submit_data(entity, synergy_contract.digest, value=value) for value in random_ints])
 
 
