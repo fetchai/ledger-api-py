@@ -127,8 +127,10 @@ endfunction
 // this can be used either to update the weights
 // or to replace with a totally new model
 @action
-function updateGraph(g : Graph)
+function updateGraph(graph_string : String)
     use graph_state;
+    var g = graph_state.get();
+    g = g.deserializeFromString(graph_string);
     graph_state.set(g);
 endfunction
 
