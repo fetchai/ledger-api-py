@@ -2,6 +2,8 @@ import binascii
 
 
 class BitVector:
+    """This class is a bare bones implementation of BitVector for use by the API.
+    """
 
     @staticmethod
     def from_bytes(data: bytes, bit_size: int):
