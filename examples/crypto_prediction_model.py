@@ -198,17 +198,19 @@ def main():
 
         print("updating smart contract graph...")
         api.sync(contract.action(api, 'updateGraph', fet_tx_fee, [entity1], obj))
-    #
-    # # set one real example input data set
-    # fet_tx_fee = 100000000
-    # api.sync(contract.action(api, 'setHistorics', fet_tx_fee, [entity1], EXAMPLE_INPUT_HISTORICS))
-    #
-    # current_historics = contract.query(api, 'getHistorics')
-    # print("current historics: " + current_historics)
-    #
-    # # make a prediction
-    # current_prediction = contract.query(api, 'makePrediction')
-    # print("current prediction: " + current_prediction)
+
+    print("finished updating smart contract graph")
+
+    # set one real example input data set
+    fet_tx_fee = 100000000
+    api.sync(contract.action(api, 'setHistorics', fet_tx_fee, [entity1], EXAMPLE_INPUT_HISTORICS))
+
+    current_historics = contract.query(api, 'getHistorics')
+    print("current historics: " + current_historics)
+
+    # make a prediction
+    current_prediction = contract.query(api, 'makePrediction')
+    print("current prediction: " + current_prediction)
 
 if __name__ == '__main__':
     main()
