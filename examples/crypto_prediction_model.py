@@ -119,8 +119,7 @@ endfunction
 function makePrediction() : String
     use prediction_state;
     var pred = prediction_state.get();
-    var squeezed_pred = pred.squeeze();
-    return squeezed_pred.toString();
+    return pred.toString();
 endfunction
 
 // Method for overwriting the current graph
@@ -187,21 +186,29 @@ def main():
     # deploy the contract to the network
     api.sync(api.contracts.create(entity1, contract, 1000000000))
 
-    # set one real example input data set
-    fet_tx_fee = 100000000
-    api.sync(contract.action(api, 'setHistorics', fet_tx_fee, [entity1], EXAMPLE_INPUT_HISTORICS))
-
-    current_historics = contract.query(api, 'getHistorics')
-    print("current historics: " + current_historics)
-
-    # make a prediction
-    current_prediction = contract.query(api, 'makePrediction')
-    print("current prediction: " + current_prediction)
-
     # update the graph with a new model
+    fet_tx_fee = 100000000
     with open(GRAPH_FILE_NAME, mode='rb') as file:
-        obj = base64.b64encode(file.read()).decode()
+        print("reading in graph file...")
+        rfile = file.read()
+
+        print("encoding to base64 string...")
+        b64obj = base64.b64encode(rfile)
+        obj = b64obj.decode()
+
+        print("updating smart contract graph...")
         api.sync(contract.action(api, 'updateGraph', fet_tx_fee, [entity1], obj))
+    #
+    # # set one real example input data set
+    # fet_tx_fee = 100000000
+    # api.sync(contract.action(api, 'setHistorics', fet_tx_fee, [entity1], EXAMPLE_INPUT_HISTORICS))
+    #
+    # current_historics = contract.query(api, 'getHistorics')
+    # print("current historics: " + current_historics)
+    #
+    # # make a prediction
+    # current_prediction = contract.query(api, 'makePrediction')
+    # print("current prediction: " + current_prediction)
 
 if __name__ == '__main__':
     main()
