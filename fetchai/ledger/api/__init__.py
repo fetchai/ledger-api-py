@@ -15,13 +15,13 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+
 import time
 from datetime import datetime, timedelta
 from typing import Sequence, Union
 
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .contracts import ContractsApi
-from .synergetic import SynergeticApi
 from .token import TokenApi
 from .tx import TransactionApi
 
@@ -41,10 +41,8 @@ class LedgerApi:
         self.tokens = TokenApi(host, port)
         self.contracts = ContractsApi(host, port)
         self.tx = TransactionApi(host, port)
-        self.synergetic = SynergeticApi(host, port)
 
     def sync(self, txs: Transactions):
-
         # given the inputs make sure that we correctly for the input set of values
         if isinstance(txs, str):
             remaining = {txs}
@@ -53,7 +51,7 @@ class LedgerApi:
         else:
             raise TypeError('Unknown argument type')
 
-        limit = timedelta(minutes=2)
+        limit = timedelta(seconds=5)
         start = datetime.now()
         while True:
 
@@ -63,6 +61,8 @@ class LedgerApi:
             # once we have completed all the outstanding transactions
             if len(remaining) == 0:
                 break
+            else:
+                print('Waiting to sync',len(remaining),'transactions',str(remaining))
 
             # time out mode
             delta_time = datetime.now() - start
@@ -72,4 +72,6 @@ class LedgerApi:
             time.sleep(1)
 
     def _poll(self, digest):
-        return self.tx.status(digest) in ('Executed', 'Submitted')
+        status = self.tx.status(digest)
+        print('status',status)
+        return status in ('Executed', 'Submitted')

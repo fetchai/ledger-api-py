@@ -121,12 +121,8 @@ class Transaction:
     def target_chain_code(self, chain_code_id: str, mask: BitVector):
         self._contract_digest = None
         self._contract_address = None
-        self._chain_code = str(chain_code_id)
         self._shard_mask = BitVector(mask)
-
-    def target_synergetic(self, digest: Address):
-        self._contract_digest = Address(digest)
-        self._shard_mask = BitVector()
+        self._chain_code = str(chain_code_id)
 
     def add_signer(self, signer: Identity):
         if signer not in self._signers:

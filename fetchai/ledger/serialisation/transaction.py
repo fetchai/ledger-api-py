@@ -33,7 +33,10 @@ def _map_contract_mode(payload: Transaction):
             return CHAIN_CODE
         assert payload.contract_digest is not None
 
-        return SMART_CONTRACT if payload.contract_address else SYNERGETIC
+        if payload.action == 'data':
+            return SYNERGETIC
+
+        return SMART_CONTRACT
     else:
         return NO_CONTRACT
 
@@ -56,6 +59,8 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
 
     # determine the node of the contract
     contract_mode = _map_contract_mode(payload)
+
+    print('contract_mode', contract_mode)  # ???
 
     header1 = contract_mode << 6
     header1 |= signalled_signatures & 0x3f
@@ -110,14 +115,12 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
                 buffer.write(_byte(contract_header))
                 buffer.write(shard_mask_bytes)
 
-        if SMART_CONTRACT == contract_mode:
+        if SMART_CONTRACT == contract_mode or  SYNERGETIC == contract_mode:
             address.encode(buffer, payload.contract_digest)
             address.encode(buffer, payload.contract_address)
         elif CHAIN_CODE == contract_mode:
             encoded_chain_code = payload.chain_code.encode('ascii')
             bytearray.encode(buffer, encoded_chain_code)
-        elif SYNERGETIC == contract_mode:
-            address.encode(buffer, payload.contract_digest)
         else:
             assert False
 
@@ -241,7 +244,7 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
                 # extract the mask from the next N bytes
                 shard_mask = BitVector.from_bytes(stream.read(byte_length), bit_length)
 
-        if contract_type == SMART_CONTRACT:
+        if contract_type == SMART_CONTRACT or contract_type == SYNERGETIC:
             contract_digest = address.decode(stream)
             contract_address = address.decode(stream)
 

@@ -1,12 +1,6 @@
-import json
-from typing import Union
-
-from .api import ContractsApi, LedgerApi
-
-ContractsApiLike = Union[ContractsApi, LedgerApi]
-
 import base64
 import hashlib
+import json
 import re
 from typing import Union, List
 
@@ -23,17 +17,39 @@ def _compute_digest(source) -> Address:
 
 
 class Contract:
-    TYPE = None
-
-    def __init__(self, source: str):
+    def __init__(self, source: str, type: str):  # ???temporary ctor param
         self._source = str(source)
         self._digest = _compute_digest(self._source)
+        self.type = type
+        self._owner = None
+
+        # Quick and easy method to inspecting the contract source and generating a set of action and query names. To
+        # be replaced in the future with a more fault tolerant approach
+        ugly = ' '.join(map(lambda x: x.strip(), source.splitlines()))
+        self._actions = set(re.findall(r'@action function (\w+)\(', ugly))
+        self._queries = set(re.findall(r'@query function (\w+)\(', ugly))
 
     def dumps(self):
         return json.dumps(self._to_json_object())
 
     def dump(self, fp):
         return json.dump(self._to_json_object(), fp)
+
+    @classmethod
+    def loads(cls, s):
+        return cls._from_json_object(json.loads(s))
+
+    @classmethod
+    def load(cls, fp):
+        return cls._from_json_object(json.load(fp))
+
+    @property
+    def owner(self):
+        return self._owner
+
+    @owner.setter
+    def owner(self, owner):
+        self._owner = Address(owner)
 
     @property
     def source(self):
@@ -47,44 +63,7 @@ class Contract:
     def encoded_source(self):
         return base64.b64encode(self.source.encode('ascii')).decode()
 
-    def _to_json_object(self):
-        raise NotImplementedError()
-
-
-class SmartContract(Contract):
-    TYPE = 'smart'
-
-    @classmethod
-    def loads(cls, s):
-        return cls._from_json_object(json.loads(s))
-
-    @classmethod
-    def load(cls, fp):
-        return cls._from_json_object(json.load(fp))
-
-    def __init__(self, source: str):
-        super(SmartContract, self).__init__(source)
-
-        self._owner = None
-
-        # Quick and easy method to inspecting the contract source and generating a set of action and query names. To
-        # be replaced in the future with a more fault tolerant approach
-        ugly = ' '.join(map(lambda x: x.strip(), source.splitlines()))
-        self._actions = set(re.findall(r'@action function (\w+)\(', ugly))
-        self._queries = set(re.findall(r'@query function (\w+)\(', ugly))
-
-    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args):
-        if self._owner is None:
-            raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
-
-        if name not in self._actions:
-            raise RuntimeError(
-                '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
-
-        return self._api(api).action(self._digest, self._owner, name, fee, signers, *args)
-
     def query(self, api: ContractsApiLike, name: str, **kwargs):
-
         if self._owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any queries. Did you deploy it?')
 
@@ -103,13 +82,15 @@ class SmartContract(Contract):
 
         return response['result']
 
-    @property
-    def owner(self):
-        return self._owner
+    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args):
+        if self._owner is None:
+            raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
 
-    @owner.setter
-    def owner(self, owner):
-        self._owner = Address(owner)
+        if name not in self._actions:
+            raise RuntimeError(
+                '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
+
+        return self._api(api).action(self._digest, self._owner, name, fee, signers, *args)
 
     @staticmethod
     def _api(api: ContractsApiLike):
@@ -120,14 +101,12 @@ class SmartContract(Contract):
         else:
             assert False
 
-    @classmethod
-    def _from_json_object(cls, obj):
+    @staticmethod
+    def _from_json_object(obj):
         assert obj['version'] == 1
-        assert obj['type'] == cls.TYPE
-
         source = base64.b64decode(obj['source']).decode()
+        sc = Contract(source, obj['type'])
 
-        sc = SmartContract(source)
         owner = obj['owner']
         if owner is not None:
             sc.owner = owner
@@ -137,36 +116,7 @@ class SmartContract(Contract):
     def _to_json_object(self):
         return {
             'version': 1,
-            'type': self.TYPE,
+            'type': self.type,
             'owner': None if self._owner is None else str(self._owner),
-            'source': self.encoded_source,
-        }
-
-
-class SynergeticContract(Contract):
-    TYPE = 'synergetic'
-
-    @classmethod
-    def loads(cls, s):
-        return cls._from_json_object(json.loads(s))
-
-    @classmethod
-    def load(cls, fp):
-        return cls._from_json_object(json.load(fp))
-
-    def __init__(self, source: str):
-        super(SynergeticContract, self).__init__(source)
-
-    @classmethod
-    def _from_json_object(cls, obj):
-        assert obj['version'] == 1
-        assert obj['type'] == cls.TYPE
-        source = base64.b64decode(obj['source']).decode()
-        return SynergeticContract(source)
-
-    def _to_json_object(self):
-        return {
-            'version': 1,
-            'type': self.TYPE,
             'source': self.encoded_source,
         }
