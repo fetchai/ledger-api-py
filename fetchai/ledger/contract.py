@@ -17,10 +17,10 @@ def _compute_digest(source) -> Address:
 
 
 class Contract:
-    def __init__(self, source: str, type: str):  # ???temporary ctor param
+    def __init__(self, source: str, contract_type: str):  # ???temporary ctor param
         self._source = str(source)
         self._digest = _compute_digest(self._source)
-        self.type = type
+        self.type = contract_type
         self._owner = None
 
         # Quick and easy method to inspecting the contract source and generating a set of action and query names. To
@@ -118,5 +118,5 @@ class Contract:
             'version': 1,
             'type': self.type,
             'owner': None if self._owner is None else str(self._owner),
-            'source': self.encoded_source,
+            'source': self.encoded_source
         }
