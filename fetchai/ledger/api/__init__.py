@@ -51,7 +51,7 @@ class LedgerApi:
         else:
             raise TypeError('Unknown argument type')
 
-        limit = timedelta(seconds=5)
+        limit = timedelta(seconds=30)
         start = datetime.now()
         while True:
 
@@ -73,5 +73,5 @@ class LedgerApi:
 
     def _poll(self, digest):
         status = self.tx.status(digest)
-        print('status',status)
+        print('status',status, digest)
         return status in ('Executed', 'Submitted')

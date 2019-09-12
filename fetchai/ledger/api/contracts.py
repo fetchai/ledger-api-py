@@ -54,12 +54,15 @@ class ContractsApi(ApiEndpoint):
         tx.data = self._encode_json(dict(**kwargs))
         tx.add_signer(entity)
 
-        print('??? submit_data')
-        # print('??? from_address', tx.from_address)
-        # print('??? contract_address', tx.contract_address)
-
         # encode the transaction
         encoded_tx = encode_transaction(tx, [entity])
+
+        print('')
+        print('??? submit_data')
+        print('??? from_address', tx.from_address)
+        print('??? contract_address', tx.contract_address)
+        print('??? entity.public_key_hex', entity.public_key_hex)
+        print('')
 
         # submit the transaction to the catch-all endpoint
         return self._post_tx_json(encoded_tx, None)
