@@ -36,7 +36,7 @@ def main():
 
     # load up the deployed contract
     with open('sample.contract', 'r') as contract_file:
-        contract = Contract.load(contract_file)  # ???cannot specify type - will not work unless extra param removed
+        contract = Contract.load(contract_file)
 
     # for the purposes of this example create a second private key pair to transfer funds to
     entity2 = Entity()

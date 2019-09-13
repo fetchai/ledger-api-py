@@ -9,7 +9,7 @@ CONTRACT_TEXT = """\
 @problem
 function createProblem(data : Array<StructuredData>) : Int32
   var value = 0;
-  for (i in 0:data.count() - 1)
+  for (i in 0:data.count())
     value += data[i].getInt32("value");
   endfor
   return value;
@@ -50,7 +50,7 @@ def main():
     print('Setup...complete')
 
     # create the contract on the ledger
-    synergetic_contract = Contract(CONTRACT_TEXT, 'synergetic')  # ???temporary
+    synergetic_contract = Contract(CONTRACT_TEXT)
     print(synergetic_contract.digest)
 
     api.sync(api.contracts.create(entity, synergetic_contract, 4096))
@@ -63,10 +63,8 @@ def main():
 
     time.sleep(10)
 
-    print('*' * 50, 'Submit query')
-
     result = synergetic_contract.query(api, 'query_result')
-    print('*' * 50, 'Query result:', result)
+    print('Query result:', result)
 
 
 if __name__ == '__main__':

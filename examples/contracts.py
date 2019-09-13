@@ -77,7 +77,7 @@ def main():
     api.sync(api.tokens.wealth(entity1, 10000))
 
     # create the smart contract
-    contract = Contract(CONTRACT_TEXT, 'smart')  # ???temporary
+    contract = Contract(CONTRACT_TEXT)
 
     # deploy the contract to the network
     api.sync(api.contracts.create(entity1, contract, 2000))

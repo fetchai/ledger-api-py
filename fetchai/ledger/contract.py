@@ -17,10 +17,9 @@ def _compute_digest(source) -> Address:
 
 
 class Contract:
-    def __init__(self, source: str, contract_type: str):  # ???temporary ctor param
+    def __init__(self, source: str):
         self._source = str(source)
         self._digest = _compute_digest(self._source)
-        self.type = contract_type
         self._owner = None
 
         # Quick and easy method to inspecting the contract source and generating a set of action and query names. To
@@ -105,7 +104,7 @@ class Contract:
     def _from_json_object(obj):
         assert obj['version'] == 1
         source = base64.b64decode(obj['source']).decode()
-        sc = Contract(source, obj['type'])
+        sc = Contract(source)
 
         owner = obj['owner']
         if owner is not None:
@@ -116,7 +115,6 @@ class Contract:
     def _to_json_object(self):
         return {
             'version': 1,
-            'type': self.type,
             'owner': None if self._owner is None else str(self._owner),
             'source': self.encoded_source
         }

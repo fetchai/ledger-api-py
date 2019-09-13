@@ -30,7 +30,7 @@ class ContractTests(unittest.TestCase):
     def test_dumps_and_loads(self):
         # create the contract
         owner = Entity()
-        orig = Contract(CONTRACT_TEXT, 'smart')  # ???temporary
+        orig = Contract(CONTRACT_TEXT)
         orig.owner = owner
 
         # encode the contract
@@ -47,7 +47,7 @@ class ContractTests(unittest.TestCase):
 
     def test_dumps_and_loads_without_owner(self):
         # create the contract
-        orig = Contract(CONTRACT_TEXT, 'smart')  # ???temporary
+        orig = Contract(CONTRACT_TEXT)
 
         # encode the contract
         encoded = orig.dumps()

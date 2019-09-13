@@ -60,8 +60,6 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
     # determine the node of the contract
     contract_mode = _map_contract_mode(payload)
 
-    print('contract_mode', contract_mode)  # ???
-
     header1 = contract_mode << 6
     header1 |= signalled_signatures & 0x3f
 
