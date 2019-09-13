@@ -11,8 +11,6 @@ class TransactionApi(ApiEndpoint):
         """
 
         url = 'http://{}:{}/api/status/tx/{}'.format(self.host, self.port, tx_digest)
-        response = self._session.get(url)
-        print('response', response)
-        response_json = response.json()
 
-        return response_json.get('status')
+        response = self._session.get(url).json()
+        return response.get('status')
