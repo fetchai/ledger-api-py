@@ -28,8 +28,7 @@ class ContractsApi(ApiEndpoint):
         tx.action = ENDPOINT
         tx.data = self._encode_json({
             'text': contract.encoded_source,
-            'digest': contract.digest.to_hex(),
-            'type': contract.type
+            'digest': contract.digest.to_hex()
         })
         tx.add_signer(owner)
 
