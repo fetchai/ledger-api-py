@@ -53,16 +53,14 @@ class LedgerApi:
 
         limit = timedelta(seconds=30)
         start = datetime.now()
-        while True:
 
+        while True:
             # loop through all the remaining digests and poll them creating a set of completed in this round
             remaining -= set([digest for digest in remaining if self._poll(digest)])
 
             # once we have completed all the outstanding transactions
             if len(remaining) == 0:
                 break
-            else:
-                print('Waiting to sync',len(remaining),'transactions',str(remaining))
 
             # time out mode
             delta_time = datetime.now() - start
@@ -72,6 +70,4 @@ class LedgerApi:
             time.sleep(1)
 
     def _poll(self, digest):
-        status = self.tx.status(digest)
-        print('status',status, digest)
-        return status in ('Executed', 'Submitted')
+        return self.tx.status(digest) in ('Executed', 'Submitted')

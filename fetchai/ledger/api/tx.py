@@ -2,7 +2,6 @@ from .common import ApiEndpoint
 
 
 class TransactionApi(ApiEndpoint):
-
     def status(self, tx_digest):
         """
         Determines the status of the transaction at the node
@@ -12,6 +11,8 @@ class TransactionApi(ApiEndpoint):
         """
 
         url = 'http://{}:{}/api/status/tx/{}'.format(self.host, self.port, tx_digest)
+        response = self._session.get(url)
+        print('response', response)
+        response_json = response.json()
 
-        response = self._session.get(url).json()
-        return response.get('status')
+        return response_json.get('status')
