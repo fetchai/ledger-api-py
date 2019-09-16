@@ -1,12 +1,6 @@
-import json
-from typing import Union
-
-from .api import ContractsApi, LedgerApi
-
-ContractsApiLike = Union[ContractsApi, LedgerApi]
-
 import base64
 import hashlib
+import json
 import re
 from typing import Union, List
 
