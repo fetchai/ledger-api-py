@@ -1,5 +1,4 @@
 import random
-import time
 
 from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.contract import Contract
@@ -51,18 +50,21 @@ def main():
 
     # create the contract on the ledger
     synergetic_contract = Contract(CONTRACT_TEXT)
-    print(synergetic_contract.digest)
-
-    api.sync(api.contracts.create(entity, synergetic_contract, 4096))
+    print('Create contract')
+    create_contract_tx = api.contracts.create(entity, synergetic_contract, 4096)
+    print('Creation sync...')
+    api.sync(create_contract_tx)
+    print('Contract submitted ({}.{}).'.format(synergetic_contract.digest.to_hex(), synergetic_contract.owner))
 
     # create a whole series of random data to submit to the DAG
     random_ints = [random.randint(0, 200) for _ in range(10)]
     api.sync([api.contracts.submit_data(entity, synergetic_contract.digest, value=value) for value in random_ints])
+    print('Data submitted.')
 
     print('Waiting...')
+    api.wait_for_n_blocks(10)
 
-    time.sleep(10)
-
+    print('Issuing query...')
     result = synergetic_contract.query(api, 'query_result')
     print('Query result:', result)
 

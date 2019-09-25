@@ -42,7 +42,8 @@ class LedgerApi:
         self.contracts = ContractsApi(host, port)
         self.tx = TransactionApi(host, port)
 
-    def sync(self, txs: Transactions):
+    def sync(self, txs: Transactions, timeout=None):
+        timeout = int(timeout or 120)
         # given the inputs make sure that we correctly for the input set of values
         if isinstance(txs, str):
             remaining = {txs}
@@ -51,7 +52,7 @@ class LedgerApi:
         else:
             raise TypeError('Unknown argument type')
 
-        limit = timedelta(seconds=30)
+        limit = timedelta(seconds=timeout)
         start = datetime.now()
 
         while True:
@@ -71,3 +72,11 @@ class LedgerApi:
 
     def _poll(self, digest):
         return self.tx.status(digest) in ('Executed', 'Submitted')
+
+    def wait_for_n_blocks(self, n):
+        initial = self.tokens._current_block_number()
+        while True:
+            time.sleep(1)
+            current = self.tokens._current_block_number()
+            if current > initial + n:
+                break
