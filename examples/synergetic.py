@@ -50,10 +50,8 @@ def main():
 
     # create the contract on the ledger
     synergetic_contract = Contract(CONTRACT_TEXT)
-    print('Create contract')
-    create_contract_tx = api.contracts.create(entity, synergetic_contract, 4096)
-    print('Creation sync...')
-    api.sync(create_contract_tx)
+    print('Creating contract..')
+    api.sync(api.contracts.create(entity, synergetic_contract, 4096))
     print('Contract submitted ({}.{}).'.format(synergetic_contract.digest.to_hex(), synergetic_contract.owner))
 
     # create a whole series of random data to submit to the DAG
