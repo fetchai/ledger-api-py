@@ -50,6 +50,7 @@ class ContractsApi(ApiEndpoint):
         tx.charge_rate = 1
         tx.charge_limit = 1000000000000
         tx.action = 'data'
+        tx.synergetic_data_submission = True
         tx.data = self._encode_json(dict(**kwargs))
         tx.add_signer(entity)
 

@@ -91,6 +91,7 @@ class TransactionSerialisation(unittest.TestCase):
         payload.charge_rate = 1
         payload.charge_limit = 1000000000000
         payload.action = 'data'
+        payload.synergetic_data_submission = True
         payload.data = json.dumps({'value': 1234}).encode('ascii')
         payload.add_signer(IDENTITIES[0])
 

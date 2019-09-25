@@ -28,13 +28,13 @@ def _byte(value: int) -> bytes:
 
 
 def _map_contract_mode(payload: Transaction):
+    if payload.synergetic_data_submission:
+        return SYNERGETIC
+
     if payload.action:
         if payload.chain_code:
             return CHAIN_CODE
         assert payload.contract_digest is not None
-
-        if payload.action == 'data':
-            return SYNERGETIC
 
         return SMART_CONTRACT
     else:
@@ -113,7 +113,7 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
                 buffer.write(_byte(contract_header))
                 buffer.write(shard_mask_bytes)
 
-        if SMART_CONTRACT == contract_mode or  SYNERGETIC == contract_mode:
+        if SMART_CONTRACT == contract_mode or SYNERGETIC == contract_mode:
             address.encode(buffer, payload.contract_digest)
             address.encode(buffer, payload.contract_address)
         elif CHAIN_CODE == contract_mode:
