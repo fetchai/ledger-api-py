@@ -60,7 +60,7 @@ def main():
     print('Data submitted.')
 
     print('Waiting...')
-    api.wait_for_n_blocks(10)
+    api.wait_for_blocks(10)
 
     print('Issuing query...')
     result = synergetic_contract.query(api, 'query_result')

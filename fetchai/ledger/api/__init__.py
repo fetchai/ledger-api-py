@@ -73,7 +73,7 @@ class LedgerApi:
     def _poll(self, digest):
         return self.tx.status(digest) in ('Executed', 'Submitted')
 
-    def wait_for_n_blocks(self, n):
+    def wait_for_blocks(self, n):
         initial = self.tokens._current_block_number()
         while True:
             time.sleep(1)
