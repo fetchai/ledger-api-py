@@ -6,7 +6,6 @@ from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity
 from fetchai.ledger.serialisation import encode_transaction
 from fetchai.ledger.transaction import Transaction
-# from fetchai.ledger.serialisation.objects.transaction_api import create_json_tx
 from .common import ApiEndpoint
 
 EntityList = List[Entity]
@@ -29,8 +28,7 @@ class ContractsApi(ApiEndpoint):
         tx.action = ENDPOINT
         tx.data = self._encode_json({
             'text': contract.encoded_source,
-            'digest': contract.digest.to_hex(),
-            'type': contract.TYPE,
+            'digest': contract.digest.to_hex()
         })
         tx.add_signer(owner)
 
@@ -42,6 +40,25 @@ class ContractsApi(ApiEndpoint):
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
+
+    def submit_data(self, entity: Entity, digest: Address, **kwargs):
+        # build up the basic transaction information
+        tx = Transaction()
+        tx.from_address = Address(entity)
+        tx.valid_until = 10000
+        tx.target_contract(digest, Address(entity), BitVector())
+        tx.charge_rate = 1
+        tx.charge_limit = 1000000000000
+        tx.action = 'data'
+        tx.synergetic_data_submission = True
+        tx.data = self._encode_json(dict(**kwargs))
+        tx.add_signer(entity)
+
+        # encode the transaction
+        encoded_tx = encode_transaction(tx, [entity])
+
+        # submit the transaction to the catch-all endpoint
+        return self._post_tx_json(encoded_tx, None)
 
     def query(self, contract_digest: Address, contract_owner: Address, query: str, **kwargs):
         prefix = '{}.{}'.format(contract_digest.to_hex(), str(contract_owner))

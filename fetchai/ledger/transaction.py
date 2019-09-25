@@ -21,6 +21,9 @@ class Transaction:
         self._chain_code = None
         self._shard_mask = BitVector()
         self._action = None
+        self._metadata = {
+            'synergetic_data_submission': False
+        }
         self._data = b''
 
         self._signers = OrderedDict()
@@ -121,12 +124,16 @@ class Transaction:
     def target_chain_code(self, chain_code_id: str, mask: BitVector):
         self._contract_digest = None
         self._contract_address = None
-        self._chain_code = str(chain_code_id)
         self._shard_mask = BitVector(mask)
+        self._chain_code = str(chain_code_id)
 
-    def target_synergetic(self, digest: Address):
-        self._contract_digest = Address(digest)
-        self._shard_mask = BitVector()
+    @property
+    def synergetic_data_submission(self):
+        return self._metadata['synergetic_data_submission']
+
+    @synergetic_data_submission.setter
+    def synergetic_data_submission(self, is_submission):
+        self._metadata['synergetic_data_submission'] = is_submission
 
     def add_signer(self, signer: Identity):
         if signer not in self._signers:

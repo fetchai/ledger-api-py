@@ -18,11 +18,11 @@
 from typing import List
 
 from fetchai.ledger.api import LedgerApi
-from fetchai.ledger.contract import SmartContract
+from fetchai.ledger.contract import Contract
 from fetchai.ledger.crypto import Entity, Address
 
 
-def print_address_balances(api: LedgerApi, contract: SmartContract, addresses: List[Address]):
+def print_address_balances(api: LedgerApi, contract: Contract, addresses: List[Address]):
     for idx, address in enumerate(addresses):
         print('Address{}: {:<6d} bFET {:<10d} TOK'.format(idx, api.tokens.balance(address),
                                                           contract.query(api, 'balance', address=Address(address))))
@@ -36,7 +36,7 @@ def main():
 
     # load up the deployed contract
     with open('sample.contract', 'r') as contract_file:
-        contract = SmartContract.load(contract_file)
+        contract = Contract.load(contract_file)
 
     # for the purposes of this example create a second private key pair to transfer funds to
     entity2 = Entity()

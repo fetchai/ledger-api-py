@@ -17,7 +17,7 @@
 # ------------------------------------------------------------------------------
 
 from fetchai.ledger.api import LedgerApi
-from fetchai.ledger.contract import SmartContract
+from fetchai.ledger.contract import Contract
 from fetchai.ledger.crypto import Entity
 
 CONTRACT_TEXT = """
@@ -54,7 +54,6 @@ endfunction
 
 
 def main():
-
     print('Loading private key...')
 
     # load up the previously created private key
@@ -67,7 +66,7 @@ def main():
     api = LedgerApi('127.0.0.1', 8000)
 
     # create the smart contract
-    contract = SmartContract(CONTRACT_TEXT)
+    contract = Contract(CONTRACT_TEXT)
 
     print('Deploying contract...')
 

@@ -15,13 +15,13 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+
 import time
 from datetime import datetime, timedelta
 from typing import Sequence, Union
 
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .contracts import ContractsApi
-from .synergetic import SynergeticApi
 from .token import TokenApi
 from .tx import TransactionApi
 
@@ -41,10 +41,9 @@ class LedgerApi:
         self.tokens = TokenApi(host, port)
         self.contracts = ContractsApi(host, port)
         self.tx = TransactionApi(host, port)
-        self.synergetic = SynergeticApi(host, port)
 
-    def sync(self, txs: Transactions):
-
+    def sync(self, txs: Transactions, timeout=None):
+        timeout = int(timeout or 120)
         # given the inputs make sure that we correctly for the input set of values
         if isinstance(txs, str):
             remaining = {txs}
@@ -53,10 +52,10 @@ class LedgerApi:
         else:
             raise TypeError('Unknown argument type')
 
-        limit = timedelta(minutes=2)
+        limit = timedelta(seconds=timeout)
         start = datetime.now()
-        while True:
 
+        while True:
             # loop through all the remaining digests and poll them creating a set of completed in this round
             remaining -= set([digest for digest in remaining if self._poll(digest)])
 
@@ -73,3 +72,11 @@ class LedgerApi:
 
     def _poll(self, digest):
         return self.tx.status(digest) in ('Executed', 'Submitted')
+
+    def wait_for_blocks(self, n):
+        initial = self.tokens._current_block_number()
+        while True:
+            time.sleep(1)
+            current = self.tokens._current_block_number()
+            if current > initial + n:
+                break
