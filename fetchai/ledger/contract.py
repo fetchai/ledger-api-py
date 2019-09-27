@@ -1,13 +1,10 @@
 import json
-from typing import Union
 
-from .api import ContractsApi, LedgerApi
-
-ContractsApiLike = Union[ContractsApi, LedgerApi]
+from fetchai.ledger.parser.etch_parser import EtchParser
+from fetchai.ledger.serialisation.shardmask import ShardMask
 
 import base64
 import hashlib
-import re
 from typing import Union, List
 
 from .api import ContractsApi, LedgerApi
@@ -28,6 +25,9 @@ class Contract:
     def __init__(self, source: str):
         self._source = str(source)
         self._digest = _compute_digest(self._source)
+
+        # Etch parser for analysing contract
+        self._parser = EtchParser(self._source)
 
     def dumps(self):
         return json.dumps(self._to_json_object())
@@ -67,11 +67,34 @@ class SmartContract(Contract):
 
         self._owner = None
 
-        # Quick and easy method to inspecting the contract source and generating a set of action and query names. To
-        # be replaced in the future with a more fault tolerant approach
-        ugly = ' '.join(map(lambda x: x.strip(), source.splitlines()))
-        self._actions = set(re.findall(r'@action function (\w+)\(', ugly))
-        self._queries = set(re.findall(r'@query function (\w+)\(', ugly))
+        # Generate set of action and query entry points
+        entries = self._parser.entry_points(['init', 'action', 'query'])
+        if 'action' in entries:
+            self._actions = set(entries['action'])
+        else:
+            self._actions = set()
+
+        if 'query' in entries:
+            self._queries = set(entries['query'])
+        else:
+            self._queries = set()
+
+        assert len(entries['init']) == 1, "Contract requires exactly one @init entry point"
+        self._init = entries['init'][0]
+
+    def create(self, api: ContractsApiLike, owner: Entity, fee: int):
+        # Set contract owner (required for resource prefix)
+        self.owner = owner
+
+        # Generate resource addresses used by persistent globals
+        resource_addresses = ['fetch.contract.state.{}'.format(self.digest.to_hex())]
+        resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
+                                  self._parser.used_globals_to_addresses(self._init, [self._owner]))
+
+        # Generate shard mask from resource addresses
+        shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
+
+        return self._api(api).create(owner, self, fee, shard_mask=shard_mask)
 
     def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args):
         if self._owner is None:
@@ -81,7 +104,14 @@ class SmartContract(Contract):
             raise RuntimeError(
                 '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
 
-        return self._api(api).action(self._digest, self._owner, name, fee, signers, *args)
+        # Generate resource addresses used by persistent globals
+        resource_addresses = [ShardMask.state_to_address(address, self) for address in
+                              self._parser.used_globals_to_addresses(name, list(args))]
+
+        # Generate shard mask from resource addresses
+        shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
+
+        return self._api(api).action(self._digest, self._owner, name, fee, signers, *args, shard_mask=shard_mask)
 
     def query(self, api: ContractsApiLike, name: str, **kwargs):
 

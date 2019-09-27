@@ -1,0 +1,93 @@
+start: instruction+
+
+instruction: "persistent" /sharded/? typed_name";"          -> global_def
+           | function
+           | "@"ANNOTATION function                             -> annotation
+           | "use" NAME [use_shard] ";"                         -> use_global
+           | "//" /.+/                                          -> comment
+           | "var" NAME "=" instruction|TYPE                    -> instantiation
+           | "var" NAME ":" TYPE ";"                            -> declaration
+           | NAME ASSIGNMENT_OP instruction|NUMBER ";"                    -> assignment
+           | "if" "(" bool_expression ")" instruction+ "endif"     -> if_block  // TODO: else/elseif support
+           | "for" "(" NAME "in" range ")" instruction+ "endfor" -> for_block
+           | "return" expression ";"                           -> return
+           | expression ";"
+           | instruction ";"                                    -> line
+
+range: (expression) | (expression ":" expression) | (expression ":" expression ":" expression)
+
+expression: NUMBER
+          | dot_expansion
+          | NAME
+          | STRING_LITERAL
+          | PRE_UNARY expression
+          | expression POST_UNARY
+          | expression BINARY_OP expression
+          | expression input_block          -> function_call
+
+dot_expansion: NAME ("." NAME)+
+
+bool_expression: expression
+               | PRE_UNARY bool_expression
+               | bool_expression COMPARISON bool_expression
+               | bool_expression BOOLEAN_OP bool_expression
+
+function: "function" NAME parameter_block (":" TYPE)? code_block "endfunction"
+
+typed_name: NAME ":" TYPE
+
+parameter_block: "(" (typed_name ","?)* ")"
+
+input_block: "(" (expression ",")* expression? ")"
+
+template_block: "<" TYPE ">"
+
+code_block: instruction+
+
+use_shard: "[" (use_shard_item ","?)+ "]"
+
+use_shard_item: NAME
+              | STRING_LITERAL
+              | string_concat
+
+string_concat: (STRING_LITERAL|NAME) ("+" (STRING_LITERAL|NAME))+
+
+ASSIGNMENT_OP: "="|"+="|"-="|"*="|"/="
+
+BINARY_OP: "+"|"-"|"*"|"/"
+
+POST_UNARY: "++"|"--"
+
+PRE_UNARY: "-"|"!"
+
+COMPARISON: ">="|"<="|"=="|"!="|">"|"<"
+
+BOOLEAN_OP: "||"|"|"|"&&"|"&"
+
+NAME: LETTER (LETTER|"_")*
+// ("[" NUMBER "]")?
+
+NUMBER: INT INLINE_INT?
+
+STRING_LITERAL: (/\"(\\.|[^"\\])*\"/)|(/\'(\\.|[^'\\])*\'/)
+
+TYPE: BASIC_TYPE|TEMPLATE_TYPE|FLOAT_TYPE|FIXED_TYPE|OTHER_TYPE
+
+TEMPLATE_TYPE: OTHER_TYPE "<" (BASIC_TYPE|OTHER_TYPE) ">(" (NAME|NUMBER)? ")"
+
+BASIC_TYPE: "U"? "Int" ("256"|"64"|"32"|"16"|"8")
+
+FLOAT_TYPE: "Float" ("64"|"32")
+
+FIXED_TYPE: "Fixed" ("64"|"32")
+
+OTHER_TYPE: "Boolean"|"Address"|"String"|"State"|"Array"|"StructuredData"|"Graph"|"DataLoader"|"Optimiser"|"Tensor"
+
+INLINE_INT: ("u"|"i") INT
+
+ANNOTATION: "init"|"action"|"query"
+
+%import common.LETTER
+%import common.WS
+%import common.INT
+%ignore WS

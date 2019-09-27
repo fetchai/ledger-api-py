@@ -23,6 +23,22 @@ class BitVector:
         decoded_bytes = binascii.unhexlify(hex_data)
         return cls.from_bytes(decoded_bytes, len(decoded_bytes) * 8)
 
+    @staticmethod
+    def from_array(bit_array: list):
+        bits = BitVector(len(bit_array))
+        for i, v in enumerate(bit_array):
+            if v:
+                bits.set(i, True)
+        return bits
+
+    @staticmethod
+    def from_indices(indices: list, size: int):
+        bits = BitVector(size)
+        for i in indices:
+            assert 0 <= i < size, "Index exceeds list size"
+            bits.set(i, True)
+        return bits
+
     def __init__(self, size=None):
         if size is None:
             size = 0
