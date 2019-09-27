@@ -20,7 +20,7 @@ class ContractsApi(ApiEndpoint):
 
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
-            Warning("Using wildcard shard mask as none supplied")
+            print("WARNING: defaulting to wildcard shard mask as none supplied")
             shard_mask = BitVector()
 
         # build up the basic transaction information
@@ -70,7 +70,7 @@ class ContractsApi(ApiEndpoint):
                *args, shard_mask: BitVector = None):
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
-            Warning("Using wildcard shard mask as none supplied")
+            print("WARNING: defaulting to wildcard shard mask as none supplied")
             shard_mask = BitVector()
 
         # build up the basic transaction information
