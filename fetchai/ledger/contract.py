@@ -1,12 +1,9 @@
-import json
-
 from fetchai.ledger.parser.etch_parser import EtchParser
 from fetchai.ledger.serialisation.shardmask import ShardMask
 
 import base64
 import hashlib
 import json
-import re
 from typing import Union, List
 
 from .api import ContractsApi, LedgerApi
@@ -93,23 +90,6 @@ class Contract:
 
         return self._api(api).create(owner, self, fee, shard_mask=shard_mask)
 
-    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args):
-        if self._owner is None:
-            raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
-
-        if name not in self._actions:
-            raise RuntimeError(
-                '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
-
-        # Generate resource addresses used by persistent globals
-        resource_addresses = [ShardMask.state_to_address(address, self) for address in
-                              self._parser.used_globals_to_addresses(name, list(args))]
-
-        # Generate shard mask from resource addresses
-        shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
-
-        return self._api(api).action(self._digest, self._owner, name, fee, signers, *args, shard_mask=shard_mask)
-
     def query(self, api: ContractsApiLike, name: str, **kwargs):
         if self._owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any queries. Did you deploy it?')
@@ -128,6 +108,23 @@ class Contract:
                 raise RuntimeError('Failed to make requested query with no error message.')
 
         return response['result']
+
+    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args):
+        if self._owner is None:
+            raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
+
+        if name not in self._actions:
+            raise RuntimeError(
+                '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
+
+        # Generate resource addresses used by persistent globals
+        resource_addresses = [ShardMask.state_to_address(address, self) for address in
+                              self._parser.used_globals_to_addresses(name, list(args))]
+
+        # Generate shard mask from resource addresses
+        shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
+
+        return self._api(api).action(self._digest, self._owner, name, fee, signers, *args, shard_mask=shard_mask)
 
     @staticmethod
     def _api(api: ContractsApiLike):
