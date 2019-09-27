@@ -12,9 +12,5 @@ setup(
     extras_require={
         'dev': ['check-manifest', 'pydot'],
         'test': ['coverage', 'pytest'],
-    },
-    entry_points={
-        'console_scripts': [
-        ],
-    },
+    }
 )

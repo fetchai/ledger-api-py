@@ -2,7 +2,6 @@ from .common import ApiEndpoint
 
 
 class TransactionApi(ApiEndpoint):
-
     def status(self, tx_digest):
         """
         Determines the status of the transaction at the node

@@ -1,6 +1,6 @@
 import unittest
 
-from fetchai.ledger.contract import SmartContract
+from fetchai.ledger.contract import Contract
 from fetchai.ledger.crypto import Entity
 
 CONTRACT_TEXT = """
@@ -26,37 +26,37 @@ endfunction
 """
 
 
-class SmartContractTests(unittest.TestCase):
+class ContractTests(unittest.TestCase):
     def test_dumps_and_loads(self):
         # create the contract
         owner = Entity()
-        orig = SmartContract(CONTRACT_TEXT)
+        orig = Contract(CONTRACT_TEXT)
         orig.owner = owner
 
         # encode the contract
         encoded = orig.dumps()
 
         # re-create the contract
-        new = SmartContract.loads(encoded)
+        new = Contract.loads(encoded)
 
         # checks
-        self.assertIsInstance(new, SmartContract)
+        self.assertIsInstance(new, Contract)
         self.assertEqual(orig.owner, new.owner)
         self.assertEqual(orig.digest, new.digest)
         self.assertEqual(orig.source, new.source)
 
     def test_dumps_and_loads_without_owner(self):
         # create the contract
-        orig = SmartContract(CONTRACT_TEXT)
+        orig = Contract(CONTRACT_TEXT)
 
         # encode the contract
         encoded = orig.dumps()
 
         # re-create the contract
-        new = SmartContract.loads(encoded)
+        new = Contract.loads(encoded)
 
         # checks
-        self.assertIsInstance(new, SmartContract)
+        self.assertIsInstance(new, Contract)
         self.assertEqual(orig.owner, new.owner)
         self.assertEqual(orig.digest, new.digest)
         self.assertEqual(orig.source, new.source)

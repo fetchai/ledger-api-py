@@ -15,7 +15,6 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-import time
 
 from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.crypto import Entity

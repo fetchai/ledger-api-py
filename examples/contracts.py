@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from typing import List
 
 from fetchai.ledger.api import LedgerApi, TokenApi
-from fetchai.ledger.contract import SmartContract
+from fetchai.ledger.contract import Contract
 from fetchai.ledger.crypto import Entity, Address
 
 CONTRACT_TEXT = """
@@ -55,7 +55,7 @@ endfunction
 """
 
 
-def print_address_balances(api: LedgerApi, contract: SmartContract, addresses: List[Address]):
+def print_address_balances(api: LedgerApi, contract: Contract, addresses: List[Address]):
     for idx, address in enumerate(addresses):
         print('Address{}: {:<6d} bFET {:<10d} TOK'.format(idx, api.tokens.balance(address),
                                                           contract.query(api, 'balance', address=address)))
@@ -98,7 +98,7 @@ def main():
     api.sync(api.tokens.wealth(entity1, 10000))
 
     # create the smart contract
-    contract = SmartContract(CONTRACT_TEXT)
+    contract = Contract(CONTRACT_TEXT)
 
     with track_cost(api.tokens, entity1, "Cost of creation: "):
         api.sync(contract.create(api, entity1, 4000))

@@ -1,16 +1,14 @@
-import os
 import random
-import json
 
 from fetchai.ledger.api import LedgerApi
-from fetchai.ledger.crypto import Entity, Address
-from fetchai.ledger.contract import SynergeticContract
+from fetchai.ledger.contract import Contract
+from fetchai.ledger.crypto import Entity
 
-CONTRACT_TEXT = """
+CONTRACT_TEXT = """\
 @problem
 function createProblem(data : Array<StructuredData>) : Int32
   var value = 0;
-  for (i in 0:data.count() - 1)
+  for (i in 0:data.count())
     value += data[i].getInt32("value");
   endfor
   return value;
@@ -32,6 +30,11 @@ function applyWork(problem : Int32, solution : Int32)
   result.set(solution);
 endfunction
 
+@query
+function query_result() : Int32
+  var result = State<Int32>("solution");
+  return result.get(-1);
+endfunction
 """
 
 
@@ -46,14 +49,22 @@ def main():
     print('Setup...complete')
 
     # create the contract on the ledger
-    synergy_contract = SynergeticContract(CONTRACT_TEXT)
-    print(synergy_contract.digest)
-
-    api.sync(api.contracts.create(entity, synergy_contract, 4096))
+    synergetic_contract = Contract(CONTRACT_TEXT)
+    print('Creating contract..')
+    api.sync(api.contracts.create(entity, synergetic_contract, 4096))
+    print('Contract submitted ({}.{}).'.format(synergetic_contract.digest.to_hex(), synergetic_contract.owner))
 
     # create a whole series of random data to submit to the DAG
     random_ints = [random.randint(0, 200) for _ in range(10)]
-    api.sync([api.synergetic.submit_data(entity, synergy_contract.digest, value=value) for value in random_ints])
+    api.sync([api.contracts.submit_data(entity, synergetic_contract.digest, value=value) for value in random_ints])
+    print('Data submitted.')
+
+    print('Waiting...')
+    api.wait_for_blocks(10)
+
+    print('Issuing query...')
+    result = synergetic_contract.query(api, 'query_result')
+    print('Query result:', result)
 
 
 if __name__ == '__main__':

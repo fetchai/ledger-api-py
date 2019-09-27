@@ -15,6 +15,7 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+
 import base64
 import json
 from typing import Optional
@@ -184,7 +185,7 @@ class ApiEndpoint(object):
         # Allow for additional data to be transferred
         response = None
         try:
-            response = json.loads(raw_response.text)            
+            response = json.loads(raw_response.text)
         except:
             pass
 
@@ -219,6 +220,9 @@ class ApiEndpoint(object):
 
         # parse the response
         response = r.json()
+        # print('\n\ntx_data\n',tx_data)
+        # print('\n\ntx_payload\n',tx_payload)
+        # print('\n\nresponse\n',json.dumps(response, indent=2), '\n\n')
 
         # attempt to extract out the submitting transaction hash
         tx_list = response.get('txs', [])
