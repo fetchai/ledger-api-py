@@ -45,7 +45,6 @@ class ParserTests(unittest.TestCase):
         try:
             parser = EtchParser()
             self.assertIsNone(parser.parsed_tree, "Parsed tree present when no code passed")
-            self.assertIsNone(parser.annotated_tree, "Annotated tree present when no code passed")
         except GrammarError as e:
             self.fail("Etch grammar failed to load with: \n" + str(e))
 
@@ -54,7 +53,6 @@ class ParserTests(unittest.TestCase):
         try:
             parser = EtchParser(CONTRACT_TEXT)
             self.assertIsNotNone(parser.parsed_tree, "Parsed tree missing when code passed")
-            self.assertIsNotNone(parser.annotated_tree, "Annotated tree missing when code passed")
         except ParseError as e:
             self.fail("Failed to parse contract text: \n" + str(e))
 

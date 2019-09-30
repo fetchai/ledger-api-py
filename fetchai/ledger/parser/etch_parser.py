@@ -1,9 +1,7 @@
 from lark import Lark, tree, lexer
-from os import path
+from pkg_resources import resource_string
 
 # Utility function for checking if a node exists within a (sub)tree
-
-
 def tree_contains(tree_root: tree.Tree, tree_node: tree.Tree):
     return tree_node in tree_root.iter_subtrees_topdown()
 
@@ -93,9 +91,7 @@ class PersistentGlobal:
 class EtchParser:
     def __init__(self, etch_code=None):
         # Load grammar
-        script_dir = path.dirname(path.realpath(__file__))
-        with open(path.join(script_dir, 'etch.grammar'), 'r') as file:
-            self.grammar = '\n'.join(file.readlines())
+        self.grammar = resource_string(__name__, 'etch.grammar').decode('ascii')
         self.parser = Lark(self.grammar)
 
         self.parsed_tree = None
@@ -239,7 +235,6 @@ class EtchParser:
     def used_globals_to_addresses(self, entry_point, parameters: list):
         # Identify globals used in function
         used_globals = self.globals_used(entry_point, parameters)
-        print(used_globals)
         # Build list of state addresses
         addresses = []
 
