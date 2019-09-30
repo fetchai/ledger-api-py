@@ -34,7 +34,7 @@ expression: NUMBER
 
 function_call: expression input_block
 
-dot_expansion: NAME ("." NAME)+
+dot_expansion: name ("." name)+
 
 bool_expression: expression
                | PRE_UNARY bool_expression
@@ -42,7 +42,7 @@ bool_expression: expression
                | bool_expression BOOLEAN_OP bool_expression
 
 annotation: "@"ANNOTATION function
-ANNOTATION: "init"|"action"|"query"|"problem"
+ANNOTATION: "init"|"action"|"query"|"problem"|"objective"|"work"|"clear"
 
 function: "function" NAME parameter_block (":" TYPE)? code_block? "endfunction"
 

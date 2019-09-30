@@ -33,8 +33,7 @@ class Contract:
         self._actions = set(entries.get('action', []))
         self._queries = set(entries.get('query', []))
 
-        assert len(entries['init']) == 1, "Contract requires exactly one @init entry point"
-        self._init = entries['init'][0]
+        self._init = set(entries.get('init', []))
 
     def dumps(self):
         return json.dumps(self._to_json_object())
@@ -78,7 +77,7 @@ class Contract:
         try:
             resource_addresses = ['fetch.contract.state.{}'.format(self.digest.to_hex())]
             resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
-                                      self._parser.used_globals_to_addresses(self._init, [self._owner]))
+                                      self._parser.used_globals_to_addresses(self._init[0], [self._owner]))
         except (UnparsableAddress, UseWildcardShardMask):
             print("WARNING: Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
