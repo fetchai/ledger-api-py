@@ -29,15 +29,8 @@ class Contract:
 
         # Generate set of action and query entry points
         entries = self._parser.entry_points(['init', 'action', 'query'])
-        if 'action' in entries:
-            self._actions = set(entries['action'])
-        else:
-            self._actions = set()
-
-        if 'query' in entries:
-            self._queries = set(entries['query'])
-        else:
-            self._queries = set()
+        self._actions = set(entries.get('action', []))
+        self._queries = set(entries.get('query', []))
 
         assert len(entries['init']) == 1, "Contract requires exactly one @init entry point"
         self._init = entries['init'][0]
