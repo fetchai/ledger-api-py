@@ -1,17 +1,13 @@
 from lark import Lark, tree, lexer
 from pkg_resources import resource_string
 
+
 # Utility function for checking if a node exists within a (sub)tree
 def tree_contains(tree_root: tree.Tree, tree_node: tree.Tree):
     return tree_node in tree_root.iter_subtrees_topdown()
 
 
 class AnnotatedTree:
-    def __init__(self, parsed_tree: tree.Tree):
-        pass
-
-
-class Function:
     def __init__(self, parsed_tree: tree.Tree):
         pass
 
@@ -88,6 +84,67 @@ class PersistentGlobal:
         self.gtype = gtype
 
 
+class Function:
+    def __init__(self, name, parameters, return_type=None, annotation=None, code_block=None):
+        self.name = name
+        self.parameters = parameters
+        self.return_type = return_type
+        self.annotation = annotation
+        self.code_block = code_block
+
+    @staticmethod
+    def from_tree(tree: tree.Tree):
+        # Parse annotation parent node
+        if tree.data == 'annotation':
+            annotation = tree.children[0].value
+            tree = tree.children[1]
+        else:
+            annotation = None
+
+        # Parse function name
+        assert tree.children[0].type == 'NAME'
+        function_name = tree.children[0].value
+
+        # Parse parameters
+        assert tree.children[1].data == 'parameter_block', "Missing parameter block"
+        parameters = [Parameter(n.children[0].value, n.children[1].value) for n in tree.children[1].children]
+
+        # Check for output type
+        if len(tree.children) > 2 and isinstance(tree.children[2], lexer.Token) and tree.children[2].type == 'TYPE':
+            return_type = tree.children[2].value
+        else:
+            return_type = None
+
+        # Store the parsed code block tree
+        code_block = list(tree.find_data('code_block'))
+        if len(code_block) == 0:
+            code_block = None
+        else:
+            assert len(code_block) == 1, "Found more than one code block"
+            code_block = code_block[0]
+
+        return Function(function_name, parameters, return_type, annotation, code_block)
+
+    @staticmethod
+    def all_from_tree(tree: tree.Tree):
+        """Returns a list of all functions within a parsed tree"""
+        functions = []
+
+        top_level = tree.find_data('top_level_instruction')
+        for inst in top_level:
+            if len(inst.children) > 0 and inst.children[0].data in ['annotation', 'function']:
+                functions.append(Function.from_tree(inst.children[0]))
+
+        return functions
+
+class UseWildcardShardMask(Exception):
+    pass
+
+
+class UnparsableAddress(Exception):
+    pass
+
+
 class EtchParser:
     def __init__(self, etch_code=None):
         # Load grammar
@@ -115,26 +172,37 @@ class EtchParser:
         for ep in valid_entries:
             entry_points[ep] = []
 
-        # Get annotation nodes from parsed tree
-        annotation_nodes = self.parsed_tree.find_data('annotation')
+        # Parse all functions in tree
+        functions = Function.all_from_tree(self.parsed_tree)
 
-        for node in annotation_nodes:
-            # Read annotation token for annotation type
-            action_token = node.children[0]
-            assert action_token.type == 'ANNOTATION'
-            assert action_token.value in valid_entries
-            action_type = action_token.value
-
-            # Read function name token for annotation name
-            function = node.children[1]
-            function_name = function.children[0]
-            assert function_name.type == 'NAME'
-            action_name = function_name.value
-
-            # Add to output dict
-            entry_points[action_type].append(action_name)
+        # Add functions with annotation to entry point dict
+        for f in functions:
+            if f.annotation in valid_entries:
+                entry_points[f.annotation].append(f.name)
 
         return entry_points
+
+    def subfunctions(self):
+        """Identify functions that are not entry points"""
+        functions = Function.all_from_tree(self.parsed_tree)
+        return list(f.name for f in functions if f.annotation is None)
+
+    def global_using_subfunctions(self):
+        """Return a dict of non entry functions, listing any global use statements they contain"""
+        globals_used = {}
+
+        functions = Function.all_from_tree(self.parsed_tree)
+
+        for f in functions:
+            if f.annotation:
+                # Skip annotated functions
+                continue
+
+            use_statements = f.code_block.find_data('use_global')
+            if len(list(use_statements)):
+                globals_used[f.name] = []  # TODO: Later expand with details of globals used
+
+        return globals_used
 
     def parameters(self, function_name: str, parameter_values: list = None):
         """Identify parameters accepted by a named function"""
@@ -203,7 +271,15 @@ class EtchParser:
             lambda x: x.data == 'annotation' and x.children[1].children[0].value == entry_point))
 
         # Identify parameters of function
+        assert isinstance(parameter_values, list), "Expected parameter values as a list"
         parameters = {p.name: p for p in self.parameters(entry_point, parameter_values)}
+
+        # Parse for functions called
+        function_calls = annotation_node.find_data('function_call')
+        called_names = [f.children[0].children[0].children[0].value for f in function_calls]
+        # If any called functions use globals, we currently can't parse those usages
+        if any(fn in called_names for fn in self.global_using_subfunctions()):
+            raise UnparsableAddress("Calls global using subfunction")
 
         # Build list of globals used
         globals_used = []
@@ -214,7 +290,18 @@ class EtchParser:
                 "Could not identify global name"
             g_name = gu.children[0].value
 
-            assert g_name in persistent_globals, "Attempting to use undeclared global"
+            # Handle use any
+            if g_name == 'any' and len(gu.children) == 1:
+                # Check if we have any sharded globals
+                if any(pg for pg in persistent_globals.values() if pg.is_sharded):
+                    raise UseWildcardShardMask("use any + persistent sharded global")
+
+                # If we don't have sharded globals, add all globals to used list
+                globals_used = [g_name for g_name in persistent_globals.keys()]
+                # Return immediately as we're already using all globals
+                return globals_used
+
+            assert g_name in persistent_globals, "Attempting to use undeclared global : {}".format(gu)
 
             # Handle non-sharded global
             if not persistent_globals[g_name].is_sharded:

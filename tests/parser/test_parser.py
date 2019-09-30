@@ -2,7 +2,7 @@ import unittest
 
 from lark import GrammarError, ParseError, UnexpectedCharacters
 
-from fetchai.ledger.parser.etch_parser import EtchParser
+from fetchai.ledger.parser.etch_parser import EtchParser, Function
 
 CONTRACT_TEXT = """
 persistent sharded balance : UInt64;
@@ -35,6 +35,9 @@ function balance(address: Address) : UInt64
     return balance.get(address, 0u64);
 endfunction
 
+function sub(val1: UInt64, val2: UInt64) : UInt64
+    return val1 - val2;
+endfunction
 """
 
 # Function block template - for testing statements that are illegal outside a function
@@ -154,21 +157,22 @@ class ParserTests(unittest.TestCase):
             self.assertEqual(tree.children[0].children[1].type, 'TYPE')
             self.assertEqual(tree.children[0].children[1].value, t)
 
+        # TODO: Test these in a meaningful way, beyond simply that they parse
         # Test declaration of array
         tree = self.parser.parse(FUNCTION_BLOCK.format("var myArray = Array<Int32>(5);"))
-        print(next(tree.find_data("code_block")))
-
         # Test assignment to array
         tree = self.parser.parse(FUNCTION_BLOCK.format("myArray[0] = 5;"))
-        print(next(tree.find_data("code_block")))
         # Test assignment from array
         tree = self.parser.parse(FUNCTION_BLOCK.format("b = myArray[0];"))
-        print(next(tree.find_data("code_block")))
         tree = self.parser.parse(FUNCTION_BLOCK.format("var b = myArray[0];"))
-        print(next(tree.find_data("code_block")))
 
-        map_type = 'Map'
-        # TODO
+        # As above, for map type
+        # tree = self.parser.parse(FUNCTION_BLOCK.format("var myArray = Map<String. Int32>(5);"))
+        # # Test assignment to array
+        # tree = self.parser.parse(FUNCTION_BLOCK.format("myArray['test'] = 5;"))
+        # # Test assignment from array
+        # tree = self.parser.parse(FUNCTION_BLOCK.format("b = myArray['test'];"))
+        # tree = self.parser.parse(FUNCTION_BLOCK.format("var b = myArray['test'];"))
 
     def test_inline(self):
         """Tests for correct parsing of inline type annotations"""
@@ -178,6 +182,64 @@ class ParserTests(unittest.TestCase):
         tree = self.parser.parse(FUNCTION_BLOCK.format("a = State<UInt64>();"))
         tree.expand_kids_by_index(0)
         # print(next(tree.find_data('code_block')))
+
+    def test_functions(self):
+        """Tests correct detection of non-entry-point functions"""
+        self.assertEqual(self.parser.subfunctions(), ['sub'])
+
+    def test_class_function(self):
+        """Tests correct ingestion of functions"""
+        # Test minimal function
+        tree = self.parser.parse("""function init()
+        endfunction""")
+
+        func = Function.from_tree(next(tree.find_data('function')))
+
+        self.assertIsNone(func.annotation)
+        self.assertIsNone(func.code_block)
+        self.assertIsNone(func.return_type)
+        self.assertEqual(func.name, 'init')
+        self.assertEqual(func.parameters, [])
+
+        # Test Function parsing from_tree
+        tree = self.parser.parse("""
+        @action
+        function a(b : UInt64) : String
+        return b;
+        endfunction
+        """)
+        func = Function.from_tree(next(tree.find_data('annotation')))
+
+        self.assertEqual(func.name, 'a')
+        self.assertEqual(func.return_type, 'String')
+        self.assertEqual(func.annotation, 'action')
+        self.assertEqual(func.parameters[0].name, 'b')
+        self.assertEqual(func.parameters[0].ptype, 'UInt64')
+
+        # Test all_from_tree
+        tree = self.parser.parse("""
+        @action
+        function a(b : UInt64) : String
+        return 'test';
+        endfunction
+        
+        function c(d: UInt64): String
+        return 'test2';
+        endfunction
+        """)
+
+        funcs = Function.all_from_tree(tree)
+        self.assertEqual(funcs[0].name, 'a')
+        self.assertEqual(funcs[0].return_type, 'String')
+        self.assertEqual(funcs[0].annotation, 'action')
+        self.assertEqual(funcs[0].parameters[0].name, 'b')
+        self.assertEqual(funcs[0].parameters[0].ptype, 'UInt64')
+
+        self.assertEqual(funcs[1].name, 'c')
+        self.assertEqual(funcs[1].return_type, 'String')
+        self.assertIsNone(funcs[1].annotation)
+        self.assertEqual(funcs[1].parameters[0].name, 'd')
+        self.assertEqual(funcs[1].parameters[0].ptype, 'UInt64')
 
 
 if __name__ == '__main__':

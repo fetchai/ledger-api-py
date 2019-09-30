@@ -2,7 +2,7 @@ start: top_level_instruction+
 
 top_level_instruction: "persistent" /sharded/? typed_name";"  -> global_def
                      | function
-                     | "@"ANNOTATION function                 -> annotation
+                     | annotation
                      | comment
 
 instruction: "use" NAME [use_shard] ";"                         -> use_global
@@ -16,7 +16,8 @@ instruction: "use" NAME [use_shard] ";"                         -> use_global
            | instruction ";"                                    -> line
            | comment
 
-instantiation: "var" NAME "=" expression
+instantiation: "var" NAME "=" expression ";"
+
 declaration: "var" NAME ":" TYPE ";"
 
 range: (expression) | (expression ":" expression) | (expression ":" expression ":" expression)
@@ -28,8 +29,10 @@ expression: NUMBER
           | PRE_UNARY expression
           | expression POST_UNARY
           | expression BINARY_OP expression
-          | expression input_block          -> function_call
+          | function_call
           | TYPE input_block
+
+function_call: expression input_block
 
 dot_expansion: NAME ("." NAME)+
 
@@ -38,11 +41,14 @@ bool_expression: expression
                | bool_expression COMPARISON bool_expression
                | bool_expression BOOLEAN_OP bool_expression
 
+annotation: "@"ANNOTATION function
+ANNOTATION: "init"|"action"|"query"|"problem"
+
 function: "function" NAME parameter_block (":" TYPE)? code_block? "endfunction"
 
-typed_name: NAME ":" TYPE
-
 parameter_block: "(" (typed_name ","?)* ")"
+
+typed_name: NAME ":" TYPE
 
 input_block: "(" (expression ",")* expression? ")"
 
@@ -77,7 +83,7 @@ name: NAME
 
 NAME: LETTER (LETTER|"_"|INT)*
 
-indexed_name: name "[" NUMBER|name "]"
+indexed_name: name "[" (NUMBER|STRING_LITERAL|name) "]"
 
 NUMBER: INT INLINE_INT?
 
@@ -85,7 +91,7 @@ STRING_LITERAL: (/\"(\\.|[^"\\])*\"/)|(/\'(\\.|[^'\\])*\'/)
 
 TYPE: BASIC_TYPE|TEMPLATE_TYPE|FLOAT_TYPE|FIXED_TYPE|OTHER_TYPE
 
-TEMPLATE_TYPE: OTHER_TYPE "<" (BASIC_TYPE|OTHER_TYPE) ">"
+TEMPLATE_TYPE: ("Array"|"Map"|"State") "<" (BASIC_TYPE|OTHER_TYPE ",")* (BASIC_TYPE|OTHER_TYPE) ">"
 
 BASIC_TYPE: "U"? "Int" ("256"|"64"|"32"|"16"|"8")
 
@@ -93,11 +99,9 @@ FLOAT_TYPE: "Float" ("64"|"32")
 
 FIXED_TYPE: "Fixed" ("64"|"32")
 
-OTHER_TYPE: "Boolean"|"Address"|"String"|"State"|"Array"|"StructuredData"|"Graph"|"DataLoader"|"Optimiser"|"Tensor"
+OTHER_TYPE: "Boolean"|"Address"|"String"|"State"|"Array"|"Map"|"StructuredData"|"Graph"|"DataLoader"|"Optimiser"|"Tensor"
 
 INLINE_INT: ("u"|"i") INT
-
-ANNOTATION: "init"|"action"|"query"|"problem"
 
 %import common.LETTER
 %import common.WS
