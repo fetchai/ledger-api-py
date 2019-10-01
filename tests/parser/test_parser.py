@@ -17,7 +17,7 @@ endfunction
 @action
 function transfer(from: Address, to: Address, amount: UInt64)
 
-  use balance[from, to];
+  use balance[from, to, "constant_string"];
 
   // Check if the sender has enough balance to proceed
   if (balance.get(from) >= amount)
@@ -99,9 +99,10 @@ class ParserTests(unittest.TestCase):
         """Test accurate parsing of globals used in entry points"""
 
         glob_addresses = self.parser.used_globals_to_addresses('transfer', ['abc', 'def', 100])
-        self.assertEqual(len(glob_addresses), 2)
+        self.assertEqual(len(glob_addresses), 3)
         self.assertEqual(glob_addresses[0], 'balance.abc')
         self.assertEqual(glob_addresses[1], 'balance.def')
+        self.assertEqual(glob_addresses[2], 'balance.constant_string')
 
     def test_scope(self):
         """Tests which instructions are allowed at each scope"""

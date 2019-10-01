@@ -1,5 +1,6 @@
 import hashlib
 import struct
+from math import log2
 
 from fetchai.ledger.bitvector import BitVector
 
