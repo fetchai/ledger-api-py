@@ -124,7 +124,18 @@ class ShardMaskParsingTests(unittest.TestCase):
         """Test detection of non-annotated functions containing 'use' statements"""
         self.parser.parse(NON_ENTRY_GLOBAL)
 
-        self.assertIn('set_balance', self.parser.global_using_subfunctions())
+        # List of non-annotated functions that use globals
+        global_using_subfunctions = self.parser.global_using_subfunctions()
+        self.assertIn('set_balance', global_using_subfunctions)
+        self.assertNotIn('sub', global_using_subfunctions)
+
+        # Test that wildcard used when annotated function calls global using subfunction
+        with self.assertRaises(UnparsableAddress):
+            self.parser.used_globals_to_addresses('setup', ['abc'])
+
+        # Parsing of function that doesn't call global-using-subfunction should succeed
+        glob_addresses = self.parser.used_globals_to_addresses('transfer', ['abc', 'def', 100])
+        self.assertEqual(glob_addresses, ['balance.abc', 'balance.def'])
 
     def test_use_any(self):
         """Test correct handling of 'use any'"""

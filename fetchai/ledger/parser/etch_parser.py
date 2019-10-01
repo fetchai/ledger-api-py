@@ -279,9 +279,14 @@ class EtchParser:
         assert isinstance(parameter_values, list), "Expected parameter values as a list"
         parameters = {p.name: p for p in self.parameters(entry_point, parameter_values)}
 
-        # Parse for functions called
+        # Parse for functions called (TODO: refactor as class)
         function_calls = annotation_node.find_data('function_call')
-        called_names = [f.children[0].children[0].children[0].value for f in function_calls]
+        called_names = []
+        for f in function_calls:
+            function_name = list(f.children[0].scan_values(lambda t: isinstance(t, lexer.Token) and t.type == 'NAME'))
+            # len > 1 indicates dot-expanded name, assumed non-user defined, therefore not containing use statements
+            if len(function_name) == 1:
+                called_names.append(function_name[0].value)
         # If any called functions use globals, we currently can't parse those usages
         if any(fn in called_names for fn in self.global_using_subfunctions()):
             raise UnparsableAddress("Calls global using subfunction")
