@@ -152,12 +152,14 @@ class EtchParser:
         self.parser = Lark(self.grammar)
 
         self.parsed_tree = None
+        self.etch_code = None
         if etch_code:
             self.parse(etch_code)
 
     def parse(self, etch_code):
         """Parses the input code and stores the parsed tree"""
         assert isinstance(etch_code, str), "Expecting string"
+        self.etch_code = etch_code
         self.parsed_tree = self.parser.parse(etch_code)
         return self.parsed_tree
 
@@ -263,6 +265,9 @@ class EtchParser:
         return persistent_globals
 
     def globals_used(self, entry_point, parameter_values):
+        if 'State' in self.etch_code:
+            raise UseWildcardShardMask("State usage detected")
+
         # First identify global definitions
         persistent_globals = self.globals_declared()
 
