@@ -50,7 +50,9 @@ class LedgerApi:
         # Check that ledger version is compatible with API version
         server_version = self.server.version().lstrip('v')
         if not all(semver.match(server_version, c) for c in __compatible__):
-            raise RuntimeError("Ledger version running on server is not compatible with this API")
+            raise RuntimeError("Ledger version running on server is not compatible with this API" +
+                               "\nServer version: {} \nExpected version: {}".format(
+                                   server_version, ', '.join(__compatible__)))
 
     def sync(self, txs: Transactions, timeout=None):
         timeout = int(timeout or 120)
