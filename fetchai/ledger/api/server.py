@@ -18,3 +18,6 @@ class ServerApi(ApiEndpoint):
     def num_lanes(self):
         """Queries the ledger for the number of lanes currently active"""
         return self.status()['lanes']
+
+    def version(self):
+        return self.status()['version']

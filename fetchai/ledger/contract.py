@@ -30,10 +30,13 @@ class Contract:
 
         # Generate set of action and query entry points
         entries = self._parser.entry_points(['init', 'action', 'query'])
-        self._actions = set(entries.get('action', []))
-        self._queries = set(entries.get('query', []))
+        self._actions = list(set(entries.get('action', [])))
+        self._queries = list(set(entries.get('query', [])))
 
-        self._init = set(entries.get('init', []))
+        init = entries.get('init', [])
+        if len(init) > 1:
+            raise RuntimeError('Contract may not have more than one @init function, found: {}'.format(', '.join(init)))
+        self._init = init[0] if len(init) else None
 
     def dumps(self):
         return json.dumps(self._to_json_object())
@@ -73,11 +76,14 @@ class Contract:
         # Set contract owner (required for resource prefix)
         self.owner = owner
 
+        if self._init is None:
+            raise RuntimeError("Contract has no initialisation function")
+
         # Generate resource addresses used by persistent globals
         try:
             resource_addresses = ['fetch.contract.state.{}'.format(self.digest.to_hex())]
             resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
-                                      self._parser.used_globals_to_addresses(self._init[0], [self._owner]))
+                                      self._parser.used_globals_to_addresses(self._init, [self._owner]))
         except (UnparsableAddress, UseWildcardShardMask):
             print("WARNING: Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
