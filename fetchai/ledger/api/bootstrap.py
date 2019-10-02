@@ -4,7 +4,8 @@ class NetworKUnavailableError(Exception)
 
 def server_from_name(network):
     # Get list of active servers
-    servers_response = requests.get('https://bootstrap.fetch.ai/networks/')
+    params = {'active': 1}
+    servers_response = requests.get('https://bootstrap.fetch.ai/networks/', params=params)
     if servers_response.status_code != 200:
         raise requests.ConnectionError('Failed to get network status from bootstrap')
 
@@ -18,7 +19,7 @@ def server_from_name(network):
     # TODO: Not sure how to compare this string to our requirements
 
     # Request server endpoints
-    params = {'network': network, 'active': 1}
+    params = {'network': network}
     endpoints_response = requests.get('https://bootstrap.fetch.ai/endpoints', params=params)
     if servers_response.status_code != 200:
         raise requests.ConnectionError('Failed to get network endpoint from bootstrap')
