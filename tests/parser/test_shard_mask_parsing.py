@@ -143,7 +143,7 @@ class ShardMaskParsingTests(unittest.TestCase):
 
         # Test correct detection of all persistent globals when none are sharded
         used_globals = self.parser.globals_used('swap', [])
-        self.assertEqual(used_globals, ['var1', 'var2'])
+        self.assertEqual(set(used_globals), {'var1', 'var2'})
 
         # Test correct raising of wildcard-needed exception if any globals are sharded
         self.parser.parse(USE_ANY_SHARDED)

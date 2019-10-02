@@ -76,7 +76,7 @@ class ParserTests(unittest.TestCase):
 
     def test_globals_declared(self):
         glob_decl = self.parser.globals_declared()
-        self.assertEqual(list(glob_decl.keys()), ['balance', 'owner_name'])
+        self.assertEqual(set(glob_decl.keys()), {'balance', 'owner_name'})
         self.assertEqual(glob_decl['balance'].name, 'balance')
         self.assertEqual(glob_decl['balance'].gtype, 'UInt64')
         self.assertEqual(glob_decl['balance'].is_sharded, True)
