@@ -14,12 +14,14 @@ EntityList = List[Entity]
 class ContractsApi(ApiEndpoint):
     API_PREFIX = 'fetch.contract'
 
-    def create(self, owner: Entity, contract: 'Contract', fee: int):
+    def create(self, owner: Entity, contract: 'Contract', fee: int, shard_mask: BitVector = None):
         ENDPOINT = 'create'
         # format the data to be closed by the transaction
 
-        # wildcard for the moment
-        shard_mask = BitVector()
+        # Default to wildcard shard mask if none supplied
+        if not shard_mask:
+            print("WARNING: defaulting to wildcard shard mask as none supplied")
+            shard_mask = BitVector()
 
         # build up the basic transaction information
         tx = self._create_skeleton_tx(fee)
@@ -65,8 +67,11 @@ class ContractsApi(ApiEndpoint):
         return self._post_json(query, prefix=prefix, data=self._encode_json_payload(**kwargs))
 
     def action(self, contract_digest: Address, contract_owner: Address, action: str, fee: int, signers: EntityList,
-               *args):
-        shard_mask = BitVector()
+               *args, shard_mask: BitVector = None):
+        # Default to wildcard shard mask if none supplied
+        if not shard_mask:
+            print("WARNING: defaulting to wildcard shard mask as none supplied")
+            shard_mask = BitVector()
 
         # build up the basic transaction information
         tx = self._create_skeleton_tx(fee)

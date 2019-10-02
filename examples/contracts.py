@@ -15,40 +15,41 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+from contextlib import contextmanager
 from typing import List
 
-from fetchai.ledger.api import LedgerApi
+from fetchai.ledger.api import LedgerApi, TokenApi
 from fetchai.ledger.contract import Contract
 from fetchai.ledger.crypto import Entity, Address
 
 CONTRACT_TEXT = """
+persistent sharded balance : UInt64;
+
 @init
 function setup(owner : Address)
-  var owner_balance = State<UInt64>(owner);
-  owner_balance.set(1000000u64);
+  use balance[owner];
+  balance.set(owner, 1000000u64);
 endfunction
 
 @action
 function transfer(from: Address, to: Address, amount: UInt64)
 
-  // define the accounts
-  var from_account = State<UInt64>(from);
-  var to_account = State<UInt64>(to); // if new sets to 0u
-
+  use balance[from, to];
+  
   // Check if the sender has enough balance to proceed
-  if (from_account.get() >= amount)
+  if (balance.get(from) >= amount)
 
     // update the account balances
-    from_account.set(from_account.get() - amount);
-    to_account.set(to_account.get(0u64) + amount);
+    balance.set(from, balance.get(from) - amount);
+    balance.set(to, balance.get(to, 0u64) + amount);
   endif
 
 endfunction
 
 @query
 function balance(address: Address) : UInt64
-    var account = State<UInt64>(address);
-    return account.get(0u64);
+    use balance[address];
+    return balance.get(address, 0u64);
 endfunction
 
 """
@@ -59,6 +60,26 @@ def print_address_balances(api: LedgerApi, contract: Contract, addresses: List[A
         print('Address{}: {:<6d} bFET {:<10d} TOK'.format(idx, api.tokens.balance(address),
                                                           contract.query(api, 'balance', address=address)))
     print()
+
+
+@contextmanager
+def track_cost(api: TokenApi, entity: Entity, message: str):
+    """
+    Context manager for recording the change in balance over a set of actions
+    Will be inaccurate if other factors change an account balance
+    """
+    if isinstance(entity, Entity):
+        entity = Address(entity)
+    elif not isinstance(entity, Address):
+        raise TypeError("Expecting Entity or Address")
+
+    balance_before = api.balance(entity)
+    yield
+
+    if not message:
+        message = "Actions cost: "
+
+    print(message + "{} TOK".format(api.balance(entity) - balance_before))
 
 
 def main():
@@ -79,8 +100,8 @@ def main():
     # create the smart contract
     contract = Contract(CONTRACT_TEXT)
 
-    # deploy the contract to the network
-    api.sync(api.contracts.create(entity1, contract, 2000))
+    with track_cost(api.tokens, entity1, "Cost of creation: "):
+        api.sync(contract.create(api, entity1, 4000))
 
     # print the current status of all the tokens
     print('-- BEFORE --')
@@ -88,8 +109,9 @@ def main():
 
     # transfer from one to the other using our newly deployed contract
     tok_transfer_amount = 200
-    fet_tx_fee = 40
-    api.sync(contract.action(api, 'transfer', fet_tx_fee, [entity1], address1, address2, tok_transfer_amount))
+    fet_tx_fee = 160
+    with track_cost(api.tokens, entity1, "Cost of transfer: "):
+        api.sync(contract.action(api, 'transfer', fet_tx_fee, [entity1], address1, address2, tok_transfer_amount))
 
     print('-- AFTER --')
     print_address_balances(api, contract, [address1, address2])

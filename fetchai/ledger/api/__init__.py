@@ -20,6 +20,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Sequence, Union
 
+from fetchai.ledger.api.server import ServerApi
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .contracts import ContractsApi
 from .token import TokenApi
@@ -41,6 +42,7 @@ class LedgerApi:
         self.tokens = TokenApi(host, port)
         self.contracts = ContractsApi(host, port)
         self.tx = TransactionApi(host, port)
+        self.server = ServerApi(host, port)
 
     def sync(self, txs: Transactions, timeout=None):
         timeout = int(timeout or 120)
