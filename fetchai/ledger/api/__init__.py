@@ -23,7 +23,7 @@ import semver
 
 from fetchai.ledger.api import bootstrap
 from fetchai.ledger.api.server import ServerApi
-from fetchai.ledger import __compatible__
+from fetchai.ledger import __compatible__, IncompatibleLedgerVersion
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .contracts import ContractsApi
 from .token import TokenApi
@@ -42,7 +42,7 @@ def _iterable(value):
 
 class LedgerApi:
     def __init__(self, host=None, port=None, network=None):
-        if server_name:
+        if network:
             assert not host and not port, 'Specify either a server name, or a host & port'
             host, port = bootstrap.server_from_name(network)
 
@@ -54,9 +54,9 @@ class LedgerApi:
         # Check that ledger version is compatible with API version
         server_version = self.server.version().lstrip('v')
         if not all(semver.match(server_version, c) for c in __compatible__):
-            raise RuntimeError("Ledger version running on server is not compatible with this API" +
-                               "\nServer version: {} \nExpected version: {}".format(
-                                   server_version, ', '.join(__compatible__)))
+            raise IncompatibleLedgerVersion("Ledger version running on server is not compatible with this API" +
+                                            "\nServer version: {} \nExpected version: {}".format(
+                                                server_version, ', '.join(__compatible__)))
 
     def sync(self, txs: Transactions, timeout=None):
         timeout = int(timeout or 120)

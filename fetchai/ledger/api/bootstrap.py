@@ -1,35 +1,50 @@
 import requests
 
+class NetworKUnavailableError(Exception)
 
-def server_from_name(server_name):
+def server_from_name(network):
     # Get list of active servers
     servers_response = requests.get('https://bootstrap.fetch.ai/networks/')
-    assert servers_response.status_code == 200, 'Failed to get network status'
+    if servers_response.status_code != 200:
+        raise requests.ConnectionError('Failed to get network status from bootstrap')
 
     # Check requested server is on list
     available_servers = [s['name'] for s in servers_response.json()]
-    assert server_name in available_servers, 'Requested server not present on network: {}'.format(server_name)
+    if network not in available_servers:
+        raise NetworKUnavailableError('Requested network not present on network: {}'.format(network))
+
+    # Check network version
+    server_version = next(s for s in servers_response.json() if s['name'] == network)['versions']
+    # TODO: Not sure how to compare this string to our requirements
 
     # Request server endpoints
-    endpoints_response = requests.get('https://bootstrap.fetch.ai/endpoints', params={'network': server_name})
-    assert endpoints_response.status_code == 200, 'Failed to get server status'
+    params = {'network': network, 'active': 1}
+    endpoints_response = requests.get('https://bootstrap.fetch.ai/endpoints', params=params)
+    if servers_response.status_code != 200:
+        raise requests.ConnectionError('Failed to get network endpoint from bootstrap')
 
     # Retrieve ledger endpoint
     ledger_endpoint = [s for s in endpoints_response.json() if s['component'] == 'ledger']
-    assert len(ledger_endpoint) == 1, 'Requested server is not reporting a ledger endpoint'
+    if len(ledger_endpoint) != 1:
+        raise NetworKUnavailableError('Requested server is not reporting a ledger endpoint')
 
     # Return server address
     ledger_endpoint = ledger_endpoint[0]
-    assert 'address' in ledger_endpoint, 'Ledger endpoint missing address'
+    if 'address' not in ledger_endpoint:
+        raise RuntimeError('Ledger endpoint missing address')
 
     # Return address and port
     ledger_address = ledger_endpoint['address']
-    # if ':' in ledger_address:
-    #     address, port = ledger_address.split(':')
-    #     return address, int(port)
-    # else:
-    return ledger_address, 443
 
+    # Check if address contains a port
+    address = ledger_address.split('://')[-1] if '://' in ledger_address else ledger_address
+    if ':' in address:
+        address, port = address.split(':')
+        return address, int(port)
+    else:
+        # If no port specified, default to 443
+        # TODO: Sensible default for http?
+        return ledger_address, 443
 
 
 
