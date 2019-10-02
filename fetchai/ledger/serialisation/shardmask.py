@@ -1,5 +1,6 @@
 import hashlib
 import struct
+from math import log2
 
 from fetchai.ledger.bitvector import BitVector
 
@@ -18,6 +19,8 @@ class ShardMask:
 
     @staticmethod
     def resource_to_shard(resource_address, num_lanes):
+        assert ((num_lanes & (num_lanes-1)) == 0) and num_lanes > 0, "Expecting power of two number of lanes"
+
         # SHA256 hash of resource_address
         s = hashlib.sha256()
         s.update(resource_address.encode('ascii'))

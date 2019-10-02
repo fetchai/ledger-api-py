@@ -1,48 +1,62 @@
-start: instruction+
+start: top_level_instruction+
 
-instruction: "persistent" /sharded/? typed_name";"          -> global_def
-           | function
-           | "@"ANNOTATION function                             -> annotation
-           | "use" NAME [use_shard] ";"                         -> use_global
-           | "//" /.+/                                          -> comment
-           | "var" NAME "=" instruction|TYPE                    -> instantiation
-           | "var" NAME ":" TYPE ";"                            -> declaration
-           | NAME ASSIGNMENT_OP instruction|NUMBER ";"                    -> assignment
+top_level_instruction: "persistent" /sharded/? typed_name";"  -> global_def
+                     | function
+                     | annotation
+                     | comment
+
+instruction: "use" NAME [use_shard] ";"                         -> use_global
+           | instantiation
+           | declaration
+           | name ASSIGNMENT_OP instruction|NUMBER ";"                    -> assignment
            | "if" "(" bool_expression ")" instruction+ "endif"     -> if_block  // TODO: else/elseif support
            | "for" "(" NAME "in" range ")" instruction+ "endfor" -> for_block
            | "return" expression ";"                           -> return
            | expression ";"
            | instruction ";"                                    -> line
+           | comment
+
+instantiation: "var" NAME "=" expression ";"
+
+declaration: "var" NAME ":" TYPE ";"
 
 range: (expression) | (expression ":" expression) | (expression ":" expression ":" expression)
 
 expression: NUMBER
           | dot_expansion
-          | NAME
+          | name
           | STRING_LITERAL
           | PRE_UNARY expression
           | expression POST_UNARY
           | expression BINARY_OP expression
-          | expression input_block          -> function_call
+          | function_call
+          | TYPE input_block
 
-dot_expansion: NAME ("." NAME)+
+function_call: expression input_block
+
+dot_expansion: name ("." name)+
 
 bool_expression: expression
                | PRE_UNARY bool_expression
                | bool_expression COMPARISON bool_expression
                | bool_expression BOOLEAN_OP bool_expression
 
-function: "function" NAME parameter_block (":" TYPE)? code_block "endfunction"
+annotation: "@"ANNOTATION function
+ANNOTATION: "init"|"action"|"query"|"problem"|"objective"|"work"|"clear"
 
-typed_name: NAME ":" TYPE
+function: "function" NAME parameter_block (":" TYPE)? code_block? "endfunction"
 
 parameter_block: "(" (typed_name ","?)* ")"
+
+typed_name: NAME ":" TYPE
 
 input_block: "(" (expression ",")* expression? ")"
 
 template_block: "<" TYPE ">"
 
 code_block: instruction+
+
+comment: "//" /.+/
 
 use_shard: "[" (use_shard_item ","?)+ "]"
 
@@ -64,8 +78,12 @@ COMPARISON: ">="|"<="|"=="|"!="|">"|"<"
 
 BOOLEAN_OP: "||"|"|"|"&&"|"&"
 
-NAME: LETTER (LETTER|"_")*
-// ("[" NUMBER "]")?
+name: NAME
+    | indexed_name
+
+NAME: LETTER (LETTER|"_"|INT)*
+
+indexed_name: name "[" (NUMBER|STRING_LITERAL|name) "]"
 
 NUMBER: INT INLINE_INT?
 
@@ -73,7 +91,7 @@ STRING_LITERAL: (/\"(\\.|[^"\\])*\"/)|(/\'(\\.|[^'\\])*\'/)
 
 TYPE: BASIC_TYPE|TEMPLATE_TYPE|FLOAT_TYPE|FIXED_TYPE|OTHER_TYPE
 
-TEMPLATE_TYPE: OTHER_TYPE "<" (BASIC_TYPE|OTHER_TYPE) ">(" (NAME|NUMBER)? ")"
+TEMPLATE_TYPE: ("Array"|"Map"|"State") "<" (BASIC_TYPE|OTHER_TYPE ",")* (BASIC_TYPE|OTHER_TYPE) ">"
 
 BASIC_TYPE: "U"? "Int" ("256"|"64"|"32"|"16"|"8")
 
@@ -81,11 +99,9 @@ FLOAT_TYPE: "Float" ("64"|"32")
 
 FIXED_TYPE: "Fixed" ("64"|"32")
 
-OTHER_TYPE: "Boolean"|"Address"|"String"|"State"|"Array"|"StructuredData"|"Graph"|"DataLoader"|"Optimiser"|"Tensor"
+OTHER_TYPE: "Boolean"|"Address"|"String"|"State"|"Array"|"Map"|"StructuredData"|"Graph"|"DataLoader"|"Optimiser"|"Tensor"
 
 INLINE_INT: ("u"|"i") INT
-
-ANNOTATION: "init"|"action"|"query"
 
 %import common.LETTER
 %import common.WS
