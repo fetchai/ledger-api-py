@@ -39,7 +39,7 @@ def _iterable(value):
 
 
 class LedgerApi:
-    def __init__(self, host=None, port=None, server_name=None):
+    def __init__(self, host=None, port=None, network=None):
         if server_name:
             assert not host and not port, 'Specify either a server name, or a host & port'
             host, port = bootstrap.server_from_name(server_name)
