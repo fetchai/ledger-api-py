@@ -38,9 +38,8 @@ def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: O
     :param protocol: Transfer protocol, either 'http' or 'https'
     :return: The formatted URL
     """
-
-    if not protocol:
-        protocol =  protocol  or 'http'
+    # Default to http protocol
+    protocol = protocol or 'http'
 
     if endpoint is None:
         url = '{}://{}:{}/api/contract/submit'.format(protocol, host, port)

@@ -42,7 +42,7 @@ class LedgerApi:
     def __init__(self, host=None, port=None, network=None):
         if server_name:
             assert not host and not port, 'Specify either a server name, or a host & port'
-            host, port = bootstrap.server_from_name(server_name)
+            host, port = bootstrap.server_from_name(network)
 
         self.tokens = TokenApi(host, port)
         self.contracts = ContractsApi(host, port)
