@@ -7,21 +7,6 @@ pipeline {
     stage('Unit Tests') {
       parallel {
 
-        stage('Python 2.7') {
-
-          agent {
-            docker {
-              image "python:2.7-alpine"
-            }
-          }
-
-          steps {
-            sh 'pip install tox'
-            sh 'tox -e py27'
-          }
-
-        } // Python 2.7
-
         stage('Python 3.5') {
 
           agent {
