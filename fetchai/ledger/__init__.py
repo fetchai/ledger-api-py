@@ -1,5 +1,3 @@
-import semver
-
 # Ledger version that this API is compatible with
 __version__ = '0.9.0-a1'
 # This API is compatible with ledgers that meet all the requirements listed here:
