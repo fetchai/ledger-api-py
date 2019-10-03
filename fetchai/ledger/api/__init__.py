@@ -45,6 +45,8 @@ class LedgerApi:
         if network:
             assert not host and not port, 'Specify either a server name, or a host & port'
             host, port = bootstrap.server_from_name(network)
+        else:
+            assert host and port, "Must specify either a server name, or a host & port"
 
         self.tokens = TokenApi(host, port)
         self.contracts = ContractsApi(host, port)
