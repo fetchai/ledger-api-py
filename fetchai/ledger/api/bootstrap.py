@@ -7,32 +7,40 @@ class NetworkUnavailableError(Exception):
     pass
 
 
-def server_from_name(network):
-    # Get list of active servers
-    params = {'active': 1}
+def list_servers(active=True):
+    """Gets list of (active) servers from bootstrap network"""
+    params = {'active': 1} if active else {}
     servers_response = requests.get('https://bootstrap.fetch.ai/networks/', params=params)
     if servers_response.status_code != 200:
         raise requests.ConnectionError('Failed to get network status from bootstrap')
 
+    return servers_response.json()
+
+
+def is_server_valid(server_list, network):
     # Check requested server is on list
-    available_servers = [s['name'] for s in servers_response.json()]
+    available_servers = [s['name'] for s in server_list]
     if network not in available_servers:
         raise NetworkUnavailableError('Requested network not present on network: {}'.format(network))
 
     # Check network version
-    server_version = next(s for s in servers_response.json() if s['name'] == network)['versions']
-    if server_version != '*':
-        version_constraints = server_version.split(',')
+    server_details = next(s for s in server_list if s['name'] == network)
+    if server_details['versions'] != '*':
+        version_constraints = server_details['versions'].split(',')
         if not all(semver.match(__network_required__, c) for c in version_constraints):
             raise IncompatibleLedgerVersion("Requested network does not support required version\n" +
                                             "Required version: {}\nNetwork supports: {}".format(
                                                 __network_required__, ', '.join(version_constraints)
                                             ))
+    # Return true if server valid
+    return True
 
+
+def get_ledger_address(network):
     # Request server endpoints
     params = {'network': network}
     endpoints_response = requests.get('https://bootstrap.fetch.ai/endpoints', params=params)
-    if servers_response.status_code != 200:
+    if endpoints_response.status_code != 200:
         raise requests.ConnectionError('Failed to get network endpoint from bootstrap')
 
     # Retrieve ledger endpoint
@@ -45,18 +53,36 @@ def server_from_name(network):
     if 'address' not in ledger_endpoint:
         raise RuntimeError('Ledger endpoint missing address')
 
-    # Return address and port
-    ledger_address = ledger_endpoint['address']
+    return ledger_endpoint['address']
 
-    # Check if address contains a port
-    address = ledger_address.split('://')[-1] if '://' in ledger_address else ledger_address
+
+def split_address(address):
+    """Splits a url into a protocol, host name and port"""
+    if '://' in address:
+        protocol, address = address.split('://')
+    else:
+        protocol = 'http'
+
     if ':' in address:
         address, port = address.split(':')
-        return address, int(port)
     else:
-        # If no port specified, default to 443
-        # TODO: Sensible default for http?
-        return ledger_address, 443
+        port = 443 if protocol == 'https' else 8000
+
+    return protocol, address, int(port)
 
 
+def server_from_name(network):
+    """Queries bootstrap for the requested network and returns connection details"""
+    # Get list of active servers
+    server_list = list_servers(True)
 
+    # Check requested network exists and supports our ledger version
+    assert is_server_valid(server_list, network)
+
+    # Get address of network ledger
+    ledger_address = get_ledger_address(network)
+
+    # Check if address contains a port
+    protocol, host, port = split_address(ledger_address)
+
+    return protocol + '://' + host, port
