@@ -1,6 +1,11 @@
 import requests
+import semver
+from fetchai.ledger import __network_required__, IncompatibleLedgerVersion
 
-class NetworKUnavailableError(Exception)
+
+class NetworkUnavailableError(Exception):
+    pass
+
 
 def server_from_name(network):
     # Get list of active servers
@@ -12,11 +17,17 @@ def server_from_name(network):
     # Check requested server is on list
     available_servers = [s['name'] for s in servers_response.json()]
     if network not in available_servers:
-        raise NetworKUnavailableError('Requested network not present on network: {}'.format(network))
+        raise NetworkUnavailableError('Requested network not present on network: {}'.format(network))
 
     # Check network version
     server_version = next(s for s in servers_response.json() if s['name'] == network)['versions']
-    # TODO: Not sure how to compare this string to our requirements
+    if server_version != '*':
+        version_constraints = server_version.split(',')
+        if not all(semver.match(__network_required__, c) for c in version_constraints):
+            raise IncompatibleLedgerVersion("Requested network does not support required version\n" +
+                                            "Required version: {}\nNetwork supports: {}".format(
+                                                __network_required__, ', '.join(version_constraints)
+                                            ))
 
     # Request server endpoints
     params = {'network': network}
@@ -27,7 +38,7 @@ def server_from_name(network):
     # Retrieve ledger endpoint
     ledger_endpoint = [s for s in endpoints_response.json() if s['component'] == 'ledger']
     if len(ledger_endpoint) != 1:
-        raise NetworKUnavailableError('Requested server is not reporting a ledger endpoint')
+        raise NetworkUnavailableError('Requested server is not reporting a ledger endpoint')
 
     # Return server address
     ledger_endpoint = ledger_endpoint[0]
