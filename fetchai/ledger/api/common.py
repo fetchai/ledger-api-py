@@ -130,8 +130,6 @@ class ApiEndpoint(object):
 
         # query what the current block number is on the node
         current_block = self._current_block_number()
-        if current_block < 0:
-            raise RuntimeError('Unable to query current block number')
 
         # build up the basic transaction information
         tx = Transaction()
@@ -143,10 +141,10 @@ class ApiEndpoint(object):
 
     def _current_block_number(self):
         success, data = self._get_json('status/chain', size=1)
-        block_number = -1
         if success:
-            block_number = data['chain'][0]['blockNumber']
-        return block_number
+            return data['chain'][0]['blockNumber']
+
+        raise RuntimeError('Unable to query current block number')
 
     def _get_json(self, path, **kwargs):
         args = dict(**kwargs)
