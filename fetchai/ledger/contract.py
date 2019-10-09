@@ -39,7 +39,8 @@ class Contract:
     
     @property
     def name(self):
-        return binacii.hexlify(bytes(self._digest)) + "." + str(self._owner)
+        return binacii.hexlify(bytes(self._digest)).decode() + "." + str(self._owner)
+
 
     def dumps(self):
         return json.dumps(self._to_json_object())
