@@ -1,6 +1,6 @@
 import requests
 import semver
-from fetchai.ledger import __network_required__, IncompatibleLedgerVersion
+from fetchai.ledger import __version__, IncompatibleLedgerVersion
 
 
 class NetworkUnavailableError(Exception):
@@ -27,10 +27,17 @@ def is_server_valid(server_list, network):
     server_details = next(s for s in server_list if s['name'] == network)
     if server_details['versions'] != '*':
         version_constraints = server_details['versions'].split(',')
-        if not all(semver.match(__network_required__, c) for c in version_constraints):
+
+        # Build required version (e.g.: 0.9.1-alpha2 -> 0.9.0)
+        network_version_required = __version__
+        network_version_required['prerelease'] = None
+        network_version_required['build'] = None
+        network_version_required['patch'] = 0
+
+        if not all(semver.match(network_version_required, c) for c in version_constraints):
             raise IncompatibleLedgerVersion("Requested network does not support required version\n" +
                                             "Required version: {}\nNetwork supports: {}".format(
-                                                __network_required__, ', '.join(version_constraints)
+                                                network_version_required, ', '.join(version_constraints)
                                             ))
     # Return true if server valid
     return True
