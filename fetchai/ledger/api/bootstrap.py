@@ -29,7 +29,7 @@ def is_server_valid(server_list, network):
         version_constraints = server_details['versions'].split(',')
 
         # Build required version (e.g.: 0.9.1-alpha2 -> 0.9.0)
-        network_version_required = __version__
+        network_version_required = semver.parse(__version__)
         network_version_required['prerelease'] = None
         network_version_required['build'] = None
         network_version_required['patch'] = 0
