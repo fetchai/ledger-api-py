@@ -60,7 +60,7 @@ class BootstrapTests(unittest.TestCase):
 
         # Test get called as expected
         list_servers(True)
-        mock_response.json.assert_called_once()
+        mock_response.json.assert_called_once_with()
         mock_get.assert_called_once_with('https://bootstrap.fetch.ai/networks/', params={'active': 1})
 
         # Test correct call when not filtering for activity
@@ -68,7 +68,7 @@ class BootstrapTests(unittest.TestCase):
         mock_get.reset_mock()
         mock_get.side_effect = [mock_response]
         list_servers(False)
-        mock_response.json.assert_called_once()
+        mock_response.json.assert_called_once_with()
         mock_get.assert_called_once_with('https://bootstrap.fetch.ai/networks/', params={})
 
         # Test exception thrown on connection error
