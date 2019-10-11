@@ -50,7 +50,11 @@ def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: O
         else:
             canonical_name = '.'.join([prefix, endpoint])
 
-        url = '{}://{}:{}/api/contract/'.format(protocol, host, port) + canonical_name.replace('.', '/')
+        url = '{}://{}:{}/api/contract/{}'.format(
+            protocol,
+            host,
+            port,
+            canonical_name.replace('.', '/'))
 
     return url
 

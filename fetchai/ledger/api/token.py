@@ -15,6 +15,7 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+
 from typing import Union
 
 from fetchai.ledger.api import ApiEndpoint, ApiError
@@ -32,7 +33,7 @@ class TokenApi(ApiEndpoint):
         """
         Query the balance for a given address from the remote node
 
-        :param address: The base64 encoded string containing the address of the node
+        :param address: The base58 encoded string containing the address of the node
         :return: The balance value retried
         :raises: ApiError on any failures
         """
@@ -60,7 +61,7 @@ class TokenApi(ApiEndpoint):
         """
         Query the stake for a given address from the remote node
 
-        :param address: The base64 encoded string containing the address of the node
+        :param address: The base58 encoded string containing the address of the node
         :return: The balance value retried
         :raises: ApiError on any failures
         """
@@ -88,7 +89,7 @@ class TokenApi(ApiEndpoint):
         """
         Query the stake on cooldown for a given address from the remote node
 
-        :param address: The base64 encoded string containing the address of the node
+        :param address: The base58 encoded string containing the address of the node
         :return: The balance value retried
         :raises: ApiError on any failures
         """
