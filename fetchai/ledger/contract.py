@@ -18,7 +18,6 @@ def _compute_digest(source) -> Address:
     hash_func.update(source.encode('ascii'))
     return Address(hash_func.digest())
 
-
 class Contract:
     def __init__(self, source: str):
         self._source = str(source)
@@ -37,6 +36,11 @@ class Contract:
         if len(init) > 1:
             raise RuntimeError('Contract may not have more than one @init function, found: {}'.format(', '.join(init)))
         self._init = init[0] if len(init) else None
+    
+    @property
+    def name(self):
+        return binacii.hexlify(bytes(self._digest)).decode() + "." + str(self._owner)
+
 
     def dumps(self):
         return json.dumps(self._to_json_object())
