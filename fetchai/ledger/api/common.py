@@ -27,7 +27,7 @@ from fetchai.ledger.transaction import Transaction
 DEFAULT_BLOCK_VALIDITY_PERIOD = 100
 
 
-def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: Optional[str]):
+def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: Optional[str], protocol: str = None):
     """
     Constructs a URL based on specified contract prefix and endpoint
 
@@ -35,11 +35,14 @@ def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: O
     :param port: The target port
     :param prefix: The dot separated prefix for the contract
     :param endpoint: The dot separated name for the contract endpoint
+    :param protocol: Transfer protocol, either 'http' or 'https'
     :return: The formatted URL
     """
+    # Default to http protocol
+    protocol = protocol or 'http'
 
     if endpoint is None:
-        url = 'http://{}:{}/api/contract/submit'.format(host, port)
+        url = '{}://{}:{}/api/contract/submit'.format(protocol, host, port)
 
     else:
         if prefix is None:
@@ -47,12 +50,12 @@ def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: O
         else:
             canonical_name = '.'.join([prefix, endpoint])
 
-        url = 'http://{}:{}/api/contract/'.format(host, port) + canonical_name.replace('.', '/')
+        url = '{}://{}:{}/api/contract/'.format(protocol, host, port) + canonical_name.replace('.', '/')
 
     return url
 
 
-def submit_json_transaction(host: str, port: int, tx_data, session=None):
+def submit_json_transaction(host: str, port: int, tx_data, session=None, protocol: str = None):
     """
     Submit a JSON transaction to the target onde
 
@@ -60,13 +63,14 @@ def submit_json_transaction(host: str, port: int, tx_data, session=None):
     :param port: The port to target ledger instance
     :param tx_data: The object that will be json encoded
     :param session: Optional session object to be passed to the
+    :param protocol: Transfer protocol, either 'http' or 'https'
     :return: True is the request was successful, otherwise False
     """
     if session is None:
         session = requests.session()
 
     # define the URL to be used
-    uri = format_contract_url(host, port, None, 'submit')
+    uri = format_contract_url(host, port, None, 'submit', protocol=protocol)
 
     headers = {
         'content-type': 'application/vnd+fetch.transaction+json',
@@ -91,9 +95,19 @@ class ApiEndpoint(object):
     API_PREFIX = None
 
     def __init__(self, host, port):
+        if '://' in host:
+            protocol, host = host.split('://')
+        else:
+            protocol = 'http'
+
+        self._protocol = protocol
         self._host = str(host)
         self._port = int(port)
         self._session = requests.session()
+
+    @property
+    def protocol(self):
+        return self._protocol
 
     @property
     def host(self):
@@ -137,7 +151,7 @@ class ApiEndpoint(object):
     def _get_json(self, path, **kwargs):
         args = dict(**kwargs)
         params = args if len(args) > 0 else None
-        url = 'http://{}:{}/api/{}'.format(self._host, self._port, path)
+        url = '{}://{}:{}/api/{}'.format(self._protocol, self._host, self._port, path)
 
         # make the request
         raw_response = self._session.get(url, params=params)
@@ -167,7 +181,7 @@ class ApiEndpoint(object):
             endpoint = endpoint[1:]
 
         # format and make the request
-        url = format_contract_url(self.host, self.port, prefix or self.API_PREFIX, endpoint)
+        url = format_contract_url(self.host, self.port, prefix or self.API_PREFIX, endpoint, protocol=self.protocol)
 
         # define the request headers
         headers = {
@@ -207,7 +221,7 @@ class ApiEndpoint(object):
         tx_payload = dict(ver="1.2", data=base64.b64encode(tx_data).decode())
 
         # format the URL
-        url = format_contract_url(self.host, self.port, self.API_PREFIX, endpoint)
+        url = format_contract_url(self.host, self.port, self.API_PREFIX, endpoint, protocol=self.protocol)
 
         # make the request
         r = self._session.post(url, json=tx_payload, headers=headers)

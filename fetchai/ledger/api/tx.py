@@ -10,7 +10,7 @@ class TransactionApi(ApiEndpoint):
         :return:
         """
 
-        url = 'http://{}:{}/api/status/tx/{}'.format(self.host, self.port, tx_digest)
+        url = '{}://{}:{}/api/status/tx/{}'.format(self.protocol, self.host, self.port, tx_digest)
 
         response = self._session.get(url).json()
         return response.get('status')
