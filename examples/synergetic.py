@@ -49,7 +49,7 @@ def main():
     print('Setup...complete')
 
     # create the contract on the ledger
-    synergetic_contract = Contract(CONTRACT_TEXT)
+    synergetic_contract = Contract(CONTRACT_TEXT, entity)
     print('Creating contract..')
     api.sync(api.contracts.create(entity, synergetic_contract, 4096))
     print('Contract submitted ({}.{}).'.format(synergetic_contract.digest.to_hex(), synergetic_contract.owner))
