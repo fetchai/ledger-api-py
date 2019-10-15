@@ -58,7 +58,7 @@ class LedgerApi:
         server_version = self.server.version().lstrip('v')
         if server_version.startswith('Unknown version with hash'):
             print('*' * 80)
-            print('WARNING: Using development version'.format(server_version))
+            print('WARNING: Using development version')
             print('*' * 80)
             return
 
