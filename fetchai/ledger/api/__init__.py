@@ -19,11 +19,12 @@
 import time
 from datetime import datetime, timedelta
 from typing import Sequence, Union
+
 import semver
 
+from fetchai.ledger import __compatible__, IncompatibleLedgerVersion
 from fetchai.ledger.api import bootstrap
 from fetchai.ledger.api.server import ServerApi
-from fetchai.ledger import __compatible__, IncompatibleLedgerVersion
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .contracts import ContractsApi
 from .token import TokenApi
@@ -55,10 +56,10 @@ class LedgerApi:
 
         # Check that ledger version is compatible with API version
         server_version = self.server.version().lstrip('v')
-        try:
-            semver.parse(server_version)
-        except:
-            print('WARNING: Using development version {}'.format(server_version))
+        if server_version.startswith('Unknown version with hash'):
+            print('*' * 80)
+            print('WARNING: Using development version'.format(server_version))
+            print('*' * 80)
             return
 
         if not all(semver.match(server_version, c) for c in __compatible__):
