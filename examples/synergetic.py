@@ -52,11 +52,12 @@ def main():
     synergetic_contract = Contract(CONTRACT_TEXT, entity)
     print('Creating contract..')
     api.sync(api.contracts.create(entity, synergetic_contract, 4096))
-    print('Contract submitted ({}.{}).'.format(synergetic_contract.digest.to_hex(), synergetic_contract.owner))
 
     # create a whole series of random data to submit to the DAG
     random_ints = [random.randint(0, 200) for _ in range(10)]
-    api.sync([api.contracts.submit_data(entity, synergetic_contract.digest, value=value) for value in random_ints])
+    api.sync(
+        [api.contracts.submit_data(entity, synergetic_contract.digest, synergetic_contract.address, value=value) \
+         for value in random_ints])
     print('Data submitted.')
 
     print('Waiting...')

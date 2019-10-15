@@ -45,12 +45,12 @@ class ContractsApi(ApiEndpoint):
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
-    def submit_data(self, entity: Entity, digest: Address, **kwargs):
+    def submit_data(self, entity: Entity, contract_digest: Address, contract_address: Address, **kwargs):
         # build up the basic transaction information
         tx = Transaction()
         tx.from_address = Address(entity)
         tx.valid_until = 10000
-        tx.target_contract(digest, Address(entity), BitVector())
+        tx.target_contract(contract_digest, contract_address, BitVector())
         tx.charge_rate = 1
         tx.charge_limit = 1000000000000
         tx.action = 'data'

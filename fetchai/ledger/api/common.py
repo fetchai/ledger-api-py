@@ -236,9 +236,6 @@ class ApiEndpoint(object):
 
         # parse the response
         response = r.json()
-        # print('\n\ntx_data\n',tx_data)
-        # print('\n\ntx_payload\n',tx_payload)
-        # print('\n\nresponse\n',json.dumps(response, indent=2), '\n\n')
 
         # attempt to extract out the submitting transaction hash
         tx_list = response.get('txs', [])
