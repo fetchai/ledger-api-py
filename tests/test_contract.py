@@ -48,7 +48,22 @@ endfunction
 
 class ContractTests(unittest.TestCase):
     def test_dumps_and_loads(self):
-        # create the contract
+        owner = Entity()
+        orig = Contract(CONTRACT_TEXT, owner, b'this is a nonce')
+
+        # encode the contract
+        encoded = orig.dumps()
+
+        # re-create the contract
+        new = Contract.loads(encoded)
+
+        # checks
+        self.assertIsInstance(new, Contract)
+        self.assertEqual(orig.owner, new.owner)
+        self.assertEqual(orig.digest, new.digest)
+        self.assertEqual(orig.source, new.source)
+
+    def test_dumps_and_loads_without_nonce(self):
         owner = Entity()
         orig = Contract(CONTRACT_TEXT, owner)
 
@@ -63,23 +78,7 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(orig.owner, new.owner)
         self.assertEqual(orig.digest, new.digest)
         self.assertEqual(orig.source, new.source)
-
-    def test_dumps_and_loads_without_owner(self):
-        # create the contract
-        owner = Entity()
-        orig = Contract(CONTRACT_TEXT, owner)
-
-        # encode the contract
-        encoded = orig.dumps()
-
-        # re-create the contract
-        new = Contract.loads(encoded)
-
-        # checks
-        self.assertIsInstance(new, Contract)
-        self.assertEqual(orig.owner, new.owner)
-        self.assertEqual(orig.digest, new.digest)
-        self.assertEqual(orig.source, new.source)
+        self.assertEqual(orig.nonce, new.nonce)
 
     @patch.object(ShardMask, 'resources_to_shard_mask')
     def test_create(self, mock_shard_mask):

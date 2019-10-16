@@ -23,11 +23,11 @@ def _compute_digest(source) -> Address:
 
 
 class Contract:
-    def __init__(self, source: str, owner: AddressLike):
+    def __init__(self, source: str, owner: AddressLike, nonce: bytes = None):
         self._source = str(source)
         self._digest = _compute_digest(self._source)
         self._owner = Address(owner)
-        self._nonce = bytes(urandom(8))
+        self._nonce = bytes(urandom(8)) if nonce is None else nonce
 
         hasher = hashlib.sha256()
         hasher.update(bytes(self._owner))
@@ -172,15 +172,22 @@ class Contract:
     @staticmethod
     def _from_json_object(obj):
         assert obj['version'] == 1
+
         source = base64.b64decode(obj['source']).decode()
         owner = obj['owner']
-        sc = Contract(source, owner)
+        nonce = base64.b64decode(obj['nonce_b64'].encode())
+
+        sc = Contract(
+            source,
+            owner,
+            nonce)
 
         return sc
 
     def _to_json_object(self):
         return {
             'version': 1,
+            'nonce_b64': self.nonce,
             'owner': None if self._owner is None else str(self._owner),
             'source': self.encoded_source
         }
