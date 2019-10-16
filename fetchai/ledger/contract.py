@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import logging
 from os import urandom
 from typing import Union, List
 
@@ -110,7 +111,7 @@ class Contract:
             resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
                                       self._parser.used_globals_to_addresses(self._init, [self._owner]))
         except (UnparsableAddress, UseWildcardShardMask):
-            print("WARNING: Couldn't auto-detect used shards, using wildcard shard mask")
+            logging.warn("Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
         else:
             # Generate shard mask from resource addresses
@@ -150,7 +151,7 @@ class Contract:
             resource_addresses = [ShardMask.state_to_address(address, self) for address in
                                   self._parser.used_globals_to_addresses(name, list(args))]
         except (UnparsableAddress, UseWildcardShardMask):
-            print("WARNING: Couldn't auto-detect used shards, using wildcard shard mask")
+            logging.warn("Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
         else:
             # Generate shard mask from resource addresses

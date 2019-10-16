@@ -183,7 +183,6 @@ class ParserTests(unittest.TestCase):
         """Tests for correct parsing of template variables"""
         tree = self.parser.parse(FUNCTION_BLOCK.format("a = State<UInt64>();"))
         tree.expand_kids_by_index(0)
-        # print(next(tree.find_data('code_block')))
 
     def test_functions(self):
         """Tests correct detection of non-entry-point functions"""

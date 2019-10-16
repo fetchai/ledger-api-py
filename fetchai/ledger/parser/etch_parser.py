@@ -1,3 +1,5 @@
+import logging
+
 from lark import Lark, tree, lexer
 from pkg_resources import resource_string
 
@@ -29,7 +31,7 @@ class ShardUse:
         elif isinstance(node.children[0], tree.Tree):
             # String concat
             items = []
-            print("WARNING: global use statements including string-parameter concatenations are experimental")
+            logging.warn("global use statements including string-parameter concatenations are experimental")
             for t in node.children[0].children:
                 if t.type == 'NAME':
                     items.append(parameter_dict[t.value])
@@ -137,6 +139,7 @@ class Function:
                 functions.append(Function.from_tree(inst.children[0]))
 
         return functions
+
 
 class UseWildcardShardMask(Exception):
     pass

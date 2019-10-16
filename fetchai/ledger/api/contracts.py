@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 import msgpack
@@ -17,11 +18,11 @@ class ContractsApi(ApiEndpoint):
     def create(self, owner: Entity, contract: 'Contract', fee: int, shard_mask: BitVector = None):
         ENDPOINT = 'create'
 
-        print('Deploying contract', contract.address)
+        logging.debug('Deploying contract', contract.address)
 
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
-            print("WARNING: defaulting to wildcard shard mask as none supplied")
+            logging.warn("Defaulting to wildcard shard mask as none supplied")
             shard_mask = BitVector()
 
         # build up the basic transaction information
@@ -73,7 +74,7 @@ class ContractsApi(ApiEndpoint):
                *args, shard_mask: BitVector = None):
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
-            print("WARNING: defaulting to wildcard shard mask as none supplied")
+            logging.warn("Defaulting to wildcard shard mask as none supplied")
             shard_mask = BitVector()
 
         # build up the basic transaction information
