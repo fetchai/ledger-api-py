@@ -16,6 +16,7 @@
 #
 # ------------------------------------------------------------------------------
 
+import logging
 import time
 from datetime import datetime, timedelta
 from typing import Sequence, Union
@@ -57,9 +58,7 @@ class LedgerApi:
         # Check that ledger version is compatible with API version
         server_version = self.server.version().lstrip('v')
         if server_version.startswith('Unknown version with hash'):
-            print('*' * 80)
-            print('WARNING: Using development version')
-            print('*' * 80)
+            logging.warn('Using development version')
             return
 
         if not all(semver.match(server_version, c) for c in __compatible__):
