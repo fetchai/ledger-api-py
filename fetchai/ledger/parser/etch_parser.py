@@ -86,16 +86,18 @@ class PersistentGlobal:
 
 
 class Function:
-    def __init__(self, name, parameters, return_type=None, annotation=None, code_block=None):
+    def __init__(self, name, parameters, return_type=None, annotation=None, code_block=None, lines=None):
         self.name = name
         self.parameters = parameters
         self.return_type = return_type
         self.annotation = annotation
         self.code_block = code_block
+        self.lines = lines
 
     @staticmethod
     def from_tree(tree: tree.Tree):
         # Parse annotation parent node
+        lines = (tree.line, tree.end_line)
         if tree.data == 'annotation':
             annotation = tree.children[0].value
             tree = tree.children[1]
@@ -124,7 +126,7 @@ class Function:
             assert len(code_block) == 1, "Found more than one code block"
             code_block = code_block[0]
 
-        return Function(function_name, parameters, return_type, annotation, code_block)
+        return Function(function_name, parameters, return_type, annotation, code_block, lines=lines)
 
     @staticmethod
     def all_from_tree(tree: tree.Tree):
@@ -150,7 +152,7 @@ class EtchParser:
     def __init__(self, etch_code=None):
         # Load grammar
         self.grammar = resource_string(__name__, 'etch.grammar').decode('ascii')
-        self.parser = Lark(self.grammar)
+        self.parser = Lark(self.grammar, propagate_positions=True)
 
         self.parsed_tree = None
         self.etch_code = None

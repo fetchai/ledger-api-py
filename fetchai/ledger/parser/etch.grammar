@@ -42,7 +42,7 @@ bool_expression: expression
                | bool_expression BOOLEAN_OP bool_expression
 
 annotation: "@"ANNOTATION function
-ANNOTATION: "init"|"action"|"query"|"problem"|"objective"|"work"|"clear"
+ANNOTATION: "initTest"|"init"|"action"|"query"|"problem"|"objective"|"work"|"clear"|"test"
 
 function: "function" NAME parameter_block (":" TYPE)? code_block? "endfunction"
 
