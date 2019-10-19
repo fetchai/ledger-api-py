@@ -50,7 +50,7 @@ class Contract:
 
     @property
     def name(self):
-        return binacii.hexlify(bytes(self._digest)).decode() + "." + str(self._owner)
+        return '{}.{}'.format(self.digest.to_hex(), self.address)
 
     def dumps(self):
         return json.dumps(self._to_json_object())
