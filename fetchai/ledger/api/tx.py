@@ -25,7 +25,7 @@ class TxStatus:
 
     @property
     def digest(self):
-        return binascii.hexlify(self._digest)
+        return binascii.hexlify(self._digest).decode()
 
 
 class TransactionApi(ApiEndpoint):
