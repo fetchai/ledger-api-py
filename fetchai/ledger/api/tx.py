@@ -1,15 +1,18 @@
+import base64
+import binascii
+
 from .common import ApiEndpoint
 
 
 class TxStatus:
     def __init__(self,
-                 digest,
-                 status,
-                 exit_code,
-                 charge,
-                 charge_rate,
-                 fee):
-        self.digest = digest
+                 digest: bytes,
+                 status: str,
+                 exit_code: int,
+                 charge: int,
+                 charge_rate: int,
+                 fee: int):
+        self._digest = digest
         self.status = status
         self.exit_code = exit_code
         self.charge = charge
@@ -19,6 +22,10 @@ class TxStatus:
     @property
     def finished(self):
         return self.status not in ('Unknown', 'Pending')
+
+    @property
+    def digest(self):
+        return binascii.hexlify(self._digest)
 
 
 class TransactionApi(ApiEndpoint):
@@ -38,9 +45,9 @@ class TransactionApi(ApiEndpoint):
         response = self._session.get(url).json()
 
         return TxStatus(
-            digest=response['tx'],
-            status=response['status'],
-            exit_code=response['exit_code'],
-            charge=response['charge'],
-            charge_rate=response['charge_rate'],
-            fee=response['fee'])
+            digest=base64.b64decode(response['tx'].encode()),
+            status=str(response['status']),
+            exit_code=int(response['exit_code']),
+            charge=int(response['charge']),
+            charge_rate=int(response['charge_rate']),
+            fee=int(response['fee']))

@@ -88,7 +88,9 @@ class LedgerApi:
             remaining_statuses = [self.tx.status(digest) for digest in remaining]
             completed_this_round = [status for status in remaining_statuses if status.finished]
             finished += completed_this_round
-            remaining -= set([status.digest for status in completed_this_round])
+
+            completed_digests = set([status.digest for status in completed_this_round])
+            remaining -= completed_digests
 
             # once we have completed all the outstanding transactions
             if len(remaining) == 0:
