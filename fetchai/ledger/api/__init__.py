@@ -19,11 +19,12 @@
 import time
 from datetime import datetime, timedelta
 from typing import Sequence, Union
+
 import semver
 
+from fetchai.ledger import __compatible__, IncompatibleLedgerVersion
 from fetchai.ledger.api import bootstrap
 from fetchai.ledger.api.server import ServerApi
-from fetchai.ledger import __compatible__, IncompatibleLedgerVersion
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .contracts import ContractsApi
 from .token import TokenApi
@@ -63,9 +64,12 @@ class LedgerApi:
     def sync(self, txs: Transactions, timeout=None):
         timeout = int(timeout or 120)
         # given the inputs make sure that we correctly for the input set of values
+        finished = []
         if isinstance(txs, str):
+            initial_txs = {txs}
             remaining = {txs}
         elif _iterable(txs):
+            initial_txs = set(txs)
             remaining = set(txs)
         else:
             raise TypeError('Unknown argument type')
@@ -75,11 +79,14 @@ class LedgerApi:
 
         while True:
             # loop through all the remaining digests and poll them creating a set of completed in this round
-            remaining -= set([digest for digest in remaining if self._poll(digest)])
+            remaining_statuses = [self.tx.status(digest) for digest in remaining]
+            completed_this_round = [status for status in remaining_statuses if status.finished]
+            finished += completed_this_round
+            remaining -= set([status.digest for status in completed_this_round])
 
             # once we have completed all the outstanding transactions
             if len(remaining) == 0:
-                break
+                return finished
 
             # time out mode
             delta_time = datetime.now() - start
@@ -87,9 +94,6 @@ class LedgerApi:
                 raise RuntimeError('Timeout waiting for txs: {}'.format(', '.join(list(remaining))))
 
             time.sleep(1)
-
-    def _poll(self, digest):
-        return self.tx.status(digest) in ('Executed', 'Submitted')
 
     def wait_for_blocks(self, n):
         initial = self.tokens._current_block_number()
