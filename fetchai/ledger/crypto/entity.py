@@ -18,7 +18,6 @@
 
 import base64
 import json
-import binascii
 
 import ecdsa
 
@@ -40,7 +39,7 @@ class Entity(Identity):
 
     @staticmethod
     def from_hex(private_key_hex: str):
-        return Entity(binascii.unhexlify(private_key_hex))
+        return Entity(bytes.fromhex(private_key_hex))
 
     @classmethod
     def from_base64(cls, private_key_base64: str):
@@ -70,7 +69,7 @@ class Entity(Identity):
 
     @property
     def private_key_hex(self):
-        return binascii.hexlify(self.private_key_bytes).decode()
+        return self.private_key_bytes.hex()
 
     @property
     def private_key_bytes(self):

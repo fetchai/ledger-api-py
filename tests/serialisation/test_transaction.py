@@ -1,4 +1,3 @@
-import binascii
 import io
 import json
 import unittest
@@ -308,7 +307,7 @@ class TransactionSerialisation(unittest.TestCase):
 
         # extract and verify the payload
         payload_bytes = transaction_bytes[:expected_payload_end]
-        self.assertEqual(expected_hex_payload, binascii.hexlify(payload_bytes).decode())
+        self.assertEqual(expected_hex_payload, payload_bytes.hex())
 
         # loop through and verify all the signatures
         buffer = io.BytesIO(transaction_bytes[expected_payload_end:])

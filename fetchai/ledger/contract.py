@@ -1,12 +1,12 @@
-from fetchai.ledger.bitvector import BitVector
-from fetchai.ledger.parser.etch_parser import EtchParser, UnparsableAddress, UseWildcardShardMask
-from fetchai.ledger.serialisation.shardmask import ShardMask
-
 import base64
 import hashlib
 import json
+import logging
 from typing import Union, List
 
+from fetchai.ledger.bitvector import BitVector
+from fetchai.ledger.parser.etch_parser import EtchParser, UnparsableAddress, UseWildcardShardMask
+from fetchai.ledger.serialisation.shardmask import ShardMask
 from .api import ContractsApi, LedgerApi
 from .crypto import Entity, Address
 
@@ -17,6 +17,7 @@ def _compute_digest(source) -> Address:
     hash_func = hashlib.sha256()
     hash_func.update(source.encode('ascii'))
     return Address(hash_func.digest())
+
 
 class Contract:
     def __init__(self, source: str):
@@ -36,11 +37,10 @@ class Contract:
         if len(init) > 1:
             raise RuntimeError('Contract may not have more than one @init function, found: {}'.format(', '.join(init)))
         self._init = init[0] if len(init) else None
-    
+
     @property
     def name(self):
-        return binacii.hexlify(bytes(self._digest)).decode() + "." + str(self._owner)
-
+        return '{}.{}'.format(self._digest.to_hex(), self._owner)
 
     def dumps(self):
         return json.dumps(self._to_json_object())
@@ -89,7 +89,7 @@ class Contract:
             resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
                                       self._parser.used_globals_to_addresses(self._init, [self._owner]))
         except (UnparsableAddress, UseWildcardShardMask):
-            print("WARNING: Couldn't auto-detect used shards, using wildcard shard mask")
+            logging.warning("Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
         else:
             # Generate shard mask from resource addresses
@@ -129,7 +129,7 @@ class Contract:
             resource_addresses = [ShardMask.state_to_address(address, self) for address in
                                   self._parser.used_globals_to_addresses(name, list(args))]
         except (UnparsableAddress, UseWildcardShardMask):
-            print("WARNING: Couldn't auto-detect used shards, using wildcard shard mask")
+            logging.warning("Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
         else:
             # Generate shard mask from resource addresses
