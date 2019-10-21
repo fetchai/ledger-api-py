@@ -14,8 +14,8 @@ class TxStatus:
                  charge: int,
                  charge_rate: int,
                  fee: int):
-        self._digest = digest
-        self._digest_hex = self._digest.hex()
+        self._digest_bytes = digest
+        self._digest_hex = self._digest_bytes.hex()
         self.status = status
         self.exit_code = exit_code
         self.charge = charge
@@ -32,12 +32,12 @@ class TxStatus:
                self.status not in self._SUCCESSFUL_TERMINAL_STATES
 
     @property
-    def digest(self):
+    def digest_hex(self):
         return self._digest_hex
 
     @property
     def digest_bytes(self):
-        return self._digest
+        return self._digest_bytes
 
 
 class TransactionApi(ApiEndpoint):

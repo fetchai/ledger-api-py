@@ -86,14 +86,14 @@ class LedgerApi:
 
             failed_this_round = [status for status in remaining_statuses if status.failed]
             if failed_this_round:
-                failures = ['{}:{}'.format(tx_status.digest, tx_status.status) \
+                failures = ['{}:{}'.format(tx_status.digest_hex, tx_status.status) \
                             for tx_status in failed_this_round]
                 raise RuntimeError('Some transactions have failed: {}'.format(', '.join(failures)))
 
             successful_this_round = [status for status in remaining_statuses if status.successful]
             finished += successful_this_round
 
-            completed_digests = set([status.digest for status in successful_this_round])
+            completed_digests = set([status.digest_hex for status in successful_this_round])
             remaining -= completed_digests
 
             # once we have completed all the outstanding transactions
