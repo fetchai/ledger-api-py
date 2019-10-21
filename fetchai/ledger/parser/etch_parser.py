@@ -31,7 +31,7 @@ class ShardUse:
         elif isinstance(node.children[0], tree.Tree):
             # String concat
             items = []
-            logging.warn("global use statements including string-parameter concatenations are experimental")
+            logging.warning("global use statements including string-parameter concatenations are experimental")
             for t in node.children[0].children:
                 if t.type == 'NAME':
                     items.append(parameter_dict[t.value])

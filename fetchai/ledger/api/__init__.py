@@ -60,10 +60,8 @@ class LedgerApi:
         # Check that ledger version is compatible with API version
         server_version = self.server.version().lstrip('v')
         if server_version.startswith('Unknown version with hash'):
-            logging.warn('Using development version')
-            return
-
-        if not all(semver.match(server_version, c) for c in __compatible__):
+            logging.warning('Using development version')
+        elif not all(semver.match(server_version, c) for c in __compatible__):
             raise IncompatibleLedgerVersion("Ledger version running on server is not compatible with this API" +
                                             "\nServer version: {} \nExpected version: {}".format(
                                                 server_version, ', '.join(__compatible__)))
