@@ -17,7 +17,6 @@
 # ------------------------------------------------------------------------------
 
 import base64
-import binascii
 import hashlib
 
 import ecdsa
@@ -35,7 +34,7 @@ class Identity:
 
     @staticmethod
     def from_hex(private_key_hex: str):
-        return Identity(binascii.unhexlify(private_key_hex))
+        return Identity(bytes.fromhex(private_key_hex))
 
     @staticmethod
     def from_base64(private_key_base64: str):
@@ -72,7 +71,7 @@ class Identity:
 
     @property
     def public_key_hex(self):
-        return binascii.hexlify(self.public_key_bytes).decode()
+        return self.public_key_bytes.hex()
 
     @property
     def public_key_bytes(self):
