@@ -178,7 +178,7 @@ class EtchParser:
             entry_points[ep] = []
 
         # Parse all functions in tree
-        functions = Function.all_from_tree(self.parsed_tree)
+        functions = self.get_functions()
 
         # Add functions with annotation to entry point dict
         for f in functions:
@@ -187,16 +187,20 @@ class EtchParser:
 
         return entry_points
 
+    def get_functions(self):
+        """Returns a list of all functions found in source"""
+        return Function.all_from_tree(self.parsed_tree)
+
     def subfunctions(self):
         """Identify functions that are not entry points"""
-        functions = Function.all_from_tree(self.parsed_tree)
+        functions = self.get_functions()
         return list(f.name for f in functions if f.annotation is None)
 
     def global_using_subfunctions(self):
         """Return a dict of non entry functions, listing any global use statements they contain"""
         globals_used = {}
 
-        functions = Function.all_from_tree(self.parsed_tree)
+        functions = self.get_functions()
 
         for f in functions:
             if f.annotation:

@@ -74,6 +74,28 @@ class ParserTests(unittest.TestCase):
         except GrammarError as e:
             self.fail("Etch grammar failed to load with: \n" + str(e))
 
+    def test_get_functions(self):
+        """Check that functions properly identified"""
+        functions = self.parser.get_functions()
+
+        # Check all functions found
+        function_dict = {f.name: f for f in functions}
+        self.assertTrue(all(n in function_dict.keys() for n in ['setup', 'transfer', 'balance', 'sub']))
+
+        # Check transfer parsed
+        self.assertEqual(function_dict['transfer'].annotation, 'action')
+        self.assertEqual(function_dict['transfer'].lines, (11, 24))
+        self.assertIsNotNone(function_dict['transfer'].code_block)
+
+        # Check return value correctly parsed
+        self.assertEqual(function_dict['balance'].return_type, 'UInt64')
+
+        # Check parameter block correctly parsed
+        self.assertEqual(len(function_dict['setup'].parameters), 1)
+        self.assertIsNone(function_dict['setup'].parameters[0].value)
+        self.assertEqual(function_dict['setup'].parameters[0].name, 'owner')
+        self.assertEqual(function_dict['setup'].parameters[0].ptype, 'Address')
+
     def test_entry_points(self):
         entry_points = self.parser.entry_points()
         self.assertIn('init', entry_points)
