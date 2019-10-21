@@ -113,7 +113,7 @@ class Function:
         parameters = [Parameter(n.children[0].value, n.children[1].value) for n in tree.children[1].children]
 
         # Check for output type
-        if len(tree.children) > 2 and isinstance(tree.children[2], lexer.Token) and tree.children[2].type == 'TYPE':
+        if len(tree.children) > 2 and isinstance(tree.children[2], lexer.Token):
             return_type = tree.children[2].value
         else:
             return_type = None
@@ -258,7 +258,6 @@ class EtchParser:
                 g_type = None
             else:
                 assert g_name_node.children[0].type == 'NAME'
-                assert g_name_node.children[1].type == 'TYPE'
                 g_name = g_name_node.children[0].value
                 g_type = g_name_node.children[1].value
 

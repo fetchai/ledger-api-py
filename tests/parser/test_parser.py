@@ -46,6 +46,16 @@ FUNCTION_BLOCK = """function a()
 endfunction
 """
 
+NESTED_FUNCTION = """
+@action
+function set_block_number_state()
+  State<UInt64>('block_number_state').set(getBlockNumber());
+endfunction
+
+@query
+function query_block_number_state() : UInt64
+  return State<UInt64>('block_number_state').get(0u64);
+endfunction"""
 
 class ParserTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -143,11 +153,25 @@ class ParserTests(unittest.TestCase):
         fixed_types = ['Fixed' + str(x) for x in [32, 64]]
 
         # Test declaration of numerical types
-        for t in int_types + uint_types + float_types + fixed_types:
+        for t in int_types + uint_types:
             tree = self.parser.parse(FUNCTION_BLOCK.format("var a : {};".format(t)))
             tree = next(tree.find_data("instruction"))
             self.assertEqual(tree.children[0].data, 'declaration')
-            self.assertEqual(tree.children[0].children[1].type, 'TYPE')
+            self.assertEqual(tree.children[0].children[1].type, 'BASIC_TYPE')
+            self.assertEqual(tree.children[0].children[1].value, t)
+
+        for t in float_types:
+            tree = self.parser.parse(FUNCTION_BLOCK.format("var a : {};".format(t)))
+            tree = next(tree.find_data("instruction"))
+            self.assertEqual(tree.children[0].data, 'declaration')
+            self.assertEqual(tree.children[0].children[1].type, 'FLOAT_TYPE')
+            self.assertEqual(tree.children[0].children[1].value, t)
+
+        for t in fixed_types:
+            tree = self.parser.parse(FUNCTION_BLOCK.format("var a : {};".format(t)))
+            tree = next(tree.find_data("instruction"))
+            self.assertEqual(tree.children[0].data, 'declaration')
+            self.assertEqual(tree.children[0].children[1].type, 'FIXED_TYPE')
             self.assertEqual(tree.children[0].children[1].value, t)
 
         # Test declaration of other types
@@ -156,7 +180,7 @@ class ParserTests(unittest.TestCase):
             tree = self.parser.parse(FUNCTION_BLOCK.format("var a : {};".format(t)))
             tree = next(tree.find_data("instruction"))
             self.assertEqual(tree.children[0].data, 'declaration')
-            self.assertEqual(tree.children[0].children[1].type, 'TYPE')
+            self.assertEqual(tree.children[0].children[1].type, 'NAME')
             self.assertEqual(tree.children[0].children[1].value, t)
 
         # TODO: Test these in a meaningful way, beyond simply that they parse
@@ -169,12 +193,12 @@ class ParserTests(unittest.TestCase):
         tree = self.parser.parse(FUNCTION_BLOCK.format("var b = myArray[0];"))
 
         # As above, for map type
-        # tree = self.parser.parse(FUNCTION_BLOCK.format("var myArray = Map<String. Int32>(5);"))
+        tree = self.parser.parse(FUNCTION_BLOCK.format("var myArray = Map<String, Int32>(5);"))
         # # Test assignment to array
-        # tree = self.parser.parse(FUNCTION_BLOCK.format("myArray['test'] = 5;"))
+        tree = self.parser.parse(FUNCTION_BLOCK.format("myArray['test'] = 5;"))
         # # Test assignment from array
-        # tree = self.parser.parse(FUNCTION_BLOCK.format("b = myArray['test'];"))
-        # tree = self.parser.parse(FUNCTION_BLOCK.format("var b = myArray['test'];"))
+        tree = self.parser.parse(FUNCTION_BLOCK.format("b = myArray['test'];"))
+        tree = self.parser.parse(FUNCTION_BLOCK.format("var b = myArray['test'];"))
 
     def test_inline(self):
         """Tests for correct parsing of inline type annotations"""
@@ -182,8 +206,7 @@ class ParserTests(unittest.TestCase):
     def test_template(self):
         """Tests for correct parsing of template variables"""
         tree = self.parser.parse(FUNCTION_BLOCK.format("a = State<UInt64>();"))
-        tree.expand_kids_by_index(0)
-        # print(next(tree.find_data('code_block')))
+        tree = self.parser.parse(FUNCTION_BLOCK.format("a = State<UInt64, UInt64>();"))
 
     def test_functions(self):
         """Tests correct detection of non-entry-point functions"""
@@ -211,7 +234,6 @@ class ParserTests(unittest.TestCase):
         endfunction
         """)
         func = Function.from_tree(next(tree.find_data('annotation')))
-
         self.assertEqual(func.name, 'a')
         self.assertEqual(func.return_type, 'String')
         self.assertEqual(func.annotation, 'action')
@@ -242,6 +264,13 @@ class ParserTests(unittest.TestCase):
         self.assertIsNone(funcs[1].annotation)
         self.assertEqual(funcs[1].parameters[0].name, 'd')
         self.assertEqual(funcs[1].parameters[0].ptype, 'UInt64')
+
+    def test_nested_function_call(self):
+        """Check that nested function calls are supported by parser"""
+        try:
+            tree = self.parser.parse(NESTED_FUNCTION)
+        except:
+            self.fail("Parsing of dot nested function calls failed")
 
 
 if __name__ == '__main__':
