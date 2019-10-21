@@ -1,10 +1,12 @@
 import base64
-import binascii
 
 from .common import ApiEndpoint
 
 
 class TxStatus:
+    _SUCCESSFUL_TERMINAL_STATES = ('Executed', 'Submitted')
+    _NON_TERMINAL_STATES = ('Unknown', 'Pending')
+
     def __init__(self,
                  digest: bytes,
                  status: str,
@@ -13,6 +15,7 @@ class TxStatus:
                  charge_rate: int,
                  fee: int):
         self._digest = digest
+        self._digest_hex = self._digest.hex()
         self.status = status
         self.exit_code = exit_code
         self.charge = charge
@@ -20,12 +23,21 @@ class TxStatus:
         self.fee = fee
 
     @property
-    def finished(self):
-        return self.status not in ('Unknown', 'Pending')
+    def successful(self):
+        return self.status in self._SUCCESSFUL_TERMINAL_STATES
+
+    @property
+    def failed(self):
+        return self.status not in self._NON_TERMINAL_STATES and \
+               self.status not in self._SUCCESSFUL_TERMINAL_STATES
 
     @property
     def digest(self):
-        return binascii.hexlify(self._digest).decode()
+        return self._digest_hex
+
+    @property
+    def digest_bytes(self):
+        return self._digest
 
 
 class TransactionApi(ApiEndpoint):

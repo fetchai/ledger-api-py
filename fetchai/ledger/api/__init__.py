@@ -41,6 +41,8 @@ def _iterable(value):
     except TypeError:
         pass
 
+    return False
+
 
 class LedgerApi:
     def __init__(self, host=None, port=None, network=None):
@@ -71,10 +73,8 @@ class LedgerApi:
         # given the inputs make sure that we correctly for the input set of values
         finished = []
         if isinstance(txs, str):
-            initial_txs = {txs}
             remaining = {txs}
         elif _iterable(txs):
-            initial_txs = set(txs)
             remaining = set(txs)
         else:
             raise TypeError('Unknown argument type')
@@ -85,10 +85,17 @@ class LedgerApi:
         while True:
             # loop through all the remaining digests and poll them creating a set of completed in this round
             remaining_statuses = [self.tx.status(digest) for digest in remaining]
-            completed_this_round = [status for status in remaining_statuses if status.finished]
-            finished += completed_this_round
 
-            completed_digests = set([status.digest for status in completed_this_round])
+            failed_this_round = [status for status in remaining_statuses if status.failed]
+            if failed_this_round:
+                failures = ['{}:{}'.format(tx_status.digest, tx_status.status) \
+                            for tx_status in failed_this_round]
+                raise RuntimeError('Some transactions have failed: {}'.format(', '.join(failures)))
+
+            successful_this_round = [status for status in remaining_statuses if status.successful]
+            finished += successful_this_round
+
+            completed_digests = set([status.digest for status in successful_this_round])
             remaining -= completed_digests
 
             # once we have completed all the outstanding transactions

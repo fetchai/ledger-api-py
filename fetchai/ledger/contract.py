@@ -1,5 +1,4 @@
 import base64
-import binascii
 import hashlib
 import json
 import logging
@@ -41,7 +40,7 @@ class Contract:
 
     @property
     def name(self):
-        return binascii.hexlify(bytes(self._digest)).decode() + "." + str(self._owner)
+        return '{}.{}'.format(self._digest.to_hex(), self._owner)
 
     def dumps(self):
         return json.dumps(self._to_json_object())
