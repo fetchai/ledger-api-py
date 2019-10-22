@@ -52,8 +52,6 @@ typed_name: NAME ":" type
 
 input_block: "(" (expression ",")* expression? ")"
 
-template_block: "<" type ">"
-
 code_block: instruction+
 
 comment: "//" /.+/
