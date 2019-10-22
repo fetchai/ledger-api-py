@@ -16,7 +16,7 @@ endfunction
 
 @action
 function transfer(from: Address, to: Address, amount: UInt64)
-
+  use owner_name;  // inline comment
   use balance[from, to, "constant_string", "prefix." + to];
 
   // Check if the sender has enough balance to proceed
@@ -56,6 +56,7 @@ endfunction
 function query_block_number_state() : UInt64
   return State<UInt64>('block_number_state').get(0u64);
 endfunction"""
+
 
 class ParserTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -131,11 +132,14 @@ class ParserTests(unittest.TestCase):
         """Test accurate parsing of globals used in entry points"""
 
         glob_addresses = self.parser.used_globals_to_addresses('transfer', ['abc', 'def', 100])
-        self.assertEqual(len(glob_addresses), 4)
-        self.assertEqual(glob_addresses[0], 'balance.abc')
-        self.assertEqual(glob_addresses[1], 'balance.def')
-        self.assertEqual(glob_addresses[2], 'balance.constant_string')
-        self.assertEqual(glob_addresses[3], 'balance.prefix.def')
+        self.assertEqual(len(glob_addresses), 5)
+        # Unsharded use statement
+        self.assertEqual(glob_addresses[0], 'owner_name')
+        # Sharded use statements
+        self.assertEqual(glob_addresses[1], 'balance.abc')      # Parameter
+        self.assertEqual(glob_addresses[2], 'balance.def')      # Parameter
+        self.assertEqual(glob_addresses[3], 'balance.constant_string')  # String constant
+        self.assertEqual(glob_addresses[4], 'balance.prefix.def')       # String concatenation
 
     def test_scope(self):
         """Tests which instructions are allowed at each scope"""
@@ -230,6 +234,17 @@ class ParserTests(unittest.TestCase):
         tree = self.parser.parse(FUNCTION_BLOCK.format("a = State<UInt64>();"))
         tree = self.parser.parse(FUNCTION_BLOCK.format("a = State<UInt64, UInt64>();"))
 
+        # Test function parsing with template parameters
+        tree = self.parser.parse("""function a(b : Array<StructuredData>) : Int32
+        var c : State<UInt32>;
+        endfunction
+        """)
+        functions = self.parser.get_functions()
+
+        # Check that argument list correctly parsed
+        self.assertEqual(functions[0].parameters[0].name, 'b')
+        self.assertEqual(functions[0].parameters[0].ptype, 'Array<StructuredData>')
+
     def test_functions(self):
         """Tests correct detection of non-entry-point functions"""
         self.assertEqual(self.parser.subfunctions(), ['sub'])
@@ -293,7 +308,3 @@ class ParserTests(unittest.TestCase):
             tree = self.parser.parse(NESTED_FUNCTION)
         except:
             self.fail("Parsing of dot nested function calls failed")
-
-
-if __name__ == '__main__':
-    unittest.main()

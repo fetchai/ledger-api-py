@@ -1,4 +1,6 @@
-from lark import Lark, tree, lexer
+import logging
+
+from lark import Lark, tree, lexer, Tree
 from pkg_resources import resource_string
 
 
@@ -29,7 +31,7 @@ class ShardUse:
         elif isinstance(node.children[0], tree.Tree):
             # String concat
             items = []
-            print("WARNING: global use statements including string-parameter concatenations are experimental")
+            logging.warning("global use statements including string-parameter concatenations are experimental")
             for t in node.children[0].children:
                 if t.type == 'NAME':
                     items.append(parameter_dict[t.value])
@@ -41,12 +43,40 @@ class ShardUse:
         pass
 
 
+def _template_to_string(node):
+    if isinstance(node, lexer.Token):
+        return node.value
+    elif node.data == 'template_type':
+        return node.children[0].value + '<' + _template_to_string(node.children[1]) + '>'
+    elif node.data == 'template_arg_list':
+        return ', '.join(_template_to_string(n) for n in node.children)
+
+
 class Parameter(ShardUse):
     def __init__(self, name, ptype, value=None):
         super().__init__()
         self.name = name
         self.ptype = ptype
         self.value = value
+
+    @staticmethod
+    def from_tree(node, value=None):
+        assert isinstance(node, tree.Tree), "Expecting Tree or Token object"
+
+        # Extract parameter name
+        name = node.children[0].value
+
+        if isinstance(node.children[1], lexer.Token):
+            # Simple typed parameter: extract type
+            ptype = node.children[1].value
+        else:
+            # Template or other complex type
+            if node.children[1].data == 'template_type':
+                ptype = _template_to_string(node.children[1])
+            else:
+                raise RuntimeError("Unexpected input for Parameter.from_tree")
+
+        return Parameter(name, ptype, value)
 
     def inject_parameters(self, par_dict):
         self.value = par_dict[self.name]
@@ -110,7 +140,7 @@ class Function:
 
         # Parse parameters
         assert tree.children[1].data == 'parameter_block', "Missing parameter block"
-        parameters = [Parameter(n.children[0].value, n.children[1].value) for n in tree.children[1].children]
+        parameters = [Parameter.from_tree(n) for n in tree.children[1].children]
 
         # Check for output type
         if len(tree.children) > 2 and isinstance(tree.children[2], lexer.Token):
@@ -236,7 +266,7 @@ class EtchParser:
             "Found {} parameters, but received {} parameter values".format(len(parameter_tokens), len(parameter_values))
 
         # Unpack typed parameters and add values
-        parameters = [Parameter(p.children[0].value, p.children[1].value, parameter_values[i])
+        parameters = [Parameter.from_tree(p, value=parameter_values[i])
                       for i, p in enumerate(parameter_tokens)]
 
         return parameters
