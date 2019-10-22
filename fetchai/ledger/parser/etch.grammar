@@ -16,7 +16,7 @@ instruction: "use" NAME [use_shard] ";"                         -> use_global
            | instruction ";"                                    -> line
            | comment
 
-instantiation: "var" NAME "=" expression ";"
+instantiation: "var" (typed_name | NAME) "=" expression ";"
 
 declaration: "var" NAME ":" type ";"
 

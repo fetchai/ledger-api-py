@@ -220,14 +220,17 @@ class ParserTests(unittest.TestCase):
 
         # As above, for map type
         tree = self.parser.parse(FUNCTION_BLOCK.format("var myArray = Map<String, Int32>(5);"))
-        # # Test assignment to array
+        # Test assignment to array
         tree = self.parser.parse(FUNCTION_BLOCK.format("myArray['test'] = 5;"))
-        # # Test assignment from array
+        # Test assignment from array
         tree = self.parser.parse(FUNCTION_BLOCK.format("b = myArray['test'];"))
         tree = self.parser.parse(FUNCTION_BLOCK.format("var b = myArray['test'];"))
 
-    def test_inline(self):
-        """Tests for correct parsing of inline type annotations"""
+    def test_instantiation(self):
+        """Tests for correct parsing of valid variable instantiation"""
+        # Check that the following parse without error
+        tree = self.parser.parse(FUNCTION_BLOCK.format("var b = get();"))           # Untyped instantiation
+        tree = self.parser.parse(FUNCTION_BLOCK.format("var b : UInt64 = get();"))  # Typed instantiation
 
     def test_template(self):
         """Tests for correct parsing of template variables"""
