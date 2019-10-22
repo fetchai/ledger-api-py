@@ -1,6 +1,6 @@
 import logging
 
-from lark import Lark, tree, lexer, Tree
+from lark import Lark, tree, lexer
 from pkg_resources import resource_string
 
 
@@ -169,6 +169,7 @@ class Function:
                 functions.append(Function.from_tree(inst.children[0]))
 
         return functions
+
 
 class UseWildcardShardMask(Exception):
     pass

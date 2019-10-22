@@ -1,5 +1,4 @@
 import base64
-import binascii
 import unittest
 
 import ecdsa
@@ -15,7 +14,7 @@ class EntityTests(unittest.TestCase):
 
         # check the other binary representations
         self.assertEqual(base64.b64encode(entity.private_key_bytes).decode(), entity.private_key)
-        self.assertEqual(binascii.hexlify(entity.private_key_bytes).decode(), entity.private_key_hex)
+        self.assertEqual(entity.private_key_bytes.hex(), entity.private_key_hex)
 
         signing_key = ecdsa.SigningKey.from_string(entity.private_key_bytes, curve=Entity.curve,
                                                    hashfunc=Entity.hash_function)
@@ -25,7 +24,7 @@ class EntityTests(unittest.TestCase):
 
         # check the other binary representations
         self.assertEqual(base64.b64encode(entity.public_key_bytes).decode(), entity.public_key)
-        self.assertEqual(binascii.hexlify(entity.public_key_bytes).decode(), entity.public_key_hex)
+        self.assertEqual(entity.public_key_bytes.hex(), entity.public_key_hex)
 
     def test_construction_from_bytes(self):
         # create a reference and a copy of the entity

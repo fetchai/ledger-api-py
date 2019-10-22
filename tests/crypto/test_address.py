@@ -1,4 +1,3 @@
-import binascii
 import hashlib
 import unittest
 
@@ -84,6 +83,6 @@ class AddressTests(unittest.TestCase):
         address = Address(entity)
 
         address_bytes = bytes(address)
-        hex_address = binascii.hexlify(address_bytes).decode()
+        hex_address = address_bytes.hex()
 
         self.assertEqual(hex_address, address.to_hex())

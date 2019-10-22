@@ -1,6 +1,3 @@
-import binascii
-
-
 class BitVector:
 
     @staticmethod
@@ -20,7 +17,7 @@ class BitVector:
 
     @classmethod
     def from_hex_string(cls, hex_data):
-        decoded_bytes = binascii.unhexlify(hex_data)
+        decoded_bytes = bytes.fromhex(hex_data)
         return cls.from_bytes(decoded_bytes, len(decoded_bytes) * 8)
 
     @staticmethod
@@ -86,4 +83,4 @@ class BitVector:
         return output
 
     def as_hex(self):
-        return binascii.hexlify(bytes(self)).decode()
+        return bytes(self).hex()
