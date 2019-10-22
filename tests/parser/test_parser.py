@@ -311,3 +311,18 @@ class ParserTests(unittest.TestCase):
             tree = self.parser.parse(NESTED_FUNCTION)
         except:
             self.fail("Parsing of dot nested function calls failed")
+
+    def test_expressions(self):
+        """Check that common expressions parse correctly"""
+        # Instantiation
+        tree = self.parser.parse(FUNCTION_BLOCK.format("var a = 1i32;"))
+        # Binary operation
+        tree = self.parser.parse(FUNCTION_BLOCK.format("var a = 1i32 + 2i32;"))
+        # Pre-unary operation
+        tree = self.parser.parse(FUNCTION_BLOCK.format("var a = - 2i32;"))
+        # Post-unary operation
+        tree = self.parser.parse(FUNCTION_BLOCK.format("var a = 2i32++;"))
+        # Comparison operation
+        tree = self.parser.parse(FUNCTION_BLOCK.format("var a = 2i32 == 3i32;"))
+        # Type cast
+        tree = self.parser.parse(FUNCTION_BLOCK.format("var a = Int64(3i32);"))
