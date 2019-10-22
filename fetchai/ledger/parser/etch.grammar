@@ -16,25 +16,25 @@ instruction: "use" NAME [use_shard] ";"                         -> use_global
            | instruction ";"                                    -> line
            | comment
 
-instantiation: "var" NAME "=" expression ";"
+instantiation: "var" (typed_name | NAME) "=" expression ";"
 
-declaration: "var" NAME ":" TYPE ";"
+declaration: "var" NAME ":" type ";"
 
 range: (expression) | (expression ":" expression) | (expression ":" expression ":" expression)
 
 expression: NUMBER
-          | dot_expansion
           | name
+          | dot_expansion
           | STRING_LITERAL
           | PRE_UNARY expression
           | expression POST_UNARY
           | expression BINARY_OP expression
           | function_call
-          | TYPE input_block
+          | type input_block
 
 function_call: expression input_block
 
-dot_expansion: name ("." name)+
+dot_expansion: expression ("." expression)+
 
 bool_expression: expression
                | PRE_UNARY bool_expression
@@ -42,17 +42,15 @@ bool_expression: expression
                | bool_expression BOOLEAN_OP bool_expression
 
 annotation: "@"ANNOTATION function
-ANNOTATION: "init"|"action"|"query"|"problem"|"objective"|"work"|"clear"
+ANNOTATION: "initTest"|"init"|"action"|"query"|"problem"|"objective"|"work"|"clear"|"test"
 
-function: "function" NAME parameter_block (":" TYPE)? code_block? "endfunction"
+function: "function" NAME parameter_block (":" type)? code_block? "endfunction"
 
 parameter_block: "(" (typed_name ","?)* ")"
 
-typed_name: NAME ":" TYPE
+typed_name: NAME ":" type
 
 input_block: "(" (expression ",")* expression? ")"
-
-template_block: "<" TYPE ">"
 
 code_block: instruction+
 
@@ -85,21 +83,21 @@ NAME: LETTER (LETTER|"_"|INT)*
 
 indexed_name: name "[" (NUMBER|STRING_LITERAL|name) "]"
 
-NUMBER: INT INLINE_INT?
+NUMBER: INT INLINE_INT?   // TODO: drop support for untyped number
 
 STRING_LITERAL: (/\"(\\.|[^"\\])*\"/)|(/\'(\\.|[^'\\])*\'/)
 
-TYPE: BASIC_TYPE|TEMPLATE_TYPE|FLOAT_TYPE|FIXED_TYPE|OTHER_TYPE
+?type: BASIC_TYPE|template_type|FLOAT_TYPE|FIXED_TYPE|NAME
 
-TEMPLATE_TYPE: ("Array"|"Map"|"State") "<" (BASIC_TYPE|OTHER_TYPE ",")* (BASIC_TYPE|OTHER_TYPE) ">"
+template_type: type "<" template_arg_list ">"
+
+template_arg_list: type? ("," type)*
 
 BASIC_TYPE: "U"? "Int" ("256"|"64"|"32"|"16"|"8")
 
 FLOAT_TYPE: "Float" ("64"|"32")
 
 FIXED_TYPE: "Fixed" ("64"|"32")
-
-OTHER_TYPE: "Boolean"|"Address"|"String"|"State"|"Array"|"Map"|"StructuredData"|"Graph"|"DataLoader"|"Optimiser"|"Tensor"
 
 INLINE_INT: ("u"|"i") INT
 

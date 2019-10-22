@@ -16,7 +16,6 @@
 #
 # ------------------------------------------------------------------------------
 
-import binascii
 import hashlib
 
 import base58
@@ -82,7 +81,7 @@ class Address:
         return bytes(self) == bytes(other)
 
     def to_hex(self):
-        return binascii.hexlify(self._address).decode()
+        return self._address.hex()
 
     @classmethod
     def _digest(cls, data):

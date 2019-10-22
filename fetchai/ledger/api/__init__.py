@@ -41,6 +41,8 @@ def _iterable(value):
     except TypeError:
         pass
 
+    return False
+
 
 class LedgerApi:
     def __init__(self, host=None, port=None, network=None):
@@ -58,10 +60,8 @@ class LedgerApi:
         # Check that ledger version is compatible with API version
         server_version = self.server.version().lstrip('v')
         if server_version.startswith('Unknown version with hash'):
-            logging.warn('Using development version')
-            return
-
-        if not all(semver.match(server_version, c) for c in __compatible__):
+            logging.warning('Using development version')
+        elif not all(semver.match(server_version, c) for c in __compatible__):
             raise IncompatibleLedgerVersion("Ledger version running on server is not compatible with this API" +
                                             "\nServer version: {} \nExpected version: {}".format(
                                                 server_version, ', '.join(__compatible__)))
@@ -69,6 +69,7 @@ class LedgerApi:
     def sync(self, txs: Transactions, timeout=None):
         timeout = int(timeout or 120)
         # given the inputs make sure that we correctly for the input set of values
+        finished = []
         if isinstance(txs, str):
             remaining = {txs}
         elif _iterable(txs):
@@ -81,11 +82,23 @@ class LedgerApi:
 
         while True:
             # loop through all the remaining digests and poll them creating a set of completed in this round
-            remaining -= set([digest for digest in remaining if self._poll(digest)])
+            remaining_statuses = [self.tx.status(digest) for digest in remaining]
+
+            failed_this_round = [status for status in remaining_statuses if status.failed]
+            if failed_this_round:
+                failures = ['{}:{}'.format(tx_status.digest_hex, tx_status.status) \
+                            for tx_status in failed_this_round]
+                raise RuntimeError('Some transactions have failed: {}'.format(', '.join(failures)))
+
+            successful_this_round = [status for status in remaining_statuses if status.successful]
+            finished += successful_this_round
+
+            completed_digests = set([status.digest_hex for status in successful_this_round])
+            remaining -= completed_digests
 
             # once we have completed all the outstanding transactions
             if len(remaining) == 0:
-                break
+                return finished
 
             # time out mode
             delta_time = datetime.now() - start
@@ -93,9 +106,6 @@ class LedgerApi:
                 raise RuntimeError('Timeout waiting for txs: {}'.format(', '.join(list(remaining))))
 
             time.sleep(1)
-
-    def _poll(self, digest):
-        return self.tx.status(digest) in ('Executed', 'Submitted')
 
     def wait_for_blocks(self, n):
         initial = self.tokens._current_block_number()

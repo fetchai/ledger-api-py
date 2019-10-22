@@ -31,7 +31,7 @@ class ShardUse:
         elif isinstance(node.children[0], tree.Tree):
             # String concat
             items = []
-            logging.warn("global use statements including string-parameter concatenations are experimental")
+            logging.warning("global use statements including string-parameter concatenations are experimental")
             for t in node.children[0].children:
                 if t.type == 'NAME':
                     items.append(parameter_dict[t.value])
@@ -43,12 +43,40 @@ class ShardUse:
         pass
 
 
+def _template_to_string(node):
+    if isinstance(node, lexer.Token):
+        return node.value
+    elif node.data == 'template_type':
+        return node.children[0].value + '<' + _template_to_string(node.children[1]) + '>'
+    elif node.data == 'template_arg_list':
+        return ', '.join(_template_to_string(n) for n in node.children)
+
+
 class Parameter(ShardUse):
     def __init__(self, name, ptype, value=None):
         super().__init__()
         self.name = name
         self.ptype = ptype
         self.value = value
+
+    @staticmethod
+    def from_tree(node, value=None):
+        assert isinstance(node, tree.Tree), "Expecting Tree or Token object"
+
+        # Extract parameter name
+        name = node.children[0].value
+
+        if isinstance(node.children[1], lexer.Token):
+            # Simple typed parameter: extract type
+            ptype = node.children[1].value
+        else:
+            # Template or other complex type
+            if node.children[1].data == 'template_type':
+                ptype = _template_to_string(node.children[1])
+            else:
+                raise RuntimeError("Unexpected input for Parameter.from_tree")
+
+        return Parameter(name, ptype, value)
 
     def inject_parameters(self, par_dict):
         self.value = par_dict[self.name]
@@ -88,16 +116,18 @@ class PersistentGlobal:
 
 
 class Function:
-    def __init__(self, name, parameters, return_type=None, annotation=None, code_block=None):
+    def __init__(self, name, parameters, return_type=None, annotation=None, code_block=None, lines=None):
         self.name = name
         self.parameters = parameters
         self.return_type = return_type
         self.annotation = annotation
         self.code_block = code_block
+        self.lines = lines
 
     @staticmethod
     def from_tree(tree: tree.Tree):
         # Parse annotation parent node
+        lines = (tree.line, tree.end_line)
         if tree.data == 'annotation':
             annotation = tree.children[0].value
             tree = tree.children[1]
@@ -110,10 +140,10 @@ class Function:
 
         # Parse parameters
         assert tree.children[1].data == 'parameter_block', "Missing parameter block"
-        parameters = [Parameter(n.children[0].value, n.children[1].value) for n in tree.children[1].children]
+        parameters = [Parameter.from_tree(n) for n in tree.children[1].children]
 
         # Check for output type
-        if len(tree.children) > 2 and isinstance(tree.children[2], lexer.Token) and tree.children[2].type == 'TYPE':
+        if len(tree.children) > 2 and isinstance(tree.children[2], lexer.Token):
             return_type = tree.children[2].value
         else:
             return_type = None
@@ -126,7 +156,7 @@ class Function:
             assert len(code_block) == 1, "Found more than one code block"
             code_block = code_block[0]
 
-        return Function(function_name, parameters, return_type, annotation, code_block)
+        return Function(function_name, parameters, return_type, annotation, code_block, lines=lines)
 
     @staticmethod
     def all_from_tree(tree: tree.Tree):
@@ -153,7 +183,7 @@ class EtchParser:
     def __init__(self, etch_code=None):
         # Load grammar
         self.grammar = resource_string(__name__, 'etch.grammar').decode('ascii')
-        self.parser = Lark(self.grammar)
+        self.parser = Lark(self.grammar, propagate_positions=True)
 
         self.parsed_tree = None
         self.etch_code = None
@@ -179,7 +209,7 @@ class EtchParser:
             entry_points[ep] = []
 
         # Parse all functions in tree
-        functions = Function.all_from_tree(self.parsed_tree)
+        functions = self.get_functions()
 
         # Add functions with annotation to entry point dict
         for f in functions:
@@ -188,16 +218,20 @@ class EtchParser:
 
         return entry_points
 
+    def get_functions(self):
+        """Returns a list of all functions found in source"""
+        return Function.all_from_tree(self.parsed_tree)
+
     def subfunctions(self):
         """Identify functions that are not entry points"""
-        functions = Function.all_from_tree(self.parsed_tree)
+        functions = self.get_functions()
         return list(f.name for f in functions if f.annotation is None)
 
     def global_using_subfunctions(self):
         """Return a dict of non entry functions, listing any global use statements they contain"""
         globals_used = {}
 
-        functions = Function.all_from_tree(self.parsed_tree)
+        functions = self.get_functions()
 
         for f in functions:
             if f.annotation:
@@ -233,7 +267,7 @@ class EtchParser:
             "Found {} parameters, but received {} parameter values".format(len(parameter_tokens), len(parameter_values))
 
         # Unpack typed parameters and add values
-        parameters = [Parameter(p.children[0].value, p.children[1].value, parameter_values[i])
+        parameters = [Parameter.from_tree(p, value=parameter_values[i])
                       for i, p in enumerate(parameter_tokens)]
 
         return parameters
@@ -259,7 +293,6 @@ class EtchParser:
                 g_type = None
             else:
                 assert g_name_node.children[0].type == 'NAME'
-                assert g_name_node.children[1].type == 'TYPE'
                 g_name = g_name_node.children[0].value
                 g_type = g_name_node.children[1].value
 
