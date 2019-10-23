@@ -83,15 +83,15 @@ class Contract:
         return self._digest
 
     @property
-    def nonce(self):
+    def nonce(self) -> str:
         return base64.b64encode(self._nonce).decode()
 
     @property
-    def nonce_bytes(self):
+    def nonce_bytes(self) -> bytes:
         return self._nonce
 
     @property
-    def address(self):
+    def address(self) -> Address:
         return self._address
 
     @property
