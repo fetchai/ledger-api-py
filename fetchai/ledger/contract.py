@@ -175,7 +175,7 @@ class Contract:
 
         source = base64.b64decode(obj['source']).decode()
         owner = obj['owner']
-        nonce = base64.b64decode(obj['nonce_b64'].encode())
+        nonce = base64.b64decode(obj['nonce'].encode())
 
         sc = Contract(
             source,
@@ -187,7 +187,7 @@ class Contract:
     def _to_json_object(self):
         return {
             'version': 1,
-            'nonce_b64': self.nonce,
+            'nonce': self.nonce,
             'owner': None if self._owner is None else str(self._owner),
             'source': self.encoded_source
         }
