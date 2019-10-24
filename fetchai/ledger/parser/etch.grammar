@@ -29,6 +29,7 @@ expression: NUMBER
           | PRE_UNARY expression
           | expression POST_UNARY
           | expression BINARY_OP expression
+          | expression COMPARISON expression
           | function_call
           | type input_block
 
