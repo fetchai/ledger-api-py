@@ -18,8 +18,11 @@
 
 import base64
 import json
+import random
+from hashlib import pbkdf2_hmac
 
 import ecdsa
+from Crypto.Cipher import AES
 
 from .identity import Identity
 
@@ -28,14 +31,18 @@ class Entity(Identity):
     """
     An entity is a full private/public key pair.
     """
+    @classmethod
+    def prompt_load(cls, fp):
+        password = input("Please enter password")
+        return cls.load(fp, password)
 
     @classmethod
-    def loads(cls, s):
-        return cls._from_json_object(json.loads(s))
+    def loads(cls, s, password):
+        return cls._from_json_object(json.loads(s), password)
 
     @classmethod
-    def load(cls, fp):
-        return cls._from_json_object(json.load(fp))
+    def load(cls, fp, password):
+        return cls._from_json_object(json.load(fp), password)
 
     @staticmethod
     def from_hex(private_key_hex: str):
@@ -82,17 +89,58 @@ class Entity(Identity):
     def sign(self, message: bytes):
         return self._signing_key.sign(message)
 
-    def dumps(self):
-        return json.dumps(self._to_json_object())
+    def prompt_dump(self, fp):
+        password = input("Please enter password")
+        return self.dump(fp, password)
 
-    def dump(self, fp):
-        return json.dump(self._to_json_object(), fp)
+    def dumps(self, password):
+        return json.dumps(self._to_json_object(password))
 
-    def _to_json_object(self):
+    def dump(self, fp, password):
+        return json.dump(self._to_json_object(password), fp)
+
+    def _to_json_object(self, password):
+        encrypted, key_length, init_vec = _encrypt(password, self.private_key_bytes)
         return {
-            'privateKey': base64.b64encode(self._private_key_bytes).decode()
+            'key_length': key_length,
+            'init_vector': init_vec,
+            'privateKey': base64.b64encode(encrypted).decode()
         }
 
     @classmethod
-    def _from_json_object(cls, obj):
-        return cls.from_base64(obj['privateKey'])
+    def _from_json_object(cls, obj, password):
+        privateKey = _decrypt(password, base64.b64decode(obj['privateKey']), obj['key_length'], obj['init_vector'])
+
+        return cls.from_base64(base64.b64encode(privateKey).decode())
+
+
+def _encrypt(password, data):
+    # Hash password to 32 bytes
+    hashed_pass = pbkdf2_hmac('sha256', password.encode('ascii'), b'fetchai_private_key_salt', 1000000)
+
+    # Random initialisation vector
+    iv = ''.join([chr(random.randint(33, 127)) for i in range(16)])
+
+    aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
+
+    # Pad data to multiple of 16
+    n = len(data)
+    if n % 16 != 0:
+        data += ' ' * (16 - n % 16)
+
+    encrypted = aes.encrypt(data)
+
+    return encrypted, n, iv
+
+
+def _decrypt(password, data, n, iv):
+    # Hash password
+    hashed_pass = pbkdf2_hmac('sha256', password.encode('ascii'), b'fetchai_private_key_salt', 1000000)
+
+    aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
+
+    # Decrypt data, noting original length
+    decrypted_data = aes.decrypt(data)[:n]
+
+    # Return original data
+    return decrypted_data
