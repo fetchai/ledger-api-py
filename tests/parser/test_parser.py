@@ -136,10 +136,10 @@ class ParserTests(unittest.TestCase):
         # Unsharded use statement
         self.assertEqual(glob_addresses[0], 'owner_name')
         # Sharded use statements
-        self.assertEqual(glob_addresses[1], 'balance.abc')      # Parameter
-        self.assertEqual(glob_addresses[2], 'balance.def')      # Parameter
+        self.assertEqual(glob_addresses[1], 'balance.abc')  # Parameter
+        self.assertEqual(glob_addresses[2], 'balance.def')  # Parameter
         self.assertEqual(glob_addresses[3], 'balance.constant_string')  # String constant
-        self.assertEqual(glob_addresses[4], 'balance.prefix.def')       # String concatenation
+        self.assertEqual(glob_addresses[4], 'balance.prefix.def')  # String concatenation
 
     def test_scope(self):
         """Tests which instructions are allowed at each scope"""
@@ -229,7 +229,7 @@ class ParserTests(unittest.TestCase):
     def test_instantiation(self):
         """Tests for correct parsing of valid variable instantiation"""
         # Check that the following parse without error
-        tree = self.parser.parse(FUNCTION_BLOCK.format("var b = get();"))           # Untyped instantiation
+        tree = self.parser.parse(FUNCTION_BLOCK.format("var b = get();"))  # Untyped instantiation
         tree = self.parser.parse(FUNCTION_BLOCK.format("var b : UInt64 = get();"))  # Typed instantiation
 
     def test_template(self):

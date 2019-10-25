@@ -98,7 +98,7 @@ def main():
     api.sync(api.tokens.wealth(entity1, 10000))
 
     # create the smart contract
-    contract = Contract(CONTRACT_TEXT)
+    contract = Contract(CONTRACT_TEXT, entity1)
 
     with track_cost(api.tokens, entity1, "Cost of creation: "):
         api.sync(contract.create(api, entity1, 4000))

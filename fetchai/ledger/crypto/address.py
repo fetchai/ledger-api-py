@@ -39,7 +39,8 @@ class Address:
 
         elif isinstance(identity, bytes):
             if len(identity) != self.BYTE_LENGTH:
-                raise RuntimeError('Incorrect length of binary address')
+                raise RuntimeError('Incorrect length of binary address, expected {}, received {}'
+                                   .format(self.BYTE_LENGTH, len(identity)))
 
             self._address = identity
             self._display = self._calculate_display(self._address)

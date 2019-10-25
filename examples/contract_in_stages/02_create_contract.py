@@ -66,7 +66,7 @@ def main():
     api = LedgerApi('127.0.0.1', 8000)
 
     # create the smart contract
-    contract = Contract(CONTRACT_TEXT)
+    contract = Contract(CONTRACT_TEXT, entity1)
 
     print('Deploying contract...')
 

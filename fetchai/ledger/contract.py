@@ -2,15 +2,18 @@ import base64
 import hashlib
 import json
 import logging
+from os import urandom
 from typing import Union, List
 
 from fetchai.ledger.bitvector import BitVector
+from fetchai.ledger.crypto import Identity
 from fetchai.ledger.parser.etch_parser import EtchParser, UnparsableAddress, UseWildcardShardMask
 from fetchai.ledger.serialisation.shardmask import ShardMask
 from .api import ContractsApi, LedgerApi
 from .crypto import Entity, Address
 
 ContractsApiLike = Union[ContractsApi, LedgerApi]
+AddressLike = Union[Address, Identity]
 
 
 def _compute_digest(source) -> Address:
@@ -20,10 +23,17 @@ def _compute_digest(source) -> Address:
 
 
 class Contract:
-    def __init__(self, source: str):
+    def __init__(self, source: str, owner: AddressLike, nonce: bytes = None):
         self._source = str(source)
         self._digest = _compute_digest(self._source)
-        self._owner = None
+        self._owner = Address(owner)
+        self._nonce = bytes(urandom(8)) if nonce is None else nonce
+
+        hasher = hashlib.sha256()
+        hasher.update(bytes(self._owner))
+        hasher.update(self._nonce)
+
+        self._address = Address(hasher.digest())
 
         # Etch parser for analysing contract
         self._parser = EtchParser(self._source)
@@ -40,7 +50,7 @@ class Contract:
 
     @property
     def name(self):
-        return '{}.{}'.format(self._digest.to_hex(), self._owner)
+        return '{}.{}'.format(self.digest.to_hex(), self.address)
 
     def dumps(self):
         return json.dumps(self._to_json_object())
@@ -71,6 +81,18 @@ class Contract:
     @property
     def digest(self):
         return self._digest
+
+    @property
+    def nonce(self) -> str:
+        return base64.b64encode(self._nonce).decode()
+
+    @property
+    def nonce_bytes(self) -> bytes:
+        return self._nonce
+
+    @property
+    def address(self) -> Address:
+        return self._address
 
     @property
     def encoded_source(self):
@@ -106,7 +128,7 @@ class Contract:
                 '{} is not an valid query name. Valid options are: {}'.format(name, ','.join(list(self._queries))))
 
         # make the required query on the API
-        success, response = self._api(api).query(self._digest, self._owner, name, **kwargs)
+        success, response = self._api(api).query(self._digest, self.address, name, **kwargs)
 
         if not success:
             if response is not None and "msg" in response:
@@ -135,7 +157,8 @@ class Contract:
             # Generate shard mask from resource addresses
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        return self._api(api).action(self._digest, self._owner, name, fee, signers, *args, shard_mask=shard_mask)
+        return self._api(api).action(self._digest, self.address, name, fee, self.owner, signers, *args,
+                                     shard_mask=shard_mask)
 
     @staticmethod
     def _api(api: ContractsApiLike):
@@ -149,18 +172,22 @@ class Contract:
     @staticmethod
     def _from_json_object(obj):
         assert obj['version'] == 1
-        source = base64.b64decode(obj['source']).decode()
-        sc = Contract(source)
 
+        source = base64.b64decode(obj['source']).decode()
         owner = obj['owner']
-        if owner is not None:
-            sc.owner = owner
+        nonce = base64.b64decode(obj['nonce'].encode())
+
+        sc = Contract(
+            source,
+            owner,
+            nonce)
 
         return sc
 
     def _to_json_object(self):
         return {
             'version': 1,
+            'nonce': self.nonce,
             'owner': None if self._owner is None else str(self._owner),
             'source': self.encoded_source
         }

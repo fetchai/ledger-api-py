@@ -15,12 +15,11 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-from typing import List
 import base64
 
 from fetchai.ledger.api import LedgerApi
-from fetchai.ledger.contract import SmartContract
-from fetchai.ledger.crypto import Entity, Address
+from fetchai.ledger.contract import Contract
+from fetchai.ledger.crypto import Entity
 
 GRAPH_FILE_NAME = "/Users/khan/fetch/models/crypto_price_prediction/bitcoin_price_prediction_graph.bin"
 
@@ -169,8 +168,8 @@ function train(train_labels_string: String)
 endfunction
 """
 
-def main():
 
+def main():
     # create our first private key pair
     entity1 = Entity()
 
@@ -181,7 +180,7 @@ def main():
     api.sync(api.tokens.wealth(entity1, 1000000000000000))
 
     # create the smart contract
-    contract = SmartContract(CONTRACT_TEXT)
+    contract = Contract(CONTRACT_TEXT, entity1)
 
     # deploy the contract to the network
     api.sync(api.contracts.create(entity1, contract, 1000000000))
@@ -211,6 +210,7 @@ def main():
     # make a prediction
     current_prediction = contract.query(api, 'makePrediction')
     print("current prediction: " + current_prediction)
+
 
 if __name__ == '__main__':
     main()

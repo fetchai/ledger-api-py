@@ -17,7 +17,8 @@ class ContractsApi(ApiEndpoint):
 
     def create(self, owner: Entity, contract: 'Contract', fee: int, shard_mask: BitVector = None):
         ENDPOINT = 'create'
-        # format the data to be closed by the transaction
+
+        logging.debug('Deploying contract', contract.address)
 
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
@@ -30,6 +31,7 @@ class ContractsApi(ApiEndpoint):
         tx.target_chain_code(self.API_PREFIX, shard_mask)
         tx.action = ENDPOINT
         tx.data = self._encode_json({
+            'nonce': contract.nonce,
             'text': contract.encoded_source,
             'digest': contract.digest.to_hex()
         })
@@ -44,12 +46,12 @@ class ContractsApi(ApiEndpoint):
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
-    def submit_data(self, entity: Entity, digest: Address, **kwargs):
+    def submit_data(self, entity: Entity, contract_digest: Address, contract_address: Address, **kwargs):
         # build up the basic transaction information
         tx = Transaction()
         tx.from_address = Address(entity)
         tx.valid_until = 10000
-        tx.target_contract(digest, Address(entity), BitVector())
+        tx.target_contract(contract_digest, contract_address, BitVector())
         tx.charge_rate = 1
         tx.charge_limit = 1000000000000
         tx.action = 'data'
@@ -67,7 +69,8 @@ class ContractsApi(ApiEndpoint):
         prefix = '{}.{}'.format(contract_digest.to_hex(), str(contract_owner))
         return self._post_json(query, prefix=prefix, data=self._encode_json_payload(**kwargs))
 
-    def action(self, contract_digest: Address, contract_owner: Address, action: str, fee: int, signers: EntityList,
+    def action(self, contract_digest: Address, contract_address: Address, action: str,
+               fee: int, from_address: Address, signers: EntityList,
                *args, shard_mask: BitVector = None):
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
@@ -76,8 +79,8 @@ class ContractsApi(ApiEndpoint):
 
         # build up the basic transaction information
         tx = self._create_skeleton_tx(fee)
-        tx.from_address = Address(contract_owner)
-        tx.target_contract(contract_digest, contract_owner, shard_mask)
+        tx.from_address = Address(from_address)
+        tx.target_contract(contract_digest, contract_address, shard_mask)
         tx.action = str(action)
         tx.data = self._encode_msgpack_payload(*args)
 
