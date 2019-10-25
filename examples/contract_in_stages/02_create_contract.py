@@ -58,7 +58,7 @@ def main():
 
     # load up the previously created private key
     with open('private.key', 'r') as private_key_file:
-        entity1 = Entity.load(private_key_file)
+        entity1 = Entity.prompt_load(private_key_file)
 
     print('Loading private key...complete')
 
