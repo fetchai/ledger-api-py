@@ -25,7 +25,6 @@ import ecdsa
 class Identity:
     """
     An identity is the public half of a private / public key pair
-
     """
 
     # these are hardcoded at the moment, but in more schemes will be supported in the future

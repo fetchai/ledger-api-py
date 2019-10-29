@@ -2,7 +2,6 @@ import unittest
 from unittest import mock
 from unittest.mock import patch
 
-import fetchai
 from fetchai.ledger.api import LedgerApi, ContractsApi
 from fetchai.ledger.contract import Contract
 from fetchai.ledger.crypto import Entity
@@ -30,7 +29,7 @@ function query2()
 endfunction
 """
 
-MULTIPLE_INITS="""
+MULTIPLE_INITS = """
 @init
 function setup(owner: Address)
 endfunction
@@ -40,18 +39,17 @@ function alternative(owner: Address)
 endfunction
 """
 
-NO_INIT="""
+NO_INIT = """
 @action
 function action1()
 endfunction
 """
 
+
 class ContractTests(unittest.TestCase):
     def test_dumps_and_loads(self):
-        # create the contract
         owner = Entity()
-        orig = Contract(CONTRACT_TEXT)
-        orig.owner = owner
+        orig = Contract(CONTRACT_TEXT, owner, b'this is a nonce')
 
         # encode the contract
         encoded = orig.dumps()
@@ -65,9 +63,9 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(orig.digest, new.digest)
         self.assertEqual(orig.source, new.source)
 
-    def test_dumps_and_loads_without_owner(self):
-        # create the contract
-        orig = Contract(CONTRACT_TEXT)
+    def test_dumps_and_loads_without_nonce(self):
+        owner = Entity()
+        orig = Contract(CONTRACT_TEXT, owner)
 
         # encode the contract
         encoded = orig.dumps()
@@ -80,12 +78,13 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(orig.owner, new.owner)
         self.assertEqual(orig.digest, new.digest)
         self.assertEqual(orig.source, new.source)
+        self.assertEqual(orig.nonce, new.nonce)
 
     @patch.object(ShardMask, 'resources_to_shard_mask')
     def test_create(self, mock_shard_mask):
         # create contract
-        contract = Contract(CONTRACT_TEXT)
         owner = Entity()
+        contract = Contract(CONTRACT_TEXT, owner)
 
         # Mock api for providing number of lanes and receiving create call
         api = mock.Mock(spec=LedgerApi)
@@ -108,17 +107,17 @@ class ContractTests(unittest.TestCase):
 
     def test_init(self):
         # Test rejection of contract with multiple init statements
+        owner = Entity()
         with self.assertRaises(RuntimeError):
-            contract = Contract(MULTIPLE_INITS)
+            contract = Contract(MULTIPLE_INITS, owner)
 
         # Test successful creation without init (to support local etch testing)
         try:
-            contract = Contract(NO_INIT)
+            contract = Contract(NO_INIT, owner)
         except Exception:
             self.fail("Contract initialisation with @init failed")
 
         # Test creation failure without init
-        owner = Entity()
         api = mock.Mock()
         with self.assertRaises(RuntimeError):
             contract.create(api, owner, 100)
