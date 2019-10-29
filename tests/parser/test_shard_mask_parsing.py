@@ -4,44 +4,11 @@ from lark import ParseError
 
 from fetchai.ledger.parser.etch_parser import EtchParser, UseWildcardShardMask, UnparsableAddress
 
-CONTRACT_TEXT = """
-persistent sharded balance_state : UInt64;
-persistent owner_name : String;
-
-@init
-function setup(owner : Address)
-  use balance_state[owner];
-  balance_state.set(owner, 1000000u64);
-endfunction
-
-@action
-function transfer(from: Address, to: Address, amount: UInt64)
-
-  use balance_state[from, to];
-
-  // Check if the sender has enough balance_state to proceed
-  if (balance_state.get(from) >= amount)
-
-    // update the account balances
-    balance_state.set(from, balance_state.get(from) - amount);
-    balance_state.set(to, balance_state.get(to, 0u64) + amount);
-  endif
-
-endfunction
-
-@query
-function balance(address: Address) : UInt64
-    use balance_state[address];
-    return balance_state.get(address, 0u64);
-endfunction
-
-"""
-
 # For testing use statements outside annotated functions
 # @init-setup() calls set_balance(), which uses a global outside an annotated function
 # @action-transfer() uses globals directly, and calls the sub(), which doesn't use globals
 NON_ENTRY_GLOBAL = """
-persistent sharded balance : UInt64;
+persistent sharded balance_state : UInt64;
 
 @init
 function setup(owner : Address)
@@ -49,21 +16,21 @@ function setup(owner : Address)
 endfunction
 
 function set_balance(owner: Address, value: UInt64)
-    use balance[owner];
-    balance.set(owner, value);
+    use balance_state[owner];
+    balance_state.set(owner, value);
 endfunction
 
 @action
 function transfer(from: Address, to: Address, amount: UInt64)
 
-  use balance[from, to];
+  use balance_state[from, to];
 
   // Check if the sender has enough balance to proceed
-  if (balance.get(from) >= amount)
+  if (balance_state.get(from) >= amount)
 
     // update the account balances
-    balance.set(from, sub(balance.get(from), amount));
-    balance.set(to, balance.get(to, 0u64) + amount);
+    balance_state.set(from, sub(balance_state.get(from), amount));
+    balance_state.set(to, balance_state.get(to, 0u64) + amount);
   endif
 
 endfunction
@@ -86,14 +53,14 @@ endfunction
 """
 
 USE_ANY_SHARDED = """
-persistent sharded balance : UInt64;
+persistent sharded balance_state : UInt64;
 persistent var3 : UInt64;
 
 @action
 function swap()
     use any;
     
-    balance.set('var1', balance.get('var2', 0));
+    balance_state.set('var1', balance_state.get('var2', 0));
 endfunction
 """
 
@@ -117,8 +84,8 @@ class ShardMaskParsingTests(unittest.TestCase):
 
         # Test transfer function, which calls a non-global-using subfunction
         glob_used = self.parser.globals_used('transfer', ['abc', 'def', 100])
-        self.assertEqual('{}.{}'.format(glob_used[0][0], glob_used[0][1].value), 'balance.abc')
-        self.assertEqual('{}.{}'.format(glob_used[1][0], glob_used[1][1].value), 'balance.def')
+        self.assertEqual('{}.{}'.format(glob_used[0][0], glob_used[0][1].value), 'balance_state.abc')
+        self.assertEqual('{}.{}'.format(glob_used[1][0], glob_used[1][1].value), 'balance_state.def')
 
     def test_global_using_subfunctions(self):
         """Test detection of non-annotated functions containing 'use' statements"""
@@ -135,7 +102,7 @@ class ShardMaskParsingTests(unittest.TestCase):
 
         # Parsing of function that doesn't call global-using-subfunction should succeed
         glob_addresses = self.parser.used_globals_to_addresses('transfer', ['abc', 'def', 100])
-        self.assertEqual(glob_addresses, ['balance.abc', 'balance.def'])
+        self.assertEqual(glob_addresses, ['balance_state.abc', 'balance_state.def'])
 
     def test_use_any(self):
         """Test correct handling of 'use any'"""
