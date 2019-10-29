@@ -5,34 +5,34 @@ from lark import ParseError
 from fetchai.ledger.parser.etch_parser import EtchParser, UseWildcardShardMask, UnparsableAddress
 
 CONTRACT_TEXT = """
-persistent sharded balance : UInt64;
+persistent sharded balance_state : UInt64;
 persistent owner_name : String;
 
 @init
 function setup(owner : Address)
-  use balance[owner];
-  balance.set(owner, 1000000u64);
+  use balance_state[owner];
+  balance_state.set(owner, 1000000u64);
 endfunction
 
 @action
 function transfer(from: Address, to: Address, amount: UInt64)
 
-  use balance[from, to];
+  use balance_state[from, to];
 
-  // Check if the sender has enough balance to proceed
-  if (balance.get(from) >= amount)
+  // Check if the sender has enough balance_state to proceed
+  if (balance_state.get(from) >= amount)
 
     // update the account balances
-    balance.set(from, balance.get(from) - amount);
-    balance.set(to, balance.get(to, 0u64) + amount);
+    balance_state.set(from, balance_state.get(from) - amount);
+    balance_state.set(to, balance_state.get(to, 0u64) + amount);
   endif
 
 endfunction
 
 @query
 function balance(address: Address) : UInt64
-    use balance[address];
-    return balance.get(address, 0u64);
+    use balance_state[address];
+    return balance_state.get(address, 0u64);
 endfunction
 
 """
