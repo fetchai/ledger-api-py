@@ -17,10 +17,12 @@
 # ------------------------------------------------------------------------------
 
 import base64
+import hashlib
 import json
+import logging
 import random
-from hashlib import pbkdf2_hmac
-
+import re
+import bcrypt
 import ecdsa
 from Crypto.Cipher import AES
 
@@ -34,6 +36,10 @@ class Entity(Identity):
     @classmethod
     def prompt_load(cls, fp):
         password = input("Please enter password")
+
+        while not _strong_password(password):
+            password = input("Please enter password")
+
         return cls.load(fp, password)
 
     @classmethod
@@ -100,27 +106,45 @@ class Entity(Identity):
         return json.dump(self._to_json_object(password), fp)
 
     def _to_json_object(self, password):
-        encrypted, key_length, init_vec = _encrypt(password, self.private_key_bytes)
+        encrypted, key_length, init_vec, salt = _encrypt(password, self.private_key_bytes)
         return {
             'key_length': key_length,
             'init_vector': init_vec,
+            'password_salt': salt,
             'privateKey': base64.b64encode(encrypted).decode()
         }
 
     @classmethod
     def _from_json_object(cls, obj, password):
-        privateKey = _decrypt(password, base64.b64decode(obj['privateKey']), obj['key_length'], obj['init_vector'])
+        private_key = _decrypt(password,
+                               obj['password_salt'],
+                               base64.b64decode(obj['privateKey']),
+                               obj['key_length'],
+                               obj['init_vector'])
 
-        return cls.from_base64(base64.b64encode(privateKey).decode())
+        return cls.from_base64(base64.b64encode(private_key).decode())
 
 
-def _encrypt(password, data):
-    # Hash password to 32 bytes
-    hashed_pass = pbkdf2_hmac('sha256', password.encode('ascii'), b'fetchai_private_key_salt', 1000000)
+def _encrypt(password: str, data: bytes):
+    """
+    Encryption schema for private keys
+    :param password: plaintext password to use for encryption
+    :param data: plaintext data to encrypt
+    :return: encrypted data, length of original data, initialisation vector for aes, password hashing salt
+    """
+    # Generate hash from password
+    salt = bcrypt.gensalt(rounds=14)
+    hashed_pass = bcrypt.hashpw(password.encode(), salt)
+
+    # SHA256 to 32 bytes
+    sha256 = hashlib.sha256()
+    sha256.update(hashed_pass)
+    hashed_pass = sha256.digest()
 
     # Random initialisation vector
-    iv = ''.join([chr(random.randint(33, 127)) for i in range(16)])
+    iv = ''.join([chr(random.randint(33, 127)) for _ in range(16)])
 
+    # Encrypt data using AES
     aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
 
     # Pad data to multiple of 16
@@ -130,17 +154,58 @@ def _encrypt(password, data):
 
     encrypted = aes.encrypt(data)
 
-    return encrypted, n, iv
+    return encrypted, n, iv, salt.decode()
 
 
-def _decrypt(password, data, n, iv):
+def _decrypt(password: str, salt: str, data: bytes, n: int, iv: str):
+    """
+    Decryption schema for private keys
+    :param password: plaintext password used for encryption
+    :param salt: password hashing salt
+    :param data: encrypted data string
+    :param n: length of original plaintext data
+    :param iv: initialisation vector for aes
+    :return: decrypted data as plaintext
+    """
     # Hash password
-    hashed_pass = pbkdf2_hmac('sha256', password.encode('ascii'), b'fetchai_private_key_salt', 1000000)
+    hashed_pass = bcrypt.hashpw(password.encode(), salt.encode())
 
-    aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
+    sha256 = hashlib.sha256()
+    sha256.update(hashed_pass)
+    hashed_pass = sha256.digest()
 
     # Decrypt data, noting original length
+    aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
     decrypted_data = aes.decrypt(data)[:n]
 
     # Return original data
     return decrypted_data
+
+
+def _strong_password(password: str):
+    """
+    Checks that a password is of sufficient length and contains all character classes
+    :param password:
+    :return: True if password is strong
+    """
+    if len(password) < 14:
+        logging.warning("Please enter a password at least 14 characters long")
+        return False
+
+    if not re.search(r'[a-z]+', password):
+        logging.warning("Password must contain at least one lower case character")
+        return False
+
+    if not re.search(r'[A-Z]+', password):
+        logging.warning("Password must contain at least one upper case character")
+        return False
+
+    if not re.search(r'[0-9]+', password):
+        logging.warning("Password must contain at least one number")
+        return False
+
+    if not re.search(r'[#?!@$%^&*\-+=/\':;,.()\[\]{}~`_\\]', password):
+        logging.warning("Password must contain at least one symbol")
+        return False
+
+    return True
