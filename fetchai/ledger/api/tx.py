@@ -1,5 +1,6 @@
 import base64
 import json
+from collections import defaultdict
 
 from .common import ApiEndpoint
 
@@ -68,7 +69,7 @@ class TxContents:
         self.valid_until = valid_until
         self.charge = charge
         self.charge_limit = charge_limit
-        self.transfers = transfers
+        self._transfers = transfers
         self.signatories = signatories
         self.data = data
 
@@ -78,11 +79,20 @@ class TxContents:
             if item['to'] == address:
                 total += item['amount']
 
+    @property
+    def transfers(self):
+        result = defaultdict(list)
+        for item in self._transfers:
+            result[item['to']] += item['amount']
+
+        return dict(result)
+
     @staticmethod
     def from_json(data):
         if isinstance(data, str):
             data = json.loads(data)
         # Extract contents from json, converting as necessary
+        print(', '.join(data.keys()))
         return TxContents(
             bytes.fromhex(data.get('digest').lstrip('0x')),
             data.get('action'),
