@@ -5,34 +5,34 @@ from lark import GrammarError, ParseError, UnexpectedCharacters
 from fetchai.ledger.parser.etch_parser import EtchParser, Function
 
 CONTRACT_TEXT = """
-persistent sharded balance : UInt64;
+persistent sharded balance_state : UInt64;
 persistent owner_name : String;
 
 @init
 function setup(owner : Address)
-  use balance[owner];
-  balance.set(owner, 1000000u64);
+  use balance_state[owner];
+  balance_state.set(owner, 1000000u64);
 endfunction
 
 @action
 function transfer(from: Address, to: Address, amount: UInt64)
   use owner_name;  // inline comment
-  use balance[from, to, "constant_string", "prefix." + to];
+  use balance_state[from, to, "constant_string", "prefix." + to];
 
   // Check if the sender has enough balance to proceed
-  if (balance.get(from) >= amount)
+  if (balance_state.get(from) >= amount)
 
     // update the account balances
-    balance.set(from, balance.get(from) - amount);
-    balance.set(to, balance.get(to, 0u64) + amount);
+    balance_state.set(from, balance_state.get(from) - amount);
+    balance_state.set(to, balance_state.get(to, 0u64) + amount);
   endif
 
 endfunction
 
 @query
 function balance(address: Address) : UInt64
-    use balance[address];
-    return balance.get(address, 0u64);
+    use balance_state[address];
+    return balance_state.get(address, 0u64);
 endfunction
 
 function sub(val1: UInt64, val2: UInt64) : UInt64
@@ -109,10 +109,10 @@ class ParserTests(unittest.TestCase):
 
     def test_globals_declared(self):
         glob_decl = self.parser.globals_declared()
-        self.assertEqual(set(glob_decl.keys()), {'balance', 'owner_name'})
-        self.assertEqual(glob_decl['balance'].name, 'balance')
-        self.assertEqual(glob_decl['balance'].gtype, 'UInt64')
-        self.assertEqual(glob_decl['balance'].is_sharded, True)
+        self.assertEqual(set(glob_decl.keys()), {'balance_state', 'owner_name'})
+        self.assertEqual(glob_decl['balance_state'].name, 'balance_state')
+        self.assertEqual(glob_decl['balance_state'].gtype, 'UInt64')
+        self.assertEqual(glob_decl['balance_state'].is_sharded, True)
 
         self.assertEqual(glob_decl['owner_name'].name, 'owner_name')
         self.assertEqual(glob_decl['owner_name'].gtype, 'String')
@@ -124,7 +124,7 @@ class ParserTests(unittest.TestCase):
         glob_used = self.parser.globals_used('setup', ['abc'])
         self.assertEqual(len(glob_used), 1)
         self.assertEqual(len(glob_used[0]), 2)
-        self.assertEqual(glob_used[0][0], 'balance')
+        self.assertEqual(glob_used[0][0], 'balance_state')
         self.assertEqual(glob_used[0][1].value, 'abc')
         self.assertEqual(glob_used[0][1].name, 'owner')
 
@@ -136,10 +136,10 @@ class ParserTests(unittest.TestCase):
         # Unsharded use statement
         self.assertEqual(glob_addresses[0], 'owner_name')
         # Sharded use statements
-        self.assertEqual(glob_addresses[1], 'balance.abc')  # Parameter
-        self.assertEqual(glob_addresses[2], 'balance.def')  # Parameter
-        self.assertEqual(glob_addresses[3], 'balance.constant_string')  # String constant
-        self.assertEqual(glob_addresses[4], 'balance.prefix.def')  # String concatenation
+        self.assertEqual(glob_addresses[1], 'balance_state.abc')  # Parameter
+        self.assertEqual(glob_addresses[2], 'balance_state.def')  # Parameter
+        self.assertEqual(glob_addresses[3], 'balance_state.constant_string')  # String constant
+        self.assertEqual(glob_addresses[4], 'balance_state.prefix.def')  # String concatenation
 
     def test_scope(self):
         """Tests which instructions are allowed at each scope"""
@@ -150,7 +150,7 @@ class ParserTests(unittest.TestCase):
         # Allowed at global scope
         try:
             # Persistent global declaration
-            self.parser.parse("persistent sharded balance : UInt64;")
+            self.parser.parse("persistent sharded balance_state : UInt64;")
             self.parser.parse("persistent owner : String;")
 
             # Functions
