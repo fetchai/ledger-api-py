@@ -72,6 +72,12 @@ class TxContents:
         self.signatories = signatories
         self.data = data
 
+    def transfers_to(self, address):
+        total = 0
+        for item in self.transfers:
+            if item['to'] == address:
+                total += item['amount']
+
     @staticmethod
     def from_json(data):
         if isinstance(data, str):
@@ -90,7 +96,7 @@ class TxContents:
             int(data.get('chargeLimit')),
             [t for t in data.get('transfers')],
             [bytes.fromhex(s.lstrip('0x')) for s in data.get('signatories')],
-            data['data']
+            data.get('data')
         )
 
 
