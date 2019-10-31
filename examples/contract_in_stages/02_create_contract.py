@@ -21,33 +21,33 @@ from fetchai.ledger.contract import Contract
 from fetchai.ledger.crypto import Entity
 
 CONTRACT_TEXT = """
+persistent sharded balance : UInt64;
+
 @init
 function setup(owner : Address)
-  var owner_balance = State<UInt64>(owner);
-  owner_balance.set(1000000u64);
+  use balance[owner];
+  balance.set(owner, 1000000u64);
 endfunction
 
 @action
 function transfer(from: Address, to: Address, amount: UInt64)
 
-  // define the accounts
-  var from_account = State<UInt64>(from);
-  var to_account = State<UInt64>(to); // if new sets to 0u
-
+  use balance[from, to];
+  
   // Check if the sender has enough balance to proceed
-  if (from_account.get() >= amount)
+  if (balance.get(from) >= amount)
 
     // update the account balances
-    from_account.set(from_account.get() - amount);
-    to_account.set(to_account.get(0u64) + amount);
+    balance.set(from, balance.get(from) - amount);
+    balance.set(to, balance.get(to, 0u64) + amount);
   endif
 
 endfunction
 
 @query
 function balance(address: Address) : UInt64
-    var account = State<UInt64>(address);
-    return account.get(0u64);
+    use balance[address];
+    return balance.get(address, 0u64);
 endfunction
 
 """
