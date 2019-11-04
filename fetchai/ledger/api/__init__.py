@@ -85,13 +85,6 @@ class LedgerApi:
             # loop through all the remaining digests and poll them creating a set of completed in this round
             remaining_statuses = [self.tx.status(digest) for digest in remaining]
 
-            pp = PrettyPrinter(indent=2, width=90)
-            conts = [self.tx._contents(digest) for digest in remaining]
-            for c in conts:
-                pp.pprint(c.__dict__)
-                print(c.signatories)
-            # print('\n'.join(pp.pprint(c.__dict__) for c in conts))
-
             failed_this_round = [status for status in remaining_statuses if status.failed]
             if failed_this_round:
                 failures = ['{}:{}'.format(tx_status.digest_hex, tx_status.status) \

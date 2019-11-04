@@ -1,8 +1,12 @@
 import base64
 import json
 from collections import defaultdict
+from typing import Union, List, Dict, Optional
 
+from fetchai.ledger.crypto import Address, Identity
 from .common import ApiEndpoint
+
+AddressLike = Union[Address, Identity, bytes, str]
 
 
 class TxStatus:
@@ -47,52 +51,43 @@ class TxContents:
                  digest: bytes,
                  action: str,
                  chain_code: str,
-                 from_address: str,
+                 from_address: AddressLike,
                  contract_digest: str,
-                 contract_address: str,
+                 contract_address: Optional[AddressLike],
                  valid_from: int,
                  valid_until: int,
                  charge: int,
                  charge_limit: int,
-                 transfers: list,
-                 signatories: list,
+                 transfers: List[Dict[str, Union[str, int]]],
+                 signatories: List[str],
                  data: str
                  ):
         self._digest_bytes = digest
         self._digest_hex = self._digest_bytes.hex()
         self.action = action
         self.chain_code = chain_code
-        self.from_address = from_address
-        self.contract_digest = contract_digest
-        self.contract_address = contract_address
+        self.from_address = Address(from_address)
+        self.contract_digest = contract_digest if contract_digest else None
+        self.contract_address = Address(contract_address) if contract_address else None
         self.valid_from = valid_from
         self.valid_until = valid_until
         self.charge = charge
         self.charge_limit = charge_limit
-        self._transfers = transfers
+        self.transfers = {Address(t['to']): t['amount'] for t in transfers}
         self.signatories = signatories
         self.data = data
 
-    def transfers_to(self, address):
-        total = 0
-        for item in self.transfers:
-            if item['to'] == address:
-                total += item['amount']
-
-    @property
-    def transfers(self):
-        result = defaultdict(list)
-        for item in self._transfers:
-            result[item['to']] += item['amount']
-
-        return dict(result)
+    def transfers_to(self, address: AddressLike) -> int:
+        """Returns the amount of FET transferred to an address by this transaction, if any"""
+        address = Address(address)
+        return self.transfers.get(address, 0)
 
     @staticmethod
-    def from_json(data):
+    def from_json(data: Union[dict, str]):
+        """Creates a TxContents from a json string or dict object"""
         if isinstance(data, str):
             data = json.loads(data)
         # Extract contents from json, converting as necessary
-        print(', '.join(data.keys()))
         return TxContents(
             bytes.fromhex(data.get('digest').lstrip('0x')),
             data.get('action'),
@@ -105,7 +100,7 @@ class TxContents:
             int(data.get('charge')),
             int(data.get('chargeLimit')),
             [t for t in data.get('transfers')],
-            [bytes.fromhex(s.lstrip('0x')) for s in data.get('signatories')],
+            data.get('signatories'),
             data.get('data')
         )
 
@@ -125,7 +120,6 @@ class TransactionApi(ApiEndpoint):
         url = '{}://{}:{}/api/status/tx/{}'.format(self.protocol, self.host, self.port, tx_digest)
 
         response = self._session.get(url).json()
-        print('digest: ', response['tx'])
         return TxStatus(
             digest=base64.b64decode(response['tx'].encode()),
             status=str(response['status']),
@@ -140,6 +134,3 @@ class TransactionApi(ApiEndpoint):
         response = self._session.get(url).json()
 
         return TxContents.from_json(response)
-
-
-
