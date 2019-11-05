@@ -1,3 +1,4 @@
+from __future__ import annotations
 import base64
 import json
 from collections import defaultdict
@@ -83,10 +84,11 @@ class TxContents:
         return self.transfers.get(address, 0)
 
     @staticmethod
-    def from_json(data: Union[dict, str]):
+    def from_json(data: Union[dict, str]) -> TxContents:
         """Creates a TxContents from a json string or dict object"""
         if isinstance(data, str):
             data = json.loads(data)
+
         # Extract contents from json, converting as necessary
         return TxContents(
             bytes.fromhex(data.get('digest').lstrip('0x')),
@@ -128,7 +130,17 @@ class TransactionApi(ApiEndpoint):
             charge_rate=int(response['charge_rate']),
             fee=int(response['fee']))
 
-    def _contents(self, tx_digest):
+    def contents(self, tx_digest) -> TxContents:
+        """
+        Returns the contents of the transaction at the node
+
+        :param tx_digest: The hex-encoded string of the target tx digest
+        :return: TxContents object
+        """
+
+        return self._contents(tx_digest)
+
+    def _contents(self, tx_digest) -> TxContents:
         url = '{}://{}:{}/api/tx/{}'.format(self.protocol, self.host, self.port, tx_digest)
 
         response = self._session.get(url).json()
