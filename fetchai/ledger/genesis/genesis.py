@@ -76,8 +76,7 @@ class GenesisFile():
 
         # build up the configuration for all the stakers
         for (entity, amount) in self._entities_staking:
-            pub_key = entity.public_key
-            token_address = generate_token_address(pub_key)
+            token_address = generate_token_address(entity.public_key)
 
             # update the stake list
             stakes.append({
@@ -87,7 +86,7 @@ class GenesisFile():
 
         # build up the configuration for all the wallet holders
         for (entity, amount) in self._entities_with_wealth:
-            pub_key = entity.public_key
+            token_address = generate_token_address(entity.public_key)
 
             # update the initial state
             key, value = create_record(
