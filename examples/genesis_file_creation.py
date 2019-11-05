@@ -45,38 +45,9 @@ def main():
     # the first N of these will be miners
     initial_miners = [(initial_entities[x][0], TOKENS_STAKED_PER_MINER) for x in range(DESIRED_MINERS)]
 
-    #import ipdb; ipdb.set_trace(context=20)
-
     genesis_file = GenesisFile(initial_entities, initial_miners, MAX_CABINET_SIZE, START_IN_X_SECONDS, BLOCK_INTERVAL_MS)
 
-    import ipdb; ipdb.set_trace(context=20)
-
-    aa = genesis_file.as_json()
-
-    #genesis_file.dump_to_file()
-
-    import ipdb; ipdb.set_trace(context=20)
-
-    ## create the APIs
-    #api = LedgerApi(HOST, PORT)
-
-    ## generate a random identity
-    #your_identity = Entity()
-    #other_identity = Entity()
-    #print('Balance Before:', api.tokens.balance(your_identity))
-
-    ## create the balance
-    #print('Submitting wealth creation...')
-    #api.sync(api.tokens.wealth(your_identity, 1000))
-    #print('Balance after wealth:', api.tokens.balance(your_identity))
-
-    ## submit and wait for the transfer to be complete
-    #print('Submitting transfer...')
-    #api.sync(api.tokens.transfer(your_identity, other_identity, 250, 20))
-
-    #print('Balance 1:', api.tokens.balance(your_identity))
-    #print('Balance 2:', api.tokens.balance(other_identity))
-
+    genesis_file.dump_to_file("genesis_file.json")
 
 if __name__ == '__main__':
     main()

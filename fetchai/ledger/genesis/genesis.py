@@ -16,13 +16,9 @@
 #
 # ------------------------------------------------------------------------------
 
-#import argparse
-#import json
-#import struct
+import json
 import hashlib
 import base64
-#import sys
-#import binascii
 import base58
 import time
 
@@ -107,7 +103,6 @@ class GenesisFile():
             'consensus': {
                 'startTime': self._start_time,
                 'cabinetSize': self._max_cabinet_size,
-                'threshold': 0.5,
                 'stakers': stakes,
                 'entropyRunahead': self._entropy_runahead,
                 'aeonPeriodicity': self._aeon_periodicity,
@@ -119,10 +114,10 @@ class GenesisFile():
 
         return genesis_file
 
-    #def dump_to_file(self, no_formatting = False):
+    def dump_to_file(self, file_name = "genesis_file.json", no_formatting = False):
 
-    #    with open(args.output, 'w') as output_file:
-    #        if no_formatting:
-    #            json.dump(genesis_file, self.as_json())
-    #        else:
-    #            json.dump(genesis_file, self.as_json(), indent=4, sort_keys=True)
+        with open(file_name, 'w') as output_file:
+            if no_formatting:
+                json.dump(self.as_json(), output_file)
+            else:
+                json.dump(self.as_json(), output_file, indent=4, sort_keys=True)
