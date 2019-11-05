@@ -17,14 +17,16 @@
 # ------------------------------------------------------------------------------
 
 import base64
-import hashlib
 import json
 import logging
+import os
 import random
 import re
-import bcrypt
+from typing import Tuple
+
 import ecdsa
 from Crypto.Cipher import AES
+from hashlib import pbkdf2_hmac
 
 from .identity import Identity
 
@@ -110,14 +112,14 @@ class Entity(Identity):
         return {
             'key_length': key_length,
             'init_vector': init_vec,
-            'password_salt': salt,
+            'password_salt': salt.hex(),
             'privateKey': base64.b64encode(encrypted).decode()
         }
 
     @classmethod
     def _from_json_object(cls, obj, password):
         private_key = _decrypt(password,
-                               obj['password_salt'],
+                               bytes.fromhex(obj['password_salt']),
                                base64.b64decode(obj['privateKey']),
                                obj['key_length'],
                                obj['init_vector'])
@@ -125,7 +127,7 @@ class Entity(Identity):
         return cls.from_base64(base64.b64encode(private_key).decode())
 
 
-def _encrypt(password: str, data: bytes):
+def _encrypt(password: str, data: bytes) -> Tuple[bytes, int, str, bytes]:
     """
     Encryption schema for private keys
     :param password: plaintext password to use for encryption
@@ -133,13 +135,8 @@ def _encrypt(password: str, data: bytes):
     :return: encrypted data, length of original data, initialisation vector for aes, password hashing salt
     """
     # Generate hash from password
-    salt = bcrypt.gensalt(rounds=14)
-    hashed_pass = bcrypt.hashpw(password.encode(), salt)
-
-    # SHA256 to 32 bytes
-    sha256 = hashlib.sha256()
-    sha256.update(hashed_pass)
-    hashed_pass = sha256.digest()
+    salt = os.urandom(16)
+    hashed_pass = pbkdf2_hmac('sha256', password.encode(), salt, 1000000)
 
     # Random initialisation vector
     iv = ''.join([chr(random.randint(33, 127)) for _ in range(16)])
@@ -150,14 +147,14 @@ def _encrypt(password: str, data: bytes):
     # Pad data to multiple of 16
     n = len(data)
     if n % 16 != 0:
-        data += ' ' * (16 - n % 16)
+        data += b' ' * (16 - n % 16)
 
     encrypted = aes.encrypt(data)
 
-    return encrypted, n, iv, salt.decode()
+    return encrypted, n, iv, salt
 
 
-def _decrypt(password: str, salt: str, data: bytes, n: int, iv: str):
+def _decrypt(password: str, salt: bytes, data: bytes, n: int, iv: str) -> bytes:
     """
     Decryption schema for private keys
     :param password: plaintext password used for encryption
@@ -168,11 +165,7 @@ def _decrypt(password: str, salt: str, data: bytes, n: int, iv: str):
     :return: decrypted data as plaintext
     """
     # Hash password
-    hashed_pass = bcrypt.hashpw(password.encode(), salt.encode())
-
-    sha256 = hashlib.sha256()
-    sha256.update(hashed_pass)
-    hashed_pass = sha256.digest()
+    hashed_pass = pbkdf2_hmac('sha256', password.encode(), salt, 1000000)
 
     # Decrypt data, noting original length
     aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
