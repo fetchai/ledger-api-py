@@ -25,7 +25,7 @@ import re
 from typing import Tuple
 
 import ecdsa
-from Crypto.Cipher import AES
+import pyaes
 from hashlib import pbkdf2_hmac
 
 from .identity import Identity
@@ -142,14 +142,20 @@ def _encrypt(password: str, data: bytes) -> Tuple[bytes, int, str, bytes]:
     iv = ''.join([chr(random.randint(33, 127)) for _ in range(16)])
 
     # Encrypt data using AES
-    aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
+    aes = pyaes.AESModeOfOperationCBC(hashed_pass, iv=iv)
+
+    # aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
 
     # Pad data to multiple of 16
     n = len(data)
     if n % 16 != 0:
         data += b' ' * (16 - n % 16)
 
-    encrypted = aes.encrypt(data)
+    encrypted = b''
+    while len(data):
+        encrypted += aes.encrypt(data[:16])
+        data = data[16:]
+    # encrypted = aes.encrypt().encrypt(data)
 
     return encrypted, n, iv, salt
 
@@ -168,8 +174,13 @@ def _decrypt(password: str, salt: bytes, data: bytes, n: int, iv: str) -> bytes:
     hashed_pass = pbkdf2_hmac('sha256', password.encode(), salt, 1000000)
 
     # Decrypt data, noting original length
-    aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
-    decrypted_data = aes.decrypt(data)[:n]
+    aes = pyaes.AESModeOfOperationCBC(hashed_pass, iv=iv)
+    # aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
+    decrypted = b''
+    while len(data):
+        decrypted += aes.decrypt(data[:16])
+        data = data[16:]
+    decrypted_data = decrypted[:n]
 
     # Return original data
     return decrypted_data
