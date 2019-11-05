@@ -1,7 +1,5 @@
-from __future__ import annotations
 import base64
 import json
-from collections import defaultdict
 from typing import Union, List, Dict, Optional
 
 from fetchai.ledger.crypto import Address, Identity
@@ -84,7 +82,7 @@ class TxContents:
         return self.transfers.get(address, 0)
 
     @staticmethod
-    def from_json(data: Union[dict, str]) -> TxContents:
+    def from_json(data: Union[dict, str]):
         """Creates a TxContents from a json string or dict object"""
         if isinstance(data, str):
             data = json.loads(data)
