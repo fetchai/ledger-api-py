@@ -1,3 +1,4 @@
+import json
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -22,9 +23,14 @@ class EncryptionTests(TestCase):
         """Check json save schema allows successful recovery of private key"""
         ent1 = entity.Entity()
         password = 'abcdABCD1234##'
-        json = ent1._to_json_object(password)
+        json_obj = ent1._to_json_object(password)
 
-        ent2 = entity.Entity._from_json_object(json, password)
+        # Test conversion of dict object to/from json (to ensure serializability)
+        json_str = json.dumps(json_obj)
+        json_obj2 = json.loads(json_str)
+        self.assertEqual(json_obj2, json_obj)
+
+        ent2 = entity.Entity._from_json_object(json_obj2, password)
 
         self.assertEqual(ent1.private_key, ent2.private_key)
 

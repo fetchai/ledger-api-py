@@ -20,7 +20,6 @@ import base64
 import json
 import logging
 import os
-import random
 import re
 from typing import Tuple
 
@@ -111,23 +110,23 @@ class Entity(Identity):
         encrypted, key_length, init_vec, salt = _encrypt(password, self.private_key_bytes)
         return {
             'key_length': key_length,
-            'init_vector': init_vec,
-            'password_salt': salt.hex(),
+            'init_vector': base64.b64encode(init_vec).decode(),
+            'password_salt': base64.b64encode(salt).decode(),
             'privateKey': base64.b64encode(encrypted).decode()
         }
 
     @classmethod
     def _from_json_object(cls, obj, password):
         private_key = _decrypt(password,
-                               bytes.fromhex(obj['password_salt']),
+                               base64.b64decode(obj['password_salt']),
                                base64.b64decode(obj['privateKey']),
                                obj['key_length'],
-                               obj['init_vector'])
+                               base64.b64decode(obj['init_vector']))
 
         return cls.from_base64(base64.b64encode(private_key).decode())
 
 
-def _encrypt(password: str, data: bytes) -> Tuple[bytes, int, str, bytes]:
+def _encrypt(password: str, data: bytes) -> Tuple[bytes, int, bytes, bytes]:
     """
     Encryption schema for private keys
     :param password: plaintext password to use for encryption
@@ -139,12 +138,10 @@ def _encrypt(password: str, data: bytes) -> Tuple[bytes, int, str, bytes]:
     hashed_pass = pbkdf2_hmac('sha256', password.encode(), salt, 1000000)
 
     # Random initialisation vector
-    iv = ''.join([chr(random.randint(33, 127)) for _ in range(16)])
+    iv = os.urandom(16)
 
     # Encrypt data using AES
     aes = pyaes.AESModeOfOperationCBC(hashed_pass, iv=iv)
-
-    # aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
 
     # Pad data to multiple of 16
     n = len(data)
@@ -155,12 +152,11 @@ def _encrypt(password: str, data: bytes) -> Tuple[bytes, int, str, bytes]:
     while len(data):
         encrypted += aes.encrypt(data[:16])
         data = data[16:]
-    # encrypted = aes.encrypt().encrypt(data)
 
     return encrypted, n, iv, salt
 
 
-def _decrypt(password: str, salt: bytes, data: bytes, n: int, iv: str) -> bytes:
+def _decrypt(password: str, salt: bytes, data: bytes, n: int, iv: bytes) -> bytes:
     """
     Decryption schema for private keys
     :param password: plaintext password used for encryption
@@ -175,7 +171,7 @@ def _decrypt(password: str, salt: bytes, data: bytes, n: int, iv: str) -> bytes:
 
     # Decrypt data, noting original length
     aes = pyaes.AESModeOfOperationCBC(hashed_pass, iv=iv)
-    # aes = AES.new(hashed_pass, AES.MODE_CBC, iv.encode('ascii'))
+
     decrypted = b''
     while len(data):
         decrypted += aes.decrypt(data[:16])
