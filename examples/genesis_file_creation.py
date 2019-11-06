@@ -39,7 +39,7 @@ def main():
     START_IN_X_SECONDS = 5
 
     print("Generating entities. This may take some time.")
-    initial_entities = [(Entity(), TOKENS_PER_ENTITY) for x in range(DESIRED_ENTITIES)]
+    initial_entities = [(Entity(), TOKENS_PER_ENTITY) for _ in range(DESIRED_ENTITIES)]
     print("Done.")
 
     # the first N of these will be miners
