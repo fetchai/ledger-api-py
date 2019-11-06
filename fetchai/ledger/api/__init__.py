@@ -15,11 +15,9 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-import json
 import logging
 import time
 from datetime import datetime, timedelta
-from pprint import PrettyPrinter
 from typing import Sequence, Union
 
 import semver
