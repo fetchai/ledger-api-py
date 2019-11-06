@@ -32,7 +32,7 @@ def print_address_balances(api: LedgerApi, contract: Contract, addresses: List[A
 def main():
     # load up the previously created private key
     with open('private.key', 'r') as private_key_file:
-        entity1 = Entity.load(private_key_file)
+        entity1 = Entity.prompt_load(private_key_file)
 
     # load up the deployed contract
     with open('sample.contract', 'r') as contract_file:

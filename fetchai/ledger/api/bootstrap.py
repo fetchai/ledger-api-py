@@ -33,6 +33,7 @@ def is_server_valid(server_list, network):
         network_version_required['prerelease'] = None
         network_version_required['build'] = None
         network_version_required['patch'] = 0
+        network_version_required = semver.format_version(**network_version_required)
 
         if not all(semver.match(network_version_required, c) for c in version_constraints):
             raise IncompatibleLedgerVersion("Requested network does not support required version\n" +
