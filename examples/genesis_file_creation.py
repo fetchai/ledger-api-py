@@ -43,7 +43,7 @@ def main():
     print("Done.")
 
     # the first N of these will be miners
-    initial_miners = [(initial_entities[x][0], TOKENS_STAKED_PER_MINER) for x in range(DESIRED_MINERS)]
+    initial_miners = [(initial_entities[x][0], TOKENS_STAKED_PER_MINER) for _ in range(DESIRED_MINERS)]
 
     genesis_file = GenesisFile(initial_entities, initial_miners, MAX_CABINET_SIZE, START_IN_X_SECONDS, BLOCK_INTERVAL_MS)
 
