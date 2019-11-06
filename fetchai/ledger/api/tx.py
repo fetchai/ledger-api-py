@@ -120,6 +120,7 @@ class TransactionApi(ApiEndpoint):
         url = '{}://{}:{}/api/status/tx/{}'.format(self.protocol, self.host, self.port, tx_digest)
 
         response = self._session.get(url).json()
+
         return TxStatus(
             digest=base64.b64decode(response['tx'].encode()),
             status=str(response['status']),
