@@ -38,14 +38,12 @@ def main():
     BLOCK_INTERVAL_MS  = 1000
     START_IN_X_SECONDS = 5
 
+    # Note: the first N of these will be miners
     print("Generating entities. This may take some time.")
-    initial_entities = [(Entity(), TOKENS_PER_ENTITY) for _ in range(DESIRED_ENTITIES)]
+    initial_entities = [(Entity(), TOKENS_PER_ENTITY, TOKENS_STAKED_PER_MINER if x < DESIRED_MINERS else 0) for x in range(DESIRED_ENTITIES)]
     print("Done.")
 
-    # the first N of these will be miners
-    initial_miners = [(initial_entities[x][0], TOKENS_STAKED_PER_MINER) for _ in range(DESIRED_MINERS)]
-
-    genesis_file = GenesisFile(initial_entities, initial_miners, MAX_CABINET_SIZE, START_IN_X_SECONDS, BLOCK_INTERVAL_MS)
+    genesis_file = GenesisFile(initial_entities, MAX_CABINET_SIZE, START_IN_X_SECONDS, BLOCK_INTERVAL_MS)
 
     genesis_file.dump_to_file("genesis_file.json")
 
