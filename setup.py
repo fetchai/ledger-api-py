@@ -10,7 +10,7 @@ setup(
     author_email='edward.fitzgerald@fetch.ai',
     packages=find_packages(exclude=['contrib', 'docs', 'tests', 'scripts']),
     package_data={'fetchai': ['ledger/parser/etch.grammar']},
-    install_requires=['requests', 'ecdsa', 'msgpack', 'base58', 'lark-parser', 'semver'],
+    install_requires=['requests', 'ecdsa', 'msgpack', 'base58', 'lark-parser', 'semver', 'pyaes'],
     extras_require={
         'dev': ['check-manifest', 'pydot'],
         'test': ['coverage', 'pytest'],

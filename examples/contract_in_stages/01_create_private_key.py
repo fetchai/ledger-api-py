@@ -28,7 +28,7 @@ def main():
 
     # save the private key to disk
     with open('private.key', 'w') as private_key_file:
-        entity1.dump(private_key_file)
+        entity1.prompt_dump(private_key_file)
 
     print('Creating private key...complete')
 
