@@ -18,8 +18,14 @@
 
 import base64
 import json
+import logging
+import os
+import re
+from typing import Tuple
 
 import ecdsa
+import pyaes
+from hashlib import pbkdf2_hmac
 
 from .identity import Identity
 
@@ -28,14 +34,22 @@ class Entity(Identity):
     """
     An entity is a full private/public key pair.
     """
+    @classmethod
+    def prompt_load(cls, fp):
+        password = input("Please enter password")
+
+        while not _strong_password(password):
+            password = input("Please enter password")
+
+        return cls.load(fp, password)
 
     @classmethod
-    def loads(cls, s):
-        return cls._from_json_object(json.loads(s))
+    def loads(cls, s, password):
+        return cls._from_json_object(json.loads(s), password)
 
     @classmethod
-    def load(cls, fp):
-        return cls._from_json_object(json.load(fp))
+    def load(cls, fp, password):
+        return cls._from_json_object(json.load(fp), password)
 
     @staticmethod
     def from_hex(private_key_hex: str):
@@ -82,17 +96,116 @@ class Entity(Identity):
     def sign(self, message: bytes):
         return self._signing_key.sign(message)
 
-    def dumps(self):
-        return json.dumps(self._to_json_object())
+    def prompt_dump(self, fp):
+        password = input("Please enter password")
+        return self.dump(fp, password)
 
-    def dump(self, fp):
-        return json.dump(self._to_json_object(), fp)
+    def dumps(self, password):
+        return json.dumps(self._to_json_object(password))
 
-    def _to_json_object(self):
+    def dump(self, fp, password):
+        return json.dump(self._to_json_object(password), fp)
+
+    def _to_json_object(self, password):
+        encrypted, key_length, init_vec, salt = _encrypt(password, self.private_key_bytes)
         return {
-            'privateKey': base64.b64encode(self._private_key_bytes).decode()
+            'key_length': key_length,
+            'init_vector': base64.b64encode(init_vec).decode(),
+            'password_salt': base64.b64encode(salt).decode(),
+            'privateKey': base64.b64encode(encrypted).decode()
         }
 
     @classmethod
-    def _from_json_object(cls, obj):
-        return cls.from_base64(obj['privateKey'])
+    def _from_json_object(cls, obj, password):
+        private_key = _decrypt(password,
+                               base64.b64decode(obj['password_salt']),
+                               base64.b64decode(obj['privateKey']),
+                               obj['key_length'],
+                               base64.b64decode(obj['init_vector']))
+
+        return cls.from_base64(base64.b64encode(private_key).decode())
+
+
+def _encrypt(password: str, data: bytes) -> Tuple[bytes, int, bytes, bytes]:
+    """
+    Encryption schema for private keys
+    :param password: plaintext password to use for encryption
+    :param data: plaintext data to encrypt
+    :return: encrypted data, length of original data, initialisation vector for aes, password hashing salt
+    """
+    # Generate hash from password
+    salt = os.urandom(16)
+    hashed_pass = pbkdf2_hmac('sha256', password.encode(), salt, 1000000)
+
+    # Random initialisation vector
+    iv = os.urandom(16)
+
+    # Encrypt data using AES
+    aes = pyaes.AESModeOfOperationCBC(hashed_pass, iv=iv)
+
+    # Pad data to multiple of 16
+    n = len(data)
+    if n % 16 != 0:
+        data += b' ' * (16 - n % 16)
+
+    encrypted = b''
+    while len(data):
+        encrypted += aes.encrypt(data[:16])
+        data = data[16:]
+
+    return encrypted, n, iv, salt
+
+
+def _decrypt(password: str, salt: bytes, data: bytes, n: int, iv: bytes) -> bytes:
+    """
+    Decryption schema for private keys
+    :param password: plaintext password used for encryption
+    :param salt: password hashing salt
+    :param data: encrypted data string
+    :param n: length of original plaintext data
+    :param iv: initialisation vector for aes
+    :return: decrypted data as plaintext
+    """
+    # Hash password
+    hashed_pass = pbkdf2_hmac('sha256', password.encode(), salt, 1000000)
+
+    # Decrypt data, noting original length
+    aes = pyaes.AESModeOfOperationCBC(hashed_pass, iv=iv)
+
+    decrypted = b''
+    while len(data):
+        decrypted += aes.decrypt(data[:16])
+        data = data[16:]
+    decrypted_data = decrypted[:n]
+
+    # Return original data
+    return decrypted_data
+
+
+def _strong_password(password: str):
+    """
+    Checks that a password is of sufficient length and contains all character classes
+    :param password:
+    :return: True if password is strong
+    """
+    if len(password) < 14:
+        logging.warning("Please enter a password at least 14 characters long")
+        return False
+
+    if not re.search(r'[a-z]+', password):
+        logging.warning("Password must contain at least one lower case character")
+        return False
+
+    if not re.search(r'[A-Z]+', password):
+        logging.warning("Password must contain at least one upper case character")
+        return False
+
+    if not re.search(r'[0-9]+', password):
+        logging.warning("Password must contain at least one number")
+        return False
+
+    if not re.search(r'[#?!@$%^&*\-+=/\':;,.()\[\]{}~`_\\]', password):
+        logging.warning("Password must contain at least one symbol")
+        return False
+
+    return True
