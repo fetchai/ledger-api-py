@@ -122,7 +122,7 @@ class TransactionApi(ApiEndpoint):
         response = self._session.get(url).json()
 
         return TxStatus(
-            digest=base64.b64decode(response['tx'].encode()),
+            digest=bytes.fromhex(response['tx']),
             status=str(response['status']),
             exit_code=int(response['exit_code']),
             charge=int(response['charge']),
