@@ -1,8 +1,8 @@
-import base64
 import json
 from typing import Union, List, Dict, Optional
 
 from fetchai.ledger.crypto import Address, Identity
+from fetchai.ledger.decode import decode_hex_or_b64
 from .common import ApiEndpoint
 
 AddressLike = Union[Address, Identity, bytes, str]
@@ -122,7 +122,7 @@ class TransactionApi(ApiEndpoint):
         response = self._session.get(url).json()
 
         return TxStatus(
-            digest=bytes.fromhex(response['tx']),
+            digest=decode_hex_or_b64(response['tx']),
             status=str(response['status']),
             exit_code=int(response['exit_code']),
             charge=int(response['charge']),
