@@ -103,6 +103,9 @@ class GenesisFile():
         for (entity, amount, stake_amount) in self._entities_with_wealth:
             token_address = generate_token_address(entity.public_key)
 
+            if not isinstance(amount, int) or not isinstance(stake_amount, int):
+                raise TypeError(f"Initial token amount and stake amount must be integer values! Amount: {amount}, Stake {stake_amount}")
+
             # update the initial state
             key, value = create_record(
                 token_address, amount, stake_amount)
