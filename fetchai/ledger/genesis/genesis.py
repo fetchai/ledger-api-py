@@ -23,7 +23,8 @@ import base58
 import time
 from typing import Tuple, List
 
-from fetchai.ledger.crypto import Entity
+from fetchai.ledger.crypto import Identity
+
 
 def calc_resource_id(resource_address):
     """
@@ -69,7 +70,8 @@ class GenesisFile():
     the transaction format changes
     """
 
-    def __init__(self, entities_with_wealth : List[Tuple[Entity, int, int]], max_cabinet_size, start_in, block_interval_ms):
+    def __init__(self, entities_with_wealth: List[Tuple[Identity, int, int]], max_cabinet_size, start_in,
+                 block_interval_ms):
 
         if not isinstance(entities_with_wealth, List):
             raise TypeError("Incorrect parameters passed to construct genesis. This must be a list of tuples: (Entity, wealth, stake_amount)")
