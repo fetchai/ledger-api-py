@@ -34,6 +34,7 @@ def calc_resource_id(resource_address):
     hasher.update(resource_address.encode())
     return base64.b64encode(hasher.digest()).decode()
 
+
 def generate_token_address(muddle_address):
     """
     Class to generate the exact token address as calculated in the ledger
@@ -52,6 +53,7 @@ def generate_token_address(muddle_address):
 
     return base58.b58encode(final_address).decode()
 
+
 def create_record(address, balance, stake):
     """
     Internally the ledger maintains a record for every account, this function
@@ -60,6 +62,7 @@ def create_record(address, balance, stake):
     resource_id = calc_resource_id('fetch.token.state.' + address)
     resource_value = {"balance": balance, "stake": stake}
     return resource_id, resource_value
+
 
 class GenesisFile():
     """
@@ -74,24 +77,25 @@ class GenesisFile():
                  block_interval_ms):
 
         if not isinstance(entities_with_wealth, List):
-            raise TypeError("Incorrect parameters passed to construct genesis. This must be a list of tuples: (Entity, wealth, stake_amount)")
+            raise TypeError(
+                "Incorrect parameters passed to construct genesis. This must be a list of tuples: (Entity, wealth, stake_amount)")
 
         # All necessary parameters here
         self._entities_with_wealth = entities_with_wealth
-        self._max_cabinet_size     = max_cabinet_size
-        self._start_time           = int(time.time()) + start_in
-        self._block_interval_ms    = block_interval_ms
+        self._max_cabinet_size = max_cabinet_size
+        self._start_time = int(time.time()) + start_in
+        self._block_interval_ms = block_interval_ms
 
         # Default parameters
-        self._entropy_runahead     = 2
-        self._aeon_periodicity     = 25
-        self._aeon_offset          = 100
-        self._minimum_stake        = 1000
+        self._entropy_runahead = 2
+        self._aeon_periodicity = 25
+        self._aeon_offset = 100
+        self._minimum_stake = 1000
 
     def as_json_object(self):
 
-        stakes  = []
-        state   = []
+        stakes = []
+        state = []
 
         # build up the configuration for all the stakers
         for (entity, _, stake_amount) in self._entities_with_wealth:
@@ -130,7 +134,7 @@ class GenesisFile():
 
         return genesis_file
 
-    def dump_to_file(self, file_name = "genesis_file.json", no_formatting = False):
+    def dump_to_file(self, file_name="genesis_file.json", no_formatting=False):
 
         with open(file_name, 'w') as output_file:
             if no_formatting:
