@@ -64,7 +64,7 @@ def create_record(address, balance, stake):
     return resource_id, resource_value
 
 
-class GenesisFile():
+class GenesisFile:
     """
     Class for managing the creation of genesis files, the configuration all nodes will use on startup to determine the genesis,
     the initial state of the system. Minimally this is accounts, their funds, and stakers (miners).
