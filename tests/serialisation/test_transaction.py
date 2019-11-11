@@ -305,8 +305,6 @@ class TransactionSerialisation(unittest.TestCase):
         buffer = io.BytesIO()
         encode_payload(buffer, payload)
         payload_hash.update(buffer.getvalue())
-        print(payload_hash.digest().hex())
-        print(transaction_bytes.hex())
         self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
 
     def test_contract_with_4bit_shard_mask(self):
