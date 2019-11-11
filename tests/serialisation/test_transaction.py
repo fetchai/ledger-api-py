@@ -1,6 +1,9 @@
 import io
 import json
 import unittest
+from _sha256 import sha256
+
+from fetchai.ledger.serialisation.transaction import encode_payload
 
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Entity, Identity
@@ -36,7 +39,12 @@ class TransactionSerialisation(unittest.TestCase):
     EXPECTED_SERIAL_SIGNATURE_LENGTH = EXPECTED_SIGNATURE_BYTE_LEN + EXPECTED_SIGNATURE_LENGTH_FIELD_LEN
 
     def test_simple_transfer(self):
-        EXPECTED_PAYLOAD = "a12400532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d44235130ac5aab442e39f9aa27118956695229212dd2f1ab5b714e9f6bd581511c101000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
+        EXPECTED_DIGEST = "7fff24ca77fbb23b9b3c460104ab1a74011bafe3965e15dc6ea6f25a4ac44392"
+        EXPECTED_PAYLOAD = \
+            "a1440000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d44235130ac5aab442e39f" \
+            "9aa27118956695229212dd2f1ab5b714e9f6bd581511c1010000000000000000000000000418c2a33af8bd2cba7f" \
+            "a714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758b" \
+            "cc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
         payload = Transaction()
@@ -56,8 +64,21 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTrue(success)
         self.assertTxAreEqual(payload, tx)
 
+        # Check payload digest
+        payload_hash = sha256()
+        buffer = io.BytesIO()
+        encode_payload(buffer, payload)
+        payload_hash.update(buffer.getvalue())
+        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+
     def test_multiple_transfers(self):
-        EXPECTED_PAYLOAD = "a12600532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4014235130ac5aab442e39f9aa27118956695229212dd2f1ab5b714e9f6bd581511c1010020f478c7f74b50c187bf9a8836f382bd62977baeeaf19625608e7e912aa60098c10200da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af6dc2000186a00000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
+        EXPECTED_DIGEST = "7e6a95a8c773755d349209d8f3bb60ec2a5f3c683075540f953863f124eb1250"
+        EXPECTED_PAYLOAD = \
+            "a1460000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4014235130ac5aab442e3" \
+            "9f9aa27118956695229212dd2f1ab5b714e9f6bd581511c1010020f478c7f74b50c187bf9a8836f382bd62977bae" \
+            "eaf19625608e7e912aa60098c10200da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af" \
+            "6dc2000186a000000000000000000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe" \
+            "08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
         payload = Transaction()
@@ -79,8 +100,21 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTrue(success)
         self.assertTxAreEqual(payload, tx)
 
+        # Check payload digest
+        payload_hash = sha256()
+        buffer = io.BytesIO()
+        encode_payload(buffer, payload)
+        payload_hash.update(buffer.getvalue())
+        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+
     def test_synergetic_data_submission(self):
-        EXPECTED_PAYLOAD = "a120c0532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4c1271001c3000000e8d4a5100080da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af6de6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df204646174610f7b2276616c7565223a20313233347d0418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
+        EXPECTED_DIGEST = "9397fd490b60a394ea0af5526435608a1e853e2cb6b09bc7cafec8f6a0aa2cf6"
+        EXPECTED_PAYLOAD = \
+            "a140c000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4c1271001c3000000e8d4" \
+            "a5100080da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af6de6672a9d98da667e5dc2" \
+            "5b2bca8acf9644a7ac0797f01cb5968abf39de011df204646174610f7b2276616c7565223a20313233347d000000" \
+            "00000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c" \
+            "258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
         payload = Transaction()
@@ -106,8 +140,20 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTrue(success)
         self.assertTxAreEqual(payload, tx)
 
+        # Check payload digest
+        payload_hash = sha256()
+        buffer = io.BytesIO()
+        encode_payload(buffer, payload)
+        payload_hash.update(buffer.getvalue())
+        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+
     def test_chain_code(self):
-        EXPECTED_PAYLOAD = "a12080532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f4240800b666f6f2e6261722e62617a066c61756e636802676f0418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
+        EXPECTED_DIGEST = "7032dd625b0a93aec85fa03696d0ecbc9de19d834ce3fd1d1ed9cf8a56d9f62e"
+        EXPECTED_PAYLOAD = \
+            "a1408000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
+            "0b666f6f2e6261722e62617a066c61756e636802676f00000000000000000418c2a33af8bd2cba7fa714a840a308" \
+            "a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75" \
+            "a0251c"
 
         # build the payload bytes for the transaction
         payload = Transaction()
@@ -131,8 +177,23 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTrue(success)
         self.assertTxAreEqual(payload, tx)
 
+        # Check payload digest
+        payload_hash = sha256()
+        buffer = io.BytesIO()
+        encode_payload(buffer, payload)
+        payload_hash.update(buffer.getvalue())
+        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+
     def test_smart_contract(self):
-        EXPECTED_PAYLOAD = "a12040532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af6de6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df2066c61756e636802676f0418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
+        EXPECTED_DIGEST = "032a72029ae2ac5cdbf9e07cf57d9ecab97a6de34ed5cdf785d1d98037cd5dcd"
+        EXPECTED_PAYLOAD = \
+            "a1404000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
+            "da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af6de6672a9d98da667e5dc25b2bca8a" \
+            "cf9644a7ac0797f01cb5968abf39de011df2066c61756e636802676f00000000000000000418c2a33af8bd2cba7f" \
+            "a714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758b" \
+            "cc4961bbdc75a0251c"
+
+
 
         # build the payload bytes for the transaction
         payload = Transaction()
@@ -156,8 +217,22 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTrue(success)
         self.assertTxAreEqual(payload, tx)
 
+        # Check payload digest
+        payload_hash = sha256()
+        buffer = io.BytesIO()
+        encode_payload(buffer, payload)
+        payload_hash.update(buffer.getvalue())
+        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+
     def test_validity_ranges(self):
-        EXPECTED_PAYLOAD = "a12700532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4024235130ac5aab442e39f9aa27118956695229212dd2f1ab5b714e9f6bd581511c103e820f478c7f74b50c187bf9a8836f382bd62977baeeaf19625608e7e912aa60098c103e8da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af6dc103e8e6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df2c103e864c0c8c103e8c2000f42400418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
+        EXPECTED_DIGEST = "98f10e8aa0bf4507db9eca66f0ff0b6a3eff35fe4def9ed86150c7ce72e71e80"
+        EXPECTED_PAYLOAD = \
+            "a1470000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4024235130ac5aab442e3" \
+            "9f9aa27118956695229212dd2f1ab5b714e9f6bd581511c103e820f478c7f74b50c187bf9a8836f382bd62977bae" \
+            "eaf19625608e7e912aa60098c103e8da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af" \
+            "6dc103e8e6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df2c103e864c0c8c103e8c2" \
+            "000f424000000000000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f" \
+            "4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
         payload = Transaction()
@@ -184,8 +259,20 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTrue(success)
         self.assertTxAreEqual(payload, tx)
 
+        # Check payload digest
+        payload_hash = sha256()
+        buffer = io.BytesIO()
+        encode_payload(buffer, payload)
+        payload_hash.update(buffer.getvalue())
+        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+
     def test_contract_with_2bit_shard_mask(self):
-        EXPECTED_PAYLOAD = "a12180532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f4240010b666f6f2e6261722e62617a066c61756e6368000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
+        EXPECTED_DIGEST = "8dbbee60c084b8ef88de39c961dec10df493c62623035972b28d1c5f1a3802a9"
+        EXPECTED_PAYLOAD = \
+            "a1418000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
+            "40010b666f6f2e6261722e62617a066c61756e63680000000000000000000418c2a33af8bd2cba7fa714a840a308" \
+            "a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75" \
+            "a0251c"
 
         mask = BitVector(2)
         mask.set(0, 1)
@@ -213,8 +300,22 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTrue(success)
         self.assertTxAreEqual(payload, tx)
 
+        # Check payload digest
+        payload_hash = sha256()
+        buffer = io.BytesIO()
+        encode_payload(buffer, payload)
+        payload_hash.update(buffer.getvalue())
+        print(payload_hash.digest().hex())
+        print(transaction_bytes.hex())
+        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+
     def test_contract_with_4bit_shard_mask(self):
-        EXPECTED_PAYLOAD = "a12180532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42401c0b666f6f2e6261722e62617a066c61756e6368000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
+        EXPECTED_DIGEST = "7915d6393fb07dbb4ff6896ef0f57025e5153b744d3a652b0f4815f129a9033c"
+        EXPECTED_PAYLOAD = \
+            "a1418000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
+            "401c0b666f6f2e6261722e62617a066c61756e63680000000000000000000418c2a33af8bd2cba7fa714a840a308" \
+            "a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75" \
+            "a0251c"
 
         mask = BitVector(4)
         mask.set(3, 1)
@@ -243,8 +344,20 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTrue(success)
         self.assertTxAreEqual(payload, tx)
 
+        # Check payload digest
+        payload_hash = sha256()
+        buffer = io.BytesIO()
+        encode_payload(buffer, payload)
+        payload_hash.update(buffer.getvalue())
+        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+
     def test_contract_with_large_shard_mask(self):
-        EXPECTED_PAYLOAD = "a12180532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f424041eaab0b666f6f2e6261722e62617a066c61756e6368000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
+        EXPECTED_DIGEST = "a4eff45d0374d29f259aba25fb06dd67394149b636927d199062102d91c0f7bf"
+        EXPECTED_PAYLOAD = \
+            "a1418000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
+            "4041eaab0b666f6f2e6261722e62617a066c61756e63680000000000000000000418c2a33af8bd2cba7fa714a840" \
+            "a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bb" \
+            "dc75a0251c"
 
         mask = BitVector(16)
         mask.set(15, 1)
@@ -280,6 +393,13 @@ class TransactionSerialisation(unittest.TestCase):
 
         self.assertTrue(success)
         self.assertTxAreEqual(payload, tx)
+
+        # Check payload digest
+        payload_hash = sha256()
+        buffer = io.BytesIO()
+        encode_payload(buffer, payload)
+        payload_hash.update(buffer.getvalue())
+        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
 
     def test_invalid_magic(self):
         encoded = bytes([0x00])
