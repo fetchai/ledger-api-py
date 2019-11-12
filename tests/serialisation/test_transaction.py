@@ -1,14 +1,13 @@
 import io
 import json
 import unittest
-from hashlib import sha256
 from unittest import mock
 
 from fetchai.ledger.serialisation.transaction import encode_payload
 
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Entity, Identity
-from fetchai.ledger.serialisation import encode_transaction, decode_transaction, bytearray
+from fetchai.ledger.serialisation import encode_transaction, decode_transaction, bytearray, sha256_hash
 from fetchai.ledger.transaction import Transaction
 
 _PRIVATE_KEYS = (
@@ -48,15 +47,15 @@ class TransactionSerialisation(unittest.TestCase):
             "cc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
-        payload = Transaction()
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            payload = Transaction()
         payload.from_address = IDENTITIES[0]
         payload.add_transfer(IDENTITIES[1], 256)
         payload.add_signer(IDENTITIES[0])
 
         # sign the final transaction
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -68,13 +67,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTxAreEqual(payload, tx)
 
         # Check payload digest
-        payload_hash = sha256()
         buffer = io.BytesIO()
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            encode_payload(buffer, payload)
-        payload_hash.update(buffer.getvalue())
-        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+        encode_payload(buffer, payload)
+        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_multiple_transfers(self):
         EXPECTED_DIGEST = "7e6a95a8c773755d349209d8f3bb60ec2a5f3c683075540f953863f124eb1250"
@@ -86,7 +81,9 @@ class TransactionSerialisation(unittest.TestCase):
             "08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
-        payload = Transaction()
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            payload = Transaction()
         payload.from_address = IDENTITIES[0]
         payload.add_transfer(IDENTITIES[1], 256)
         payload.add_transfer(IDENTITIES[2], 512)
@@ -94,9 +91,7 @@ class TransactionSerialisation(unittest.TestCase):
         payload.add_signer(IDENTITIES[0])
 
         # sign the final transaction
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -108,13 +103,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTxAreEqual(payload, tx)
 
         # Check payload digest
-        payload_hash = sha256()
         buffer = io.BytesIO()
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            encode_payload(buffer, payload)
-        payload_hash.update(buffer.getvalue())
-        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+        encode_payload(buffer, payload)
+        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_synergetic_data_submission(self):
         EXPECTED_DIGEST = "9397fd490b60a394ea0af5526435608a1e853e2cb6b09bc7cafec8f6a0aa2cf6"
@@ -126,7 +117,9 @@ class TransactionSerialisation(unittest.TestCase):
             "258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
-        payload = Transaction()
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            payload = Transaction()
         payload.from_address = IDENTITIES[0]
         payload.valid_until = 10000
         payload.target_contract(IDENTITIES[3], IDENTITIES[4], BitVector())
@@ -138,9 +131,7 @@ class TransactionSerialisation(unittest.TestCase):
         payload.add_signer(IDENTITIES[0])
 
         # sign the final transaction
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -152,13 +143,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTxAreEqual(payload, tx)
 
         # Check payload digest
-        payload_hash = sha256()
         buffer = io.BytesIO()
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            encode_payload(buffer, payload)
-        payload_hash.update(buffer.getvalue())
-        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+        encode_payload(buffer, payload)
+        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_chain_code(self):
         EXPECTED_DIGEST = "7032dd625b0a93aec85fa03696d0ecbc9de19d834ce3fd1d1ed9cf8a56d9f62e"
@@ -169,7 +156,9 @@ class TransactionSerialisation(unittest.TestCase):
             "a0251c"
 
         # build the payload bytes for the transaction
-        payload = Transaction()
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            payload = Transaction()
         payload.from_address = IDENTITIES[0]
         payload.add_signer(IDENTITIES[0])
         payload.charge_rate = 1000
@@ -179,9 +168,7 @@ class TransactionSerialisation(unittest.TestCase):
         payload.data = 'go'.encode('ascii')
 
         # sign the final transaction
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -193,13 +180,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTxAreEqual(payload, tx)
 
         # Check payload digest
-        payload_hash = sha256()
         buffer = io.BytesIO()
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            encode_payload(buffer, payload)
-        payload_hash.update(buffer.getvalue())
-        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+        encode_payload(buffer, payload)
+        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_smart_contract(self):
         EXPECTED_DIGEST = "032a72029ae2ac5cdbf9e07cf57d9ecab97a6de34ed5cdf785d1d98037cd5dcd"
@@ -210,10 +193,10 @@ class TransactionSerialisation(unittest.TestCase):
             "a714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758b" \
             "cc4961bbdc75a0251c"
 
-
-
         # build the payload bytes for the transaction
-        payload = Transaction()
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            payload = Transaction()
         payload.from_address = IDENTITIES[0]
         payload.add_signer(IDENTITIES[0])
         payload.charge_rate = 1000
@@ -223,9 +206,7 @@ class TransactionSerialisation(unittest.TestCase):
         payload.data = 'go'.encode('ascii')
 
         # sign the final transaction
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -237,13 +218,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTxAreEqual(payload, tx)
 
         # Check payload digest
-        payload_hash = sha256()
         buffer = io.BytesIO()
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            encode_payload(buffer, payload)
-        payload_hash.update(buffer.getvalue())
-        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+        encode_payload(buffer, payload)
+        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_validity_ranges(self):
         EXPECTED_DIGEST = "98f10e8aa0bf4507db9eca66f0ff0b6a3eff35fe4def9ed86150c7ce72e71e80"
@@ -256,7 +233,9 @@ class TransactionSerialisation(unittest.TestCase):
             "4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
-        payload = Transaction()
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            payload = Transaction()
         payload.from_address = IDENTITIES[0]
         payload.add_transfer(IDENTITIES[1], 1000)
         payload.add_transfer(IDENTITIES[2], 1000)
@@ -269,9 +248,7 @@ class TransactionSerialisation(unittest.TestCase):
         payload.valid_until = 200
 
         # sign the final transaction
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
@@ -284,13 +261,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTxAreEqual(payload, tx)
 
         # Check payload digest
-        payload_hash = sha256()
         buffer = io.BytesIO()
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            encode_payload(buffer, payload)
-        payload_hash.update(buffer.getvalue())
-        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+        encode_payload(buffer, payload)
+        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_contract_with_2bit_shard_mask(self):
         EXPECTED_DIGEST = "8dbbee60c084b8ef88de39c961dec10df493c62623035972b28d1c5f1a3802a9"
@@ -304,7 +277,9 @@ class TransactionSerialisation(unittest.TestCase):
         mask.set(0, 1)
 
         # build the payload bytes for the transaction
-        payload = Transaction()
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            payload = Transaction()
         payload.from_address = IDENTITIES[0]
         payload.add_signer(IDENTITIES[0])
         payload.charge_rate = 1000
@@ -315,9 +290,7 @@ class TransactionSerialisation(unittest.TestCase):
         payload.action = 'launch'
 
         # sign the final transaction
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
@@ -330,13 +303,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTxAreEqual(payload, tx)
 
         # Check payload digest
-        payload_hash = sha256()
         buffer = io.BytesIO()
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            encode_payload(buffer, payload)
-        payload_hash.update(buffer.getvalue())
-        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+        encode_payload(buffer, payload)
+        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_contract_with_4bit_shard_mask(self):
         EXPECTED_DIGEST = "7915d6393fb07dbb4ff6896ef0f57025e5153b744d3a652b0f4815f129a9033c"
@@ -351,7 +320,9 @@ class TransactionSerialisation(unittest.TestCase):
         mask.set(2, 1)
 
         # build the payload bytes for the transaction
-        payload = Transaction()
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            payload = Transaction()
         payload.from_address = IDENTITIES[0]
         payload.add_signer(IDENTITIES[0])
         payload.charge_rate = 1000
@@ -362,9 +333,7 @@ class TransactionSerialisation(unittest.TestCase):
         payload.action = 'launch'
 
         # sign the final transaction
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
@@ -377,13 +346,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTxAreEqual(payload, tx)
 
         # Check payload digest
-        payload_hash = sha256()
         buffer = io.BytesIO()
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            encode_payload(buffer, payload)
-        payload_hash.update(buffer.getvalue())
-        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+        encode_payload(buffer, payload)
+        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_contract_with_large_shard_mask(self):
         EXPECTED_DIGEST = "a4eff45d0374d29f259aba25fb06dd67394149b636927d199062102d91c0f7bf"
@@ -406,7 +371,9 @@ class TransactionSerialisation(unittest.TestCase):
         mask.set(0, 1)
 
         # build the payload bytes for the transaction
-        payload = Transaction()
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            payload = Transaction()
         payload.from_address = IDENTITIES[0]
         payload.add_signer(IDENTITIES[0])
         payload.charge_rate = 1000
@@ -417,9 +384,7 @@ class TransactionSerialisation(unittest.TestCase):
         payload.action = 'launch'
 
         # sign the final transaction
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
@@ -432,13 +397,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertTxAreEqual(payload, tx)
 
         # Check payload digest
-        payload_hash = sha256()
         buffer = io.BytesIO()
-        with mock.patch('random.getrandbits') as mock_counter:
-            mock_counter.side_effect = [0]
-            encode_payload(buffer, payload)
-        payload_hash.update(buffer.getvalue())
-        self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
+        encode_payload(buffer, payload)
+        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_invalid_magic(self):
         encoded = bytes([0x00])

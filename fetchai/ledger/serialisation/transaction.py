@@ -1,5 +1,6 @@
 import io
 import random
+import struct
 from typing import List
 
 from fetchai.ledger.bitvector import BitVector
@@ -132,9 +133,8 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
         bytearray.encode(buffer, encoded_action)
         bytearray.encode(buffer, payload.data)
 
-    # TODO: use actual counter
-    counter = random.getrandbits(64)
-    encode_fixed(buffer, value=counter, num_bytes=8)
+    # Counter value
+    encode_fixed(buffer, value=payload.counter, num_bytes=8)
 
     if num_extra_signatures > 0:
         integer.encode(buffer, num_extra_signatures)
@@ -273,7 +273,7 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
         tx.data = bytearray.decode(stream)
 
     # Read counter value
-    counter = stream.read(8)
+    tx.counter = struct.unpack('<Q', stream.read(8))[0]
 
     if signature_count_minus1 == 0x3F:
         additional_signatures = integer.decode(stream)

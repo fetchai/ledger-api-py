@@ -1,3 +1,4 @@
+import random
 from collections import OrderedDict
 from typing import Union
 
@@ -18,6 +19,7 @@ class Transaction:
 
         self._contract_digest = None
         self._contract_address = None
+        self._counter = random.getrandbits(64)
         self._chain_code = None
         self._shard_mask = BitVector()
         self._action = None
@@ -79,6 +81,14 @@ class Transaction:
     @property
     def contract_address(self):
         return self._contract_address
+
+    @property
+    def counter(self):
+        return self._counter
+
+    @counter.setter
+    def counter(self, value: int):
+        self._counter = int(value)
 
     @property
     def chain_code(self):
