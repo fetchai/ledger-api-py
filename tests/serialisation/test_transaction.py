@@ -1,8 +1,7 @@
 import io
 import json
 import unittest
-from _sha256 import sha256
-
+from hashlib import sha256
 from fetchai.ledger.serialisation.transaction import encode_payload
 
 from fetchai.ledger.bitvector import BitVector
