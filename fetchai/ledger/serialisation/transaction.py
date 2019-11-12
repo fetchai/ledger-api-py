@@ -1,5 +1,5 @@
 import io
-from random import getrandbits
+import random
 from typing import List
 
 from fetchai.ledger.bitvector import BitVector
@@ -68,7 +68,7 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
     buffer.write(bytes([MAGIC, header0, header1]))
 
     reserved = 0
-    encode_fixed(buffer, reserved, 1)
+    encode_fixed(buffer, value=reserved, num_bytes=1)
 
     address.encode(buffer, payload.from_address)
     if num_transfers > 1:
@@ -133,8 +133,8 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
         bytearray.encode(buffer, payload.data)
 
     # TODO: use actual counter
-    counter = getrandbits(64)
-    encode_fixed(buffer, 0)
+    counter = random.getrandbits(64)
+    encode_fixed(buffer, value=counter, num_bytes=8)
 
     if num_extra_signatures > 0:
         integer.encode(buffer, num_extra_signatures)

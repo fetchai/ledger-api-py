@@ -2,6 +2,8 @@ import io
 import json
 import unittest
 from hashlib import sha256
+from unittest import mock
+
 from fetchai.ledger.serialisation.transaction import encode_payload
 
 from fetchai.ledger.bitvector import BitVector
@@ -52,7 +54,9 @@ class TransactionSerialisation(unittest.TestCase):
         payload.add_signer(IDENTITIES[0])
 
         # sign the final transaction
-        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -66,7 +70,9 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         payload_hash = sha256()
         buffer = io.BytesIO()
-        encode_payload(buffer, payload)
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            encode_payload(buffer, payload)
         payload_hash.update(buffer.getvalue())
         self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
 
@@ -88,7 +94,9 @@ class TransactionSerialisation(unittest.TestCase):
         payload.add_signer(IDENTITIES[0])
 
         # sign the final transaction
-        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -102,7 +110,9 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         payload_hash = sha256()
         buffer = io.BytesIO()
-        encode_payload(buffer, payload)
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            encode_payload(buffer, payload)
         payload_hash.update(buffer.getvalue())
         self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
 
@@ -128,7 +138,9 @@ class TransactionSerialisation(unittest.TestCase):
         payload.add_signer(IDENTITIES[0])
 
         # sign the final transaction
-        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -142,7 +154,9 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         payload_hash = sha256()
         buffer = io.BytesIO()
-        encode_payload(buffer, payload)
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            encode_payload(buffer, payload)
         payload_hash.update(buffer.getvalue())
         self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
 
@@ -165,7 +179,9 @@ class TransactionSerialisation(unittest.TestCase):
         payload.data = 'go'.encode('ascii')
 
         # sign the final transaction
-        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -179,7 +195,9 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         payload_hash = sha256()
         buffer = io.BytesIO()
-        encode_payload(buffer, payload)
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            encode_payload(buffer, payload)
         payload_hash.update(buffer.getvalue())
         self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
 
@@ -205,7 +223,9 @@ class TransactionSerialisation(unittest.TestCase):
         payload.data = 'go'.encode('ascii')
 
         # sign the final transaction
-        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -219,7 +239,9 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         payload_hash = sha256()
         buffer = io.BytesIO()
-        encode_payload(buffer, payload)
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            encode_payload(buffer, payload)
         payload_hash.update(buffer.getvalue())
         self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
 
@@ -247,7 +269,10 @@ class TransactionSerialisation(unittest.TestCase):
         payload.valid_until = 200
 
         # sign the final transaction
-        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -261,7 +286,9 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         payload_hash = sha256()
         buffer = io.BytesIO()
-        encode_payload(buffer, payload)
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            encode_payload(buffer, payload)
         payload_hash.update(buffer.getvalue())
         self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
 
@@ -288,7 +315,10 @@ class TransactionSerialisation(unittest.TestCase):
         payload.action = 'launch'
 
         # sign the final transaction
-        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -302,7 +332,9 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         payload_hash = sha256()
         buffer = io.BytesIO()
-        encode_payload(buffer, payload)
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            encode_payload(buffer, payload)
         payload_hash.update(buffer.getvalue())
         self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
 
@@ -330,7 +362,10 @@ class TransactionSerialisation(unittest.TestCase):
         payload.action = 'launch'
 
         # sign the final transaction
-        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -344,7 +379,9 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         payload_hash = sha256()
         buffer = io.BytesIO()
-        encode_payload(buffer, payload)
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            encode_payload(buffer, payload)
         payload_hash.update(buffer.getvalue())
         self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
 
@@ -380,7 +417,10 @@ class TransactionSerialisation(unittest.TestCase):
         payload.action = 'launch'
 
         # sign the final transaction
-        transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            transaction_bytes = encode_transaction(payload, [ENTITIES[0]])
+
 
         self.assertIsExpectedTx(payload, transaction_bytes, EXPECTED_PAYLOAD)
 
@@ -394,7 +434,9 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         payload_hash = sha256()
         buffer = io.BytesIO()
-        encode_payload(buffer, payload)
+        with mock.patch('random.getrandbits') as mock_counter:
+            mock_counter.side_effect = [0]
+            encode_payload(buffer, payload)
         payload_hash.update(buffer.getvalue())
         self.assertEqual(payload_hash.digest().hex(), EXPECTED_DIGEST)
 
