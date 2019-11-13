@@ -4,7 +4,7 @@ import unittest
 
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Entity, Identity
-from fetchai.ledger.serialisation import encode_transaction, decode_transaction, bytearray
+from fetchai.ledger.serialisation.transaction import encode_transaction, decode_transaction, bytearray
 from fetchai.ledger.transaction import Transaction
 
 _PRIVATE_KEYS = (
