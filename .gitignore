@@ -5,3 +5,7 @@
 dist/
 .idea/
 build/
+
+# Code coverage output
+.coverage
+htmlcov/

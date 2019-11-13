@@ -15,5 +15,16 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+import hashlib
+from typing import Union
 
 from .transaction import encode_transaction, decode_transaction
+
+
+def sha256_hash(data: Union[str, bytes], to_hex: bool = True) -> str:
+    hasher = hashlib.sha256()
+    hasher.update(data)
+    if to_hex:
+        return hasher.digest().hex()
+    else:
+        return hasher.digest()
