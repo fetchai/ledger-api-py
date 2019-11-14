@@ -43,6 +43,12 @@ def _iterable(value):
 
     return False
 
+def _get_or_set_default_time(d, key, default):
+    if key in d and d[key] != -1:
+        return d[key]
+    d[key] = default
+    return default
+
 
 class LedgerApi:
     def __init__(self, host=None, port=None, network=None):
@@ -66,7 +72,7 @@ class LedgerApi:
                                             "\nServer version: {} \nExpected version: {}".format(
                                                 server_version, ', '.join(__compatible__)))
 
-    def sync(self, txs: Transactions, timeout=None):
+    def sync(self, txs: Transactions, timeout=None, hold_state_sec=0):
         timeout = int(timeout or 120)
         # given the inputs make sure that we correctly for the input set of values
         finished = []
@@ -80,6 +86,9 @@ class LedgerApi:
         limit = timedelta(seconds=timeout)
         start = datetime.now()
 
+        hold_state = timedelta(seconds=hold_state_sec)
+        hold_times = {}
+
         while True:
             # loop through all the remaining digests and poll them creating a set of completed in this round
             remaining_statuses = [self.tx.status(digest) for digest in remaining]
@@ -89,8 +98,10 @@ class LedgerApi:
                 failures = ['{}:{}'.format(tx_status.digest_hex, tx_status.status) \
                             for tx_status in failed_this_round]
                 raise RuntimeError('Some transactions have failed: {}'.format(', '.join(failures)))
-
+            now = datetime.now()
             successful_this_round = [status for status in remaining_statuses if status.successful]
+            successful_this_round = [status for status in successful_this_round if (now-_get_or_set_default_time(hold_times, status.digest_hex, now))>=hold_state]
+            hold_times.update({status.digest_hex: -1 for status in remaining_statuses if status.non_terminal})
             finished += successful_this_round
 
             completed_digests = set([status.digest_hex for status in successful_this_round])
