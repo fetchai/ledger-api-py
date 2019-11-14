@@ -29,6 +29,13 @@ HOST = '127.0.0.1'
 PORT = 8000
 
 
+def print_signing_votes(voting_weights, signers):
+    if not isinstance(signers, list):
+        signers = [signers]
+    votes = [voting_weights[s] for s in signers]
+    print("Votes: {} Total weight: {}".format(', '.format(str(v) for v in votes), sum(votes)))
+
+
 def main():
     # create the APIs
     api = LedgerApi(HOST, PORT)
@@ -36,31 +43,32 @@ def main():
     # generate a random identity
     multi_sig_identity = Entity()
     # generate a board to control multi-sig account, with variable voting weights
-    board = {
-        Entity(): 1,
-        Entity(): 1,
-        Entity(): 2,
+    board = [Entity() for _ in range(4)]
+    voting_weights = {
+        board[0]: 1,
+        board[1]: 1,
+        board[2]: 1,
+        board[3]: 2,
     }
     # generate another entity as a target for transfers
     other_identity = Entity()
 
-    print('Balance Before:', api.tokens.balance(multi_sig_identity))
-
-    # create the balance
+    # Create the balance
     print('Submitting wealth creation...')
     api.sync(api.tokens.wealth(multi_sig_identity, 100000000))
     print('Balance after wealth:', api.tokens.balance(multi_sig_identity))
 
     # Transfers can happen normally without a deed
-    print('Submitting transfer...')
+    print('Submitting pre-deed transfer with original signature...')
     api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20))
 
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
     # Submit deed
+    print("Creating deed...")
     deed = Deed(multi_sig_identity)
-    for sig, weight in board.items():
+    for sig, weight in voting_weights.items():
         deed.add_signee(sig, weight)
     deed.amend_threshold = 4
     deed.transfer_threshold = 2
@@ -68,26 +76,48 @@ def main():
     api.sync(api.tokens.deed(multi_sig_identity, deed))
 
     # Original address can no longer validate transfers
-    # api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20))
+    print("Transfer with original signature should fail...")
+    try:
+        api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20))
+    except RuntimeError as e:
+        print("Transaction failed as expected")
+    else:
+        print("Transaction succeeded, it shouldn't have")
 
     # Sufficient voting power required to sign transfers
-    api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board))
+    print("Submitting transfer with two signatures with total 2 votes...")
+    print_signing_votes(voting_weights, board[:2])
+    api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board[:2]))
 
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
-    b1 = list(board.keys())[2]
-    #
-    # tx = api.tokens._create_skeleton_tx(1000)
-    # tx.from_address = Address(multi_sig_identity)
-    # tx.add_transfer(Address(other_identity), 250)
-    # tx.add_signer(b1)
-    #
-    # te = encode_transaction(tx, [b1])
-    #
-    # api.sync(api.tokens._post_tx_json(te, 'transfer'))
+    # Some entities may have more voting power
+    print("Submitting transfer with single signature with 2 votes")
+    print_signing_votes(voting_weights, board[3])
+    api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20, signatories=[board[3]]))
+    print('Balance 1:', api.tokens.balance(multi_sig_identity))
+    print('Balance 2:', api.tokens.balance(other_identity))
 
-    api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20, signatories={b1: 1}))
+    # Amend the deed
+    print("Amending deed to increase transfer threshold to 3 votes")
+    deed.transfer_threshold = 3
+    api.sync(api.tokens.deed(multi_sig_identity, deed, board))
+
+    # Single member no longer has enough voting power
+    print("Single member transfer with 2 votes should no longer succeed...")
+    try:
+        print_signing_votes(voting_weights, board[3])
+        api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20, signatories=[board[3]]))
+    except RuntimeError as e:
+        print("Transaction failed as expected")
+    else:
+        print("Transaction succeeded, it shouldn't have")
+
+    # Correct number of signatory votes
+    print("Succesful transaction with sufficient voting weight...")
+    print_signing_votes(voting_weights, board[1:])
+    api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board[1:]))
 
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))

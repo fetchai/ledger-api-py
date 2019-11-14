@@ -149,7 +149,7 @@ class TokenApi(ApiEndpoint):
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
-    def deed(self, entity: Entity, deed: Deed):
+    def deed(self, entity: Entity, deed: Deed, signatories: list = None):
         ENDPOINT = 'deed'
 
         shard_mask = BitVector()
@@ -159,17 +159,22 @@ class TokenApi(ApiEndpoint):
 
         tx.target_chain_code(self.API_PREFIX, shard_mask)
         tx.action = 'deed'
-        tx.add_signer(entity)
+
+        if signatories:
+            for sig in signatories:
+                tx.add_signer(sig)
+        else:
+            tx.add_signer(entity)
 
         deed_json = deed.deed_creation_json()
 
         tx.data = self._encode_json(deed_json)
 
-        encoded_tx = encode_transaction(tx, [entity])
+        encoded_tx = encode_transaction(tx, signatories if signatories else [entity])
 
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
-    def transfer(self, entity: Entity, to: AddressLike, amount: int, fee: int, signatories: dict = None):
+    def transfer(self, entity: Entity, to: AddressLike, amount: int, fee: int, signatories: list = None):
         """
         Transfers wealth from one account to another account
 
@@ -193,13 +198,13 @@ class TokenApi(ApiEndpoint):
         tx.add_transfer(to, amount)
 
         if signatories:
-            for ent in signatories.keys():
+            for ent in signatories:
                 tx.add_signer(ent)
         else:
             tx.add_signer(entity)
 
         # encode and sign the transaction
-        encoded_tx = encode_transaction(tx, list(signatories.keys()) if signatories else [entity])
+        encoded_tx = encode_transaction(tx, signatories if signatories else [entity])
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
