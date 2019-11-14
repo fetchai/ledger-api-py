@@ -65,8 +65,8 @@ class ContractsApi(ApiEndpoint):
         # submit the transaction to the catch-all endpoint
         return self._post_tx_json(encoded_tx, None)
 
-    def query(self, contract_digest: Address, contract_owner: Address, query: str, **kwargs):
-        prefix = '{}.{}'.format(contract_digest.to_hex(), str(contract_owner))
+    def query(self, contract_digest: Address, address: Address, query: str, **kwargs):
+        prefix = '{}.{}'.format(contract_digest.to_hex(), str(address))
         return self._post_json(query, prefix=prefix, data=self._encode_json_payload(**kwargs))
 
     def action(self, contract_digest: Address, contract_address: Address, action: str,

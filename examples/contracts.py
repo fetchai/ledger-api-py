@@ -15,6 +15,7 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+import hashlib
 from contextlib import contextmanager
 from typing import List
 
@@ -82,13 +83,18 @@ def track_cost(api: TokenApi, entity: Entity, message: str):
     print(message + "{} TOK".format(api.balance(entity) - balance_before))
 
 
+def _calc_digest(data):
+    hash_func = hashlib.sha256()
+    hash_func.update(data)
+    return hash_func.digest()
+
 def main():
     # create our first private key pair
-    entity1 = Entity()
+    entity1 = Entity(_calc_digest(str.encode('random1')))
     address1 = Address(entity1)
 
     # create a second private key pair
-    entity2 = Entity()
+    entity2 = Entity(_calc_digest(str.encode('random2')))
     address2 = Address(entity2)
 
     # build the ledger API
@@ -98,7 +104,7 @@ def main():
     api.sync(api.tokens.wealth(entity1, 10000))
 
     # create the smart contract
-    contract = Contract(CONTRACT_TEXT, entity1)
+    contract = Contract(CONTRACT_TEXT, entity1, b'this is a nonce')
 
     with track_cost(api.tokens, entity1, "Cost of creation: "):
         api.sync(contract.create(api, entity1, 4000))
