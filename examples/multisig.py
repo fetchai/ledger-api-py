@@ -122,6 +122,22 @@ def main():
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
+    # Warning: if no amend threshold is set, future amendments are impossible
+    print("Amending deed to increase transfer threshold to 3 votes")
+    deed.amend_threshold = None
+    print("Amending deed to remove threshold...")
+    api.sync(api.tokens.deed(multi_sig_identity, deed, board))
+
+    deed.amend_threshold = 1
+    print("Expecting further amendment to fail...")
+    try:
+        api.sync(api.tokens.deed(multi_sig_identity, deed, board))
+    except RuntimeError as e:
+        print("Transaction failed as expected")
+    else:
+        print("Transaction succeeded, it shouldn't have")
+
+
 
 if __name__ == '__main__':
     main()
