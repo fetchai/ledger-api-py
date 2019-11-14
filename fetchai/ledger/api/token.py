@@ -15,12 +15,13 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-
+import json
 from typing import Union
 
 from fetchai.ledger.api import ApiEndpoint, ApiError
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity, Identity
+from fetchai.ledger.crypto.deed import Deed
 from fetchai.ledger.serialisation import encode_transaction
 
 AddressLike = Union[Address, Identity, str, bytes]
@@ -148,7 +149,27 @@ class TokenApi(ApiEndpoint):
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
-    def transfer(self, entity: Entity, to: AddressLike, amount: int, fee: int):
+    def deed(self, entity: Entity, deed: Deed):
+        ENDPOINT = 'deed'
+
+        shard_mask = BitVector()
+
+        tx = self._create_skeleton_tx(10000)
+        tx.from_address = Address(entity)
+
+        tx.target_chain_code(self.API_PREFIX, shard_mask)
+        tx.action = 'deed'
+        tx.add_signer(entity)
+
+        deed_json = deed.deed_creation_json()
+
+        tx.data = self._encode_json(deed_json)
+
+        encoded_tx = encode_transaction(tx, [entity])
+
+        return self._post_tx_json(encoded_tx, ENDPOINT)
+
+    def transfer(self, entity: Entity, to: AddressLike, amount: int, fee: int, signatories: dict = None):
         """
         Transfers wealth from one account to another account
 
@@ -170,10 +191,15 @@ class TokenApi(ApiEndpoint):
         tx = self._create_skeleton_tx(fee)
         tx.from_address = Address(entity)
         tx.add_transfer(to, amount)
-        tx.add_signer(entity)
+
+        if signatories:
+            for ent in signatories.keys():
+                tx.add_signer(ent)
+        else:
+            tx.add_signer(entity)
 
         # encode and sign the transaction
-        encoded_tx = encode_transaction(tx, [entity])
+        encoded_tx = encode_transaction(tx, list(signatories.keys()) if signatories else [entity])
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)

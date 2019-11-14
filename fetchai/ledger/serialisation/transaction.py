@@ -10,7 +10,7 @@ from fetchai.ledger.transaction import Transaction
 from . import address, integer, bytearray, identity
 
 MAGIC = 0xA1
-VERSION = 2
+VERSION = 1
 
 NO_CONTRACT = 0
 SMART_CONTRACT = 1
@@ -68,8 +68,8 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
 
     buffer.write(bytes([MAGIC, header0, header1]))
 
-    reserved = 0
-    encode_fixed(buffer, value=reserved, num_bytes=1)
+    # reserved = 0
+    # encode_fixed(buffer, value=reserved, num_bytes=1)
 
     address.encode(buffer, payload.from_address)
     if num_transfers > 1:
@@ -134,7 +134,7 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
         bytearray.encode(buffer, payload.data)
 
     # Counter value
-    encode_fixed(buffer, value=payload.counter, num_bytes=8)
+    # encode_fixed(buffer, value=payload.counter, num_bytes=8)
 
     if num_extra_signatures > 0:
         integer.encode(buffer, num_extra_signatures)
