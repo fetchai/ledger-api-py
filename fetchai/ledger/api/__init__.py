@@ -72,7 +72,7 @@ class LedgerApi:
                                             "\nServer version: {} \nExpected version: {}".format(
                                                 server_version, ', '.join(__compatible__)))
 
-    def sync(self, txs: Transactions, timeout=None, hold_state_sec=0):
+    def sync(self, txs: Transactions, timeout=None, hold_state_sec=0, extend_success_status = []):
         timeout = int(timeout or 120)
         # given the inputs make sure that we correctly for the input set of values
         finished = []
@@ -99,8 +99,8 @@ class LedgerApi:
                             for tx_status in failed_this_round]
                 raise RuntimeError('Some transactions have failed: {}'.format(', '.join(failures)))
             now = datetime.now()
-            successful_this_round = [status for status in remaining_statuses if status.successful]
-            successful_this_round = [status for status in successful_this_round if (now-_get_or_set_default_time(hold_times, status.digest_hex, now))>=hold_state]
+            successful_this_round = [status for status in remaining_statuses if status.successful or status.status in extend_success_status]
+            successful_this_round = [status for status in successful_this_round if (now - _get_or_set_default_time(hold_times, status.digest_hex, now)) >= hold_state]
             hold_times.update({status.digest_hex: -1 for status in remaining_statuses if status.non_terminal})
             finished += successful_this_round
 
