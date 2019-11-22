@@ -44,6 +44,14 @@ def _iterable(value):
     return False
 
 def _get_or_set_default_time(d, key, default):
+    """
+    Dictionary helper. If the key is not in the d dictionary or the value is set to -1 it will set the key to default
+     and return default otherwise returns the value from d.
+    :param d: dictionary
+    :param key: key we are interested in
+    :param default: the default value in case the key is not in d or value -1
+    :return: value
+    """
     if key in d and d[key] != -1:
         return d[key]
     d[key] = default
@@ -73,6 +81,14 @@ class LedgerApi:
                                                 server_version, ', '.join(__compatible__)))
 
     def sync(self, txs: Transactions, timeout=None, hold_state_sec=0, extend_success_status = []):
+        """
+        Waits till the transaction list is executed
+        :param txs: list of transactions
+        :param timeout: max execution time in seconds, default is 120
+        :param hold_state_sec: this variable if set will only mark a transaction as executed if the success state is keept for the specified duration (dropped block success->unknown)
+        :param extend_success_status: by default only "Success" is the status indicator, but in some cases other indicators are possible as well
+        :return:
+        """
         timeout = int(timeout or 120)
         # given the inputs make sure that we correctly for the input set of values
         finished = []
@@ -100,6 +116,7 @@ class LedgerApi:
                 raise RuntimeError('Some transactions have failed: {}'.format(', '.join(failures)))
             now = datetime.now()
             successful_this_round = [status for status in remaining_statuses if status.successful or status.status in extend_success_status]
+            #filter out statuses which aren't kept for hold_state_sec time if it's set
             successful_this_round = [status for status in successful_this_round if (now - _get_or_set_default_time(hold_times, status.digest_hex, now)) >= hold_state]
             hold_times.update({status.digest_hex: -1 for status in remaining_statuses if status.non_terminal})
             finished += successful_this_round
