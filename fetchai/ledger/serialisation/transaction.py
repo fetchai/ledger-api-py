@@ -1,13 +1,16 @@
 import io
+import random
+import struct
 from typing import List
 
 from fetchai.ledger import bitvector
 from fetchai.ledger import crypto
 from fetchai.ledger import transaction
+
 from . import address, integer, bytearray, identity
 
 MAGIC = 0xA1
-VERSION = 1
+VERSION = 2
 
 NO_CONTRACT = 0
 SMART_CONTRACT = 1
@@ -64,6 +67,9 @@ def encode_payload(buffer: io.BytesIO, payload: transaction.Transaction):
     header1 |= signalled_signatures & 0x3f
 
     buffer.write(bytes([MAGIC, header0, header1]))
+
+    reserved = 0
+    encode_fixed(buffer, value=reserved, num_bytes=1)
 
     address.encode(buffer, payload.from_address)
     if num_transfers > 1:
@@ -127,6 +133,9 @@ def encode_payload(buffer: io.BytesIO, payload: transaction.Transaction):
         bytearray.encode(buffer, encoded_action)
         bytearray.encode(buffer, payload.data)
 
+    # Counter value
+    encode_fixed(buffer, value=payload.counter, num_bytes=8)
+
     if num_extra_signatures > 0:
         integer.encode(buffer, num_extra_signatures)
 
@@ -182,6 +191,9 @@ def decode_transaction(stream: io.BytesIO) -> (bool, transaction.Transaction):
     # ensure that the version is correct
     if version != VERSION:
         raise RuntimeError('Unable to parse transaction from stream, incompatible version')
+
+    # Ready empty reserved byte
+    stream.read(1)
 
     tx = transaction.Transaction()
 
@@ -259,6 +271,9 @@ def decode_transaction(stream: io.BytesIO) -> (bool, transaction.Transaction):
 
         tx.action = bytearray.decode(stream).decode('ascii')
         tx.data = bytearray.decode(stream)
+
+    # Read counter value
+    tx.counter = struct.unpack('<Q', stream.read(8))[0]
 
     if signature_count_minus1 == 0x3F:
         additional_signatures = integer.decode(stream)

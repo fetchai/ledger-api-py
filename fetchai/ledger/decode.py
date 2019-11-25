@@ -2,6 +2,11 @@ import base64
 
 
 def decode_hex_or_b64(encoded) -> bytes:
+    """Decode an input encoded as hex or base64 as bytes.
+
+    :type encoded: str or bytes
+    """
+
     hex_prefix = '0x'
     b64_padding = '='
 

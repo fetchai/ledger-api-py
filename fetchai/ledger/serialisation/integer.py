@@ -81,3 +81,8 @@ def encode(stream: io.BytesIO, value: int):
             values = [(abs_value >> (n * 8)) & 0xFF for n in reversed(range(num_bytes))]
 
             stream.write(bytes([header] + values))
+
+
+def encode_fixed(stream: io.BytesIO, value: int, num_bytes: int = 8):
+    # Pack given integer value in to specified number of bytes (big-endian)
+    stream.write(bytes([value >> n * 8 & 0xFF for n in reversed(range(num_bytes))]))
