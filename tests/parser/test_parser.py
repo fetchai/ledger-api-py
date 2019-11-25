@@ -326,3 +326,16 @@ class ParserTests(unittest.TestCase):
         tree = self.parser.parse(FUNCTION_BLOCK.format("var a = 2i32 == 3i32;"))
         # Type cast
         tree = self.parser.parse(FUNCTION_BLOCK.format("var a = Int64(3i32);"))
+
+    def test_assignments(self):
+        """Check successful parsing of assignment operators"""
+        FB_WITH_DECLARATION = FUNCTION_BLOCK.format("var a : Int64; {}")
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a += 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a -= 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a *= 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a /= 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a %= 5;"))
+
+    def test_assert_statement(self):
+        """Check boolean expressions valid in any context"""
+        tree = self.parser.parse(FUNCTION_BLOCK.format("assert(a >= 0 && a <= 15);"))
