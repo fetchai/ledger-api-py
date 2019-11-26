@@ -31,7 +31,7 @@ def print_signing_votes(voting_weights, signers):
     if not isinstance(signers, list):
         signers = [signers]
     votes = [voting_weights[s] for s in signers]
-    print("Votes: {} \nTotal weight: {}".format(', '.join(str(v) for v in votes), sum(votes)))
+    print("Votes: {} = {}".format(' + '.join(str(v) for v in votes), sum(votes)))
 
 
 def main():
