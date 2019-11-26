@@ -1,5 +1,8 @@
 import unittest
 
+from fetchai.ledger.crypto import Entity
+
+from fetchai.ledger.contract import Contract
 from lark import GrammarError, ParseError, UnexpectedCharacters
 
 from fetchai.ledger.parser.etch_parser import EtchParser, Function
@@ -56,6 +59,20 @@ endfunction
 function query_block_number_state() : UInt64
   return State<UInt64>('block_number_state').get(0u64);
 endfunction"""
+
+TEMPLATE_GLOBAL = """
+persistent users : Array<Address>;
+persistent sharded sharded_users : Array<Address>;
+@action
+function A()
+    use users;
+endfunction
+
+@action
+function B()
+    use sharded_users['abc'];
+endfunction
+"""
 
 
 class ParserTests(unittest.TestCase):
@@ -339,3 +356,16 @@ class ParserTests(unittest.TestCase):
     def test_assert_statement(self):
         """Check boolean expressions valid in any context"""
         tree = self.parser.parse(FUNCTION_BLOCK.format("assert(a >= 0 && a <= 15);"))
+
+    def test_template_global(self):
+        """Checks correct parsing of globals with template types"""
+        self.parser.parse(TEMPLATE_GLOBAL)
+
+        # Function A contains a non-sharded global of type Array<Address>
+        addresses = self.parser.used_globals_to_addresses('A', [])
+        self.assertEqual(addresses, ['users'])
+
+        # Function B contains a sharded global of type Array<Address>
+        addresses = self.parser.used_globals_to_addresses('B', [])
+        self.assertEqual(addresses, ['sharded_users.abc'])
+
