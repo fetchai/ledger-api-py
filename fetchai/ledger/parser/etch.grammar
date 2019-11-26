@@ -9,7 +9,7 @@ instruction: "use" NAME [use_shard] ";"                         -> use_global
            | instantiation
            | declaration
            | name ASSIGNMENT_OP instruction|NUMBER ";"                    -> assignment
-           | "if" "(" bool_expression ")" instruction+ "endif"     -> if_block  // TODO: else/elseif support
+           | if_block
            | "for" "(" NAME "in" range ")" instruction+ "endfor" -> for_block
            | "return" expression ";"                           -> return
            | expression ";"
@@ -30,17 +30,13 @@ expression: NUMBER
           | expression POST_UNARY
           | expression BINARY_OP expression
           | expression COMPARISON expression
+          | expression BOOLEAN_OP expression
           | function_call
           | type input_block
 
 function_call: expression input_block
 
 dot_expansion: expression ("." expression)+
-
-bool_expression: expression
-               | PRE_UNARY bool_expression
-               | bool_expression COMPARISON bool_expression
-               | bool_expression BOOLEAN_OP bool_expression
 
 annotation: "@"ANNOTATION function
 ANNOTATION: "initTest"|"init"|"action"|"query"|"problem"|"objective"|"work"|"clear"|"test"
@@ -55,6 +51,12 @@ input_block: "(" (expression ",")* expression? ")"
 
 code_block: instruction+
 
+if_block: "if" "(" expression ")" instruction+ elseif_block* else_block? "endif"
+
+else_block: "else" instruction+
+
+elseif_block: "elseif" "(" expression ")" instruction+
+
 comment: "//" /.+/
 
 use_shard: "[" (use_shard_item ","?)+ "]"
@@ -65,7 +67,7 @@ use_shard_item: NAME
 
 string_concat: (STRING_LITERAL|NAME) ("+" (STRING_LITERAL|NAME))+
 
-ASSIGNMENT_OP: "="|"+="|"-="|"*="|"/="
+ASSIGNMENT_OP: "="|"+="|"-="|"*="|"/="|"%="
 
 BINARY_OP: "+"|"-"|"*"|"/"
 
