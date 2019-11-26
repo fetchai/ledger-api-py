@@ -24,32 +24,58 @@ from fetchai.ledger.crypto import Entity, Address
 
 CONTRACT_TEXT = """
 persistent sharded balance_state : UInt64;
+persistent supply_state : UInt64;
 
 @init
-function setup(owner : Address)
-  use balance_state[owner];
+function init(owner: Address)
 
-  balance_state.set(owner, 1000000u64);
-endfunction
+    use supply_state;
+    use balance_state[owner];
 
-@action
-function transfer(from: Address, to: Address, amount: UInt64)
-  use balance_state[from, to];
-
-  // Check if the sender has enough balance to proceed
-  if (balance_state.get(from) >= amount)
-    // update the account balances
-    balance_state.set(from, balance_state.get(from) - amount);
-    balance_state.set(to, balance_state.get(to, 0u64) + amount);
-  endif
+    supply_state.set(92817u64);
+    balance_state.set(owner, 92817u64);
 
 endfunction
 
 @query
-function balance(address: Address) : UInt64
-  use balance_state[address];
+function totalSupply(): UInt64
 
-  return balance_state.get(address, 0u64);
+    use supply_state;
+    return supply_state.get();
+
+endfunction
+
+
+@query
+function balanceOf(address: Address) : UInt64
+    
+    use balance_state[address];
+    return balance_state.get(address, 0u64);
+
+endfunction
+
+@action
+function transfer(from: Address, to: Address, value: UInt64) : Bool
+
+    if(!from.signedTx())
+      return false;
+    endif
+
+    use balance_state[from, to];
+    var from_balance = balance_state.get(from, 0u64);
+    var to_balance = balance_state.get(to, 0u64);
+
+    if(from_balance < value)
+      return false;
+    endif
+
+    var u_from = from_balance - value;
+    var u_to = to_balance + value;
+
+    balance_state.set(from, u_from);
+    balance_state.set(to, u_to);
+    return true;
+
 endfunction
 
 """
@@ -58,7 +84,7 @@ endfunction
 def print_address_balances(api: LedgerApi, contract: Contract, addresses: List[Address]):
     for idx, address in enumerate(addresses):
         print('Address{}: {:<6d} bFET {:<10d} TOK'.format(idx, api.tokens.balance(address),
-                                                          contract.query(api, 'balance', address=address)))
+                                                          contract.query(api, 'balanceOf', address=address)))
     print()
 
 
