@@ -59,7 +59,7 @@ def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: O
     return url
 
 
-def submit_json_transaction(host: str, port: int, tx_data, session=None, protocol: str = None):
+def submit_json_transaction(host: str, port: int, tx_data, session=None, protocol: str = None, endpoint: str = None):
     """
     Submit a JSON transaction to the target onde
 
@@ -74,7 +74,7 @@ def submit_json_transaction(host: str, port: int, tx_data, session=None, protoco
         session = requests.session()
 
     # define the URL to be used
-    uri = format_contract_url(host, port, None, 'submit', protocol=protocol)
+    uri = format_contract_url(host, port, None, endpoint=endpoint, protocol=protocol)
 
     headers = {
         'content-type': 'application/vnd+fetch.transaction+json',
@@ -82,9 +82,21 @@ def submit_json_transaction(host: str, port: int, tx_data, session=None, protoco
 
     # make the request
     r = session.post(uri, json=tx_data, headers=headers)
+    success = 200 <= r.status_code < 300
 
-    # check the status code
-    return 200 <= r.status_code < 300
+    # The following code is to get the transaction id
+    if not success:
+        raise ApiError(
+            'Unable to fulfil transaction request {}.{}. Status Code {}'.format(self.API_PREFIX, endpoint,
+                                                                                r.status_code))
+
+    # parse the response
+    response = r.json()
+
+    # attempt to extract out the submitting transaction hash
+    tx_list = response.get('txs', [])
+    if len(tx_list):
+        return tx_list[0]
 
 
 def submit_native_transactions(host, port, native_tx, session=None):
