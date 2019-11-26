@@ -22,7 +22,7 @@ from fetchai.ledger.api import ApiEndpoint, ApiError
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity, Identity
 from fetchai.ledger.crypto.deed import Deed
-from fetchai.ledger.serialisation import encode_transaction
+from fetchai.ledger.serialisation import transaction
 
 AddressLike = Union[Address, Identity, str, bytes]
 
@@ -144,7 +144,7 @@ class TokenApi(ApiEndpoint):
         })
 
         # encode and sign the transaction
-        encoded_tx = encode_transaction(tx, [entity])
+        encoded_tx = transaction.encode_transaction(tx, [entity])
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
@@ -170,7 +170,7 @@ class TokenApi(ApiEndpoint):
 
         tx.data = self._encode_json(deed_json)
 
-        encoded_tx = encode_transaction(tx, signatories if signatories else [entity])
+        encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
 
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
@@ -204,7 +204,7 @@ class TokenApi(ApiEndpoint):
             tx.add_signer(entity)
 
         # encode and sign the transaction
-        encoded_tx = encode_transaction(tx, signatories if signatories else [entity])
+        encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
@@ -239,7 +239,7 @@ class TokenApi(ApiEndpoint):
         })
 
         # encode and sign the transaction
-        encoded_tx = encode_transaction(tx, [entity])
+        encoded_tx = transaction.encode_transaction(tx, [entity])
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
@@ -275,7 +275,7 @@ class TokenApi(ApiEndpoint):
         })
 
         # encode and sign the transaction
-        encoded_tx = encode_transaction(tx, [entity])
+        encoded_tx = transaction.encode_transaction(tx, [entity])
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
@@ -303,7 +303,7 @@ class TokenApi(ApiEndpoint):
         tx.add_signer(entity)
 
         # encode and sign the transaction
-        encoded_tx = encode_transaction(tx, [entity])
+        encoded_tx = transaction.encode_transaction(tx, [entity])
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)

@@ -5,7 +5,7 @@ import msgpack
 
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity
-from fetchai.ledger.serialisation import encode_transaction
+from fetchai.ledger.serialisation import transaction
 from fetchai.ledger.transaction import Transaction
 from .common import ApiEndpoint
 
@@ -38,7 +38,7 @@ class ContractsApi(ApiEndpoint):
         tx.add_signer(owner)
 
         # encode and sign the transaction
-        encoded_tx = encode_transaction(tx, [owner])
+        encoded_tx = transaction.encode_transaction(tx, [owner])
 
         # update the contracts owner
         contract.owner = owner
@@ -60,7 +60,7 @@ class ContractsApi(ApiEndpoint):
         tx.add_signer(entity)
 
         # encode the transaction
-        encoded_tx = encode_transaction(tx, [entity])
+        encoded_tx = transaction.encode_transaction(tx, [entity])
 
         # submit the transaction to the catch-all endpoint
         return self._post_tx_json(encoded_tx, None)
@@ -87,7 +87,7 @@ class ContractsApi(ApiEndpoint):
         for signer in signers:
             tx.add_signer(signer)
 
-        encoded_tx = encode_transaction(tx, signers)
+        encoded_tx = transaction.encode_transaction(tx, signers)
 
         return self._post_tx_json(encoded_tx, None)
 
