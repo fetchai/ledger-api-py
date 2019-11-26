@@ -5,7 +5,7 @@ from typing import List
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Entity
 from fetchai.ledger.serialisation.integer import encode_fixed
-from fetchai.ledger.transaction import Transaction
+from fetchai.ledger import transaction
 from . import address, integer, bytearray, identity
 
 MAGIC = 0xA1
@@ -29,7 +29,7 @@ def _byte(value: int) -> bytes:
     return bytes([value])
 
 
-def _map_contract_mode(payload: Transaction):
+def _map_contract_mode(payload: 'Transaction'):
     if payload.synergetic_data_submission:
         return SYNERGETIC
 
@@ -43,7 +43,7 @@ def _map_contract_mode(payload: Transaction):
         return NO_CONTRACT
 
 
-def encode_payload(buffer: io.BytesIO, payload: Transaction):
+def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
     num_transfers = len(payload.transfers)
     num_signatures = len(payload.signers)
 
@@ -143,7 +143,7 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
         identity.encode(buffer, signer)
 
 
-def encode_transaction(payload: Transaction, signers: List[Entity]):
+def encode_transaction(payload: 'Transaction', signers: List[Entity]):
     # encode the contents of the transaction
     buffer = io.BytesIO()
     encode_payload(buffer, payload)
@@ -166,7 +166,7 @@ def encode_transaction(payload: Transaction, signers: List[Entity]):
     return buffer.getvalue()
 
 
-def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
+def decode_transaction(stream: io.BytesIO) -> (bool, 'Transaction'):
     # ensure the at the magic is correctly configured
     magic = stream.read(1)[0]
     if magic != MAGIC:
@@ -194,7 +194,7 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
     # Ready empty reserved byte
     stream.read(1)
 
-    tx = Transaction()
+    tx = transaction.Transaction()
 
     # Set synergetic contract type
     tx.synergetic_data_submission = (contract_type == SYNERGETIC)
