@@ -9,7 +9,7 @@ instruction: "use" NAME [use_shard] ";"                         -> use_global
            | instantiation
            | declaration
            | name ASSIGNMENT_OP instruction|NUMBER ";"                    -> assignment
-           | "if" "(" expression ")" instruction+ "endif"     -> if_block  // TODO: else/elseif support
+           | if_block
            | "for" "(" NAME "in" range ")" instruction+ "endfor" -> for_block
            | "return" expression ";"                           -> return
            | expression ";"
@@ -50,6 +50,12 @@ typed_name: NAME ":" type
 input_block: "(" (expression ",")* expression? ")"
 
 code_block: instruction+
+
+if_block: "if" "(" expression ")" instruction+ elseif_block* else_block? "endif"
+
+else_block: "else" instruction+
+
+elseif_block: "elseif" "(" expression ")" instruction+
 
 comment: "//" /.+/
 

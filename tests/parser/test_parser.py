@@ -369,3 +369,58 @@ class ParserTests(unittest.TestCase):
         addresses = self.parser.used_globals_to_addresses('B', [])
         self.assertEqual(addresses, ['sharded_users.abc'])
 
+    def test_if_blocks(self):
+        """Checks correct parsing of if blocks"""
+        # Partial contract text with function block and variable instantiation
+        PARTIAL_BLOCK = FUNCTION_BLOCK.format("""
+        var a: Int64 = 5;
+        var b: Int64 = 0;
+        {}""")
+
+        try:
+            # Simple if block
+            tree = self.parser.parse(PARTIAL_BLOCK.format("""
+            if (a > 5)
+                b = 6;
+            endif"""))
+
+            # If-else block
+            tree = self.parser.parse(PARTIAL_BLOCK.format("""
+            if (a > 5)
+                b = 6;
+            else
+                b = 7;
+            endif"""))
+
+            # Nested if-else-if block
+            tree = self.parser.parse(PARTIAL_BLOCK.format("""
+            if (a > 5)
+                b = 6;
+            else if (a < 5)
+                    b = 4;
+                endif
+            endif"""))
+
+            # If-elseif block
+            tree = self.parser.parse(PARTIAL_BLOCK.format("""
+            if (a > 5)
+                b = 6;
+            elseif (a < 5)
+                b = 4;
+            endif"""))
+
+            # Complex example
+            tree = self.parser.parse(PARTIAL_BLOCK.format("""
+            if (a > 5 && a < 100)
+                b = 6;
+            elseif (a < 2 || a > 100)
+                if (a < 0)
+                    b = 4;
+                else
+                    b = 2;
+                endif
+            else
+                b = 3;
+            endif"""))
+        except:
+            self.fail()
