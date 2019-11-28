@@ -11,6 +11,12 @@ from .common import ApiEndpoint
 
 EntityList = List[Entity]
 
+class Transfer:
+    def __init__(self, to: Address, amount: int):
+        self.to: Address = to
+        self.amount: int = amount
+
+TransferList = List[Transfer]
 
 class ContractsApi(ApiEndpoint):
     API_PREFIX = 'fetch.contract'
@@ -69,9 +75,10 @@ class ContractsApi(ApiEndpoint):
         prefix = '{}.{}'.format(contract_digest.to_hex(), str(contract_owner))
         return self._post_json(query, prefix=prefix, data=self._encode_json_payload(**kwargs))
 
-    def action(self, contract_digest: Address, contract_address: Address, action: str,
-               fee: int, from_address: Address, signers: EntityList,
-               *args, shard_mask: BitVector = None):
+    def create_transaction(self, contract_digest: Address, contract_address: Address, action: str,
+                           fee: int, from_address: Address, signers: EntityList,
+                           *args, transfers: TransferList = None, shard_mask: BitVector = None):
+
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
             logging.warning("Defaulting to wildcard shard mask as none supplied")
@@ -84,9 +91,19 @@ class ContractsApi(ApiEndpoint):
         tx.action = str(action)
         tx.data = self._encode_msgpack_payload(*args)
 
+        for t in transfers or []:
+            tx.add_transfer(t.to, t.amount)
+
         for signer in signers:
             tx.add_signer(signer)
 
+        return tx
+
+    def action(self, contract_digest: Address, contract_address: Address, action: str,
+               fee: int, from_address: Address, signers: EntityList,
+               *args, transfers: TransferList, shard_mask: BitVector = None):
+        tx = self.create_transaction(contract_digest, contract_address, action, fee, from_address, signers,
+                                     args, transfers, shard_mask)
         encoded_tx = encode_transaction(tx, signers)
 
         return self._post_tx_json(encoded_tx, None)
