@@ -21,7 +21,7 @@ from typing import Union
 from fetchai.ledger.api import ApiEndpoint, ApiError
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity, Identity
-from fetchai.ledger.serialisation import encode_transaction
+from fetchai.ledger.serialisation.transaction import encode_transaction
 
 AddressLike = Union[Address, Identity, str, bytes]
 

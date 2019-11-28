@@ -1,8 +1,7 @@
-import hashlib
 import struct
-from math import log2
 
 from fetchai.ledger.bitvector import BitVector
+from fetchai.ledger.serialisation.sha256 import sha256_hash
 
 
 class ShardMask:
@@ -21,12 +20,8 @@ class ShardMask:
     def resource_to_shard(resource_address, num_lanes):
         assert ((num_lanes & (num_lanes-1)) == 0) and num_lanes > 0, "Expecting power of two number of lanes"
 
-        # SHA256 hash of resource_address
-        s = hashlib.sha256()
-        s.update(resource_address.encode('ascii'))
-
-        # -> Resource ID
-        resource_id = s.digest()
+        # Resource ID from address
+        resource_id = sha256_hash(resource_address.encode('ascii'))
 
         # Take last 4 bytes
         group = struct.unpack('<I', resource_id[:4])[0]
