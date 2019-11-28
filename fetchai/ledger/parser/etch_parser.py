@@ -294,7 +294,7 @@ class EtchParser:
             else:
                 assert g_name_node.children[0].type == 'NAME'
                 g_name = g_name_node.children[0].value
-                g_type = g_name_node.children[1].value
+                g_type = _template_to_string(g_name_node.children[1])
 
             assert g_name not in persistent_globals, "Duplicate global definition: " + g_name
             persistent_globals[g_name] = PersistentGlobal(g_name, is_sharded, g_type)
