@@ -57,7 +57,7 @@ else_block: "else" instruction+
 
 elseif_block: "elseif" "(" expression ")" instruction+
 
-comment: "//" /.+/
+comment: "//" [/.+/]
 
 use_shard: "[" (use_shard_item ","?)+ "]"
 
