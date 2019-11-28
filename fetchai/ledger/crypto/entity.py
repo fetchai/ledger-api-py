@@ -135,7 +135,7 @@ def _encrypt(password: str, data: bytes) -> Tuple[bytes, int, bytes, bytes]:
     """
     # Generate hash from password
     salt = os.urandom(16)
-    hashed_pass = pbkdf2_hmac('sha256', password.encode(), salt, 1000000)
+    hashed_pass = pbkdf2_hmac('sha256', password.encode(), salt, 2000000)
 
     # Random initialisation vector
     iv = os.urandom(16)
@@ -167,7 +167,7 @@ def _decrypt(password: str, salt: bytes, data: bytes, n: int, iv: bytes) -> byte
     :return: decrypted data as plaintext
     """
     # Hash password
-    hashed_pass = pbkdf2_hmac('sha256', password.encode(), salt, 1000000)
+    hashed_pass = pbkdf2_hmac('sha256', password.encode(), salt, 2000000)
 
     # Decrypt data, noting original length
     aes = pyaes.AESModeOfOperationCBC(hashed_pass, iv=iv)

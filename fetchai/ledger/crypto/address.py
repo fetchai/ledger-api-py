@@ -16,10 +16,9 @@
 #
 # ------------------------------------------------------------------------------
 
-import hashlib
-
 import base58
 
+from fetchai.ledger.serialisation import sha256_hash
 from .identity import Identity
 
 
@@ -85,9 +84,7 @@ class Address:
 
     @classmethod
     def _digest(cls, data):
-        hash_func = hashlib.sha256()
-        hash_func.update(data)
-        return hash_func.digest()
+        return sha256_hash(data)
 
     @classmethod
     def _calculate_checksum(cls, address_raw):
