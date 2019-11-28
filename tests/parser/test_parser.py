@@ -1,5 +1,8 @@
 import unittest
 
+from fetchai.ledger.crypto import Entity
+
+from fetchai.ledger.contract import Contract
 from lark import GrammarError, ParseError, UnexpectedCharacters
 
 from fetchai.ledger.parser.etch_parser import EtchParser, Function
@@ -56,6 +59,20 @@ endfunction
 function query_block_number_state() : UInt64
   return State<UInt64>('block_number_state').get(0u64);
 endfunction"""
+
+TEMPLATE_GLOBAL = """
+persistent users : Array<Address>;
+persistent sharded sharded_users : Array<Address>;
+@action
+function A()
+    use users;
+endfunction
+
+@action
+function B()
+    use sharded_users['abc'];
+endfunction
+"""
 
 
 class ParserTests(unittest.TestCase):
@@ -326,3 +343,84 @@ class ParserTests(unittest.TestCase):
         tree = self.parser.parse(FUNCTION_BLOCK.format("var a = 2i32 == 3i32;"))
         # Type cast
         tree = self.parser.parse(FUNCTION_BLOCK.format("var a = Int64(3i32);"))
+
+    def test_assignments(self):
+        """Check successful parsing of assignment operators"""
+        FB_WITH_DECLARATION = FUNCTION_BLOCK.format("var a : Int64; {}")
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a += 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a -= 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a *= 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a /= 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a %= 5;"))
+
+    def test_assert_statement(self):
+        """Check boolean expressions valid in any context"""
+        tree = self.parser.parse(FUNCTION_BLOCK.format("assert(a >= 0 && a <= 15);"))
+
+    def test_template_global(self):
+        """Checks correct parsing of globals with template types"""
+        self.parser.parse(TEMPLATE_GLOBAL)
+
+        # Function A contains a non-sharded global of type Array<Address>
+        addresses = self.parser.used_globals_to_addresses('A', [])
+        self.assertEqual(addresses, ['users'])
+
+        # Function B contains a sharded global of type Array<Address>
+        addresses = self.parser.used_globals_to_addresses('B', [])
+        self.assertEqual(addresses, ['sharded_users.abc'])
+
+    def test_if_blocks(self):
+        """Checks correct parsing of if blocks"""
+        # Partial contract text with function block and variable instantiation
+        PARTIAL_BLOCK = FUNCTION_BLOCK.format("""
+        var a: Int64 = 5;
+        var b: Int64 = 0;
+        {}""")
+
+        try:
+            # Simple if block
+            tree = self.parser.parse(PARTIAL_BLOCK.format("""
+            if (a > 5)
+                b = 6;
+            endif"""))
+
+            # If-else block
+            tree = self.parser.parse(PARTIAL_BLOCK.format("""
+            if (a > 5)
+                b = 6;
+            else
+                b = 7;
+            endif"""))
+
+            # Nested if-else-if block
+            tree = self.parser.parse(PARTIAL_BLOCK.format("""
+            if (a > 5)
+                b = 6;
+            else if (a < 5)
+                    b = 4;
+                endif
+            endif"""))
+
+            # If-elseif block
+            tree = self.parser.parse(PARTIAL_BLOCK.format("""
+            if (a > 5)
+                b = 6;
+            elseif (a < 5)
+                b = 4;
+            endif"""))
+
+            # Complex example
+            tree = self.parser.parse(PARTIAL_BLOCK.format("""
+            if (a > 5 && a < 100)
+                b = 6;
+            elseif (a < 2 || a > 100)
+                if (a < 0)
+                    b = 4;
+                else
+                    b = 2;
+                endif
+            else
+                b = 3;
+            endif"""))
+        except:
+            self.fail()
