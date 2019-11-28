@@ -55,7 +55,7 @@ input_block: "(" (expression ",")* expression? ")"
 
 code_block: instruction+
 
-comment: "//" /.+/
+comment: "//" [/.+/]
 
 use_shard: "[" (use_shard_item ","?)+ "]"
 
