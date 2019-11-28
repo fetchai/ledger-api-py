@@ -1,7 +1,10 @@
 import random
 from collections import OrderedDict
+from io import BytesIO
 from typing import Union
 
+from fetchai.ledger.crypto import Entity
+from fetchai.ledger.serialisation import transaction
 from .bitvector import BitVector
 from .crypto import Address, Identity
 
@@ -115,6 +118,12 @@ class Transaction:
         self._data = bytes(data)
 
     @property
+    def payload(self):
+        buffer = BytesIO()
+        transaction.encode_payload(buffer, self)
+        return buffer.getvalue()
+
+    @property
     def signers(self):
         return self._signers
 
@@ -148,3 +157,9 @@ class Transaction:
     def add_signer(self, signer: Identity):
         if signer not in self._signers:
             self._signers[signer] = None  # will be replaced with a signature in the future
+
+    def sign(self, signer: Entity):
+        if Identity(signer) in self._signers:
+            self._signers[Identity(signer)] = {
+                'signature': signer.sign(self._payload)
+            }

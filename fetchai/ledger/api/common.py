@@ -21,6 +21,9 @@ import json
 from typing import Optional
 
 import requests
+from fetchai.ledger.bitvector import BitVector
+
+from fetchai.ledger.crypto import Address, Entity
 
 from fetchai.ledger.transaction import Transaction
 
@@ -153,6 +156,14 @@ class ApiEndpoint(object):
         tx.charge_rate = 1
         tx.charge_limit = fee
 
+        return tx
+
+    def _create_action_tx(self, fee: int, entity: Entity, action: str, shard_mask: Optional[BitVector] = None,
+                          validity_period: Optional[int] = None):
+        tx = self._create_skeleton_tx(fee, validity_period)
+        tx.from_address = Address(entity)
+        tx.target_chain_code(self.API_PREFIX, shard_mask if shard_mask else BitVector())
+        tx.action = action
         return tx
 
     def _current_block_number(self):

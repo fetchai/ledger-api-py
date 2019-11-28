@@ -27,7 +27,7 @@ from fetchai.ledger.serialisation import transaction
 AddressLike = Union[Address, Identity, str, bytes]
 
 
-class TokenApi(ApiEndpoint):
+class TokenApiBase(ApiEndpoint):
     API_PREFIX = 'fetch.token'
 
     def balance(self, address: AddressLike):
@@ -123,18 +123,8 @@ class TokenApi(ApiEndpoint):
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
         """
-        ENDPOINT = 'wealth'
-
-        # format the data to be closed by the transaction
-
-        # wildcard for the moment
-        shard_mask = BitVector()
-
         # build up the basic transaction information
-        tx = self._create_skeleton_tx(1)
-        tx.from_address = Address(entity)
-        tx.target_chain_code(self.API_PREFIX, shard_mask)
-        tx.action = 'wealth'
+        tx = self._create_action_tx(1, entity, 'wealth')
         tx.add_signer(entity)
 
         # format the transaction payload
@@ -143,22 +133,10 @@ class TokenApi(ApiEndpoint):
             'amount': amount
         })
 
-        # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction(tx, [entity])
-
-        # submit the transaction
-        return self._post_tx_json(encoded_tx, ENDPOINT)
+        return tx
 
     def deed(self, entity: Entity, deed: Deed, signatories: list = None):
-        ENDPOINT = 'deed'
-
-        shard_mask = BitVector()
-
-        tx = self._create_skeleton_tx(10000)
-        tx.from_address = Address(entity)
-
-        tx.target_chain_code(self.API_PREFIX, shard_mask)
-        tx.action = 'deed'
+        tx = self._create_action_tx(10000, entity, 'deed')
 
         if signatories:
             for sig in signatories:
@@ -170,9 +148,7 @@ class TokenApi(ApiEndpoint):
 
         tx.data = self._encode_json(deed_json)
 
-        encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
-
-        return self._post_tx_json(encoded_tx, ENDPOINT)
+        return tx
 
     def transfer(self, entity: Entity, to: AddressLike, amount: int, fee: int, signatories: list = None):
         """
@@ -185,13 +161,6 @@ class TokenApi(ApiEndpoint):
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
         """
-        ENDPOINT = 'transfer'
-
-        # format the data to be closed by the transaction
-
-        # wildcard for the moment
-        shard_mask = BitVector()
-
         # build up the basic transaction information
         tx = self._create_skeleton_tx(fee)
         tx.from_address = Address(entity)
@@ -203,11 +172,7 @@ class TokenApi(ApiEndpoint):
         else:
             tx.add_signer(entity)
 
-        # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
-
-        # submit the transaction
-        return self._post_tx_json(encoded_tx, ENDPOINT)
+        return tx
 
     def add_stake(self, entity: Entity, amount: int, fee: int):
         """
@@ -218,18 +183,9 @@ class TokenApi(ApiEndpoint):
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
         """
-        ENDPOINT = 'addStake'
-
-        # format the data to be closed by the transaction
-
-        # wildcard for the moment
-        shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = self._create_skeleton_tx(fee)
-        tx.from_address = Address(entity)
-        tx.target_chain_code(self.API_PREFIX, shard_mask)
-        tx.action = 'addStake'
+        tx = self._create_action_tx(fee, entity, 'addStake')
         tx.add_signer(entity)
 
         # format the transaction payload
@@ -238,11 +194,7 @@ class TokenApi(ApiEndpoint):
             'amount': amount
         })
 
-        # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction(tx, [entity])
-
-        # submit the transaction
-        return self._post_tx_json(encoded_tx, ENDPOINT)
+        return tx
 
     def de_stake(self, entity: Entity, amount: int, fee: int):
         """
@@ -254,18 +206,9 @@ class TokenApi(ApiEndpoint):
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
         """
-        ENDPOINT = 'deStake'
-
-        # format the data to be closed by the transaction
-
-        # wildcard for the moment
-        shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = self._create_skeleton_tx(fee)
-        tx.from_address = Address(entity)
-        tx.target_chain_code(self.API_PREFIX, shard_mask)
-        tx.action = 'deStake'
+        tx = self._create_action_tx(fee, entity, 'deStake')
         tx.add_signer(entity)
 
         # format the transaction payload
@@ -274,11 +217,7 @@ class TokenApi(ApiEndpoint):
             'amount': amount
         })
 
-        # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction(tx, [entity])
-
-        # submit the transaction
-        return self._post_tx_json(encoded_tx, ENDPOINT)
+        return tx
 
     def collect_stake(self, entity: Entity, fee: int):
         """
@@ -288,22 +227,77 @@ class TokenApi(ApiEndpoint):
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
         """
-        ENDPOINT = 'collectStake'
-
-        # format the data to be closed by the transaction
-
-        # wildcard for the moment
-        shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = self._create_skeleton_tx(fee)
-        tx.from_address = Address(entity)
-        tx.target_chain_code(self.API_PREFIX, shard_mask)
-        tx.action = 'collectStake'
+        tx = self._create_action_tx(fee, entity, 'collectStake')
         tx.add_signer(entity)
+
+        return tx
+
+
+class TokenApi(TokenApiBase):
+    def wealth(self, entity: Entity, amount: int):
+        ENDPOINT = 'wealth'
+
+        tx = super().wealth(entity, amount)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, [entity])
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
+
+    def deed(self, entity: Entity, deed: Deed, signatories: list = None):
+        ENDPOINT = 'deed'
+
+        tx = super().deed(entity, deed, signatories)
+
+        encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
+
+        return self._post_tx_json(encoded_tx, ENDPOINT)
+
+    def transfer(self, entity: Entity, to: AddressLike, amount: int, fee: int, signatories: list = None):
+        ENDPOINT = 'transfer'
+
+        tx = super().transfer(entity, to, amount, fee, signatories)
+
+        # encode and sign the transaction
+        encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
+
+        # submit the transaction
+        return self._post_tx_json(encoded_tx, ENDPOINT)
+
+    def add_stake(self, entity: Entity, amount: int, fee: int):
+        ENDPOINT = 'addStake'
+
+        tx = super().add_stake(entity, amount, fee)
+
+        # encode and sign the transaction
+        encoded_tx = transaction.encode_transaction(tx, [entity])
+
+        # submit the transaction
+        return self._post_tx_json(encoded_tx, ENDPOINT)
+
+    def de_stake(self, entity: Entity, amount: int, fee: int):
+        ENDPOINT = 'deStake'
+
+        tx = super().de_stake(entity, amount, fee)
+
+        # encode and sign the transaction
+        encoded_tx = transaction.encode_transaction(tx, [entity])
+
+        # submit the transaction
+        return self._post_tx_json(encoded_tx, ENDPOINT)
+
+    def collect_stake(self, entity: Entity, fee: int):
+        ENDPOINT = 'collectStake'
+
+        tx = super(self).collect_stake(entity, fee)
+
+        # encode and sign the transaction
+        encoded_tx = transaction.encode_transaction(tx, [entity])
+
+        # submit the transaction
+        return self._post_tx_json(encoded_tx, ENDPOINT)
+
+
