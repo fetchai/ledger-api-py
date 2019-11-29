@@ -1,8 +1,9 @@
 import unittest
+from unittest.mock import patch
 
 from lark import ParseError
 
-from fetchai.ledger.parser.etch_parser import EtchParser, UseWildcardShardMask, UnparsableAddress
+from fetchai.ledger.parser.etch_parser import EtchParser, UseWildcardShardMask, UnparsableAddress, NoParsedEtchSource
 
 # For testing use statements outside annotated functions
 # @init-setup() calls set_balance(), which uses a global outside an annotated function
@@ -69,7 +70,7 @@ class ShardMaskParsingTests(unittest.TestCase):
     def setUp(self) -> None:
         try:
             self.parser = EtchParser()
-            self.assertIsNone(self.parser.parsed_tree, "Unexpected initialisation of parsed tree")
+            self.assertIsNone(self.parser._parsed_tree, "Unexpected initialisation of parsed tree")
         except ParseError as e:
             self.fail("Parser isntantiation failed with: \n" + str(e))
 
@@ -117,8 +118,11 @@ class ShardMaskParsingTests(unittest.TestCase):
         with self.assertRaises(UseWildcardShardMask):
             used_globals = self.parser.globals_used('swap', [])
 
-    def test_use_state(self):
-        pass
+    def test_unparsable(self):
+        """Test that parser raises an exception when parsing fails"""
+        with patch('logging.warning') as mock_warn:
+            self.parser.parse("This is not valid etch code")
+            self.assertEqual(mock_warn.call_count, 2)
 
-    def test_use_sharded_state(self):
-        pass
+        with self.assertRaises(NoParsedEtchSource):
+            used_globals = self.parser.globals_used('entry', [])

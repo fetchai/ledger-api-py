@@ -181,23 +181,34 @@ class UnparsableAddress(Exception):
     pass
 
 
+class NoParsedEtchSource(Exception):
+    pass
+
+
 class EtchParser:
     def __init__(self, etch_code=None):
         # Load grammar
         self.grammar = resource_string(__name__, 'etch.grammar').decode('ascii')
         self.parser = Lark(self.grammar, propagate_positions=True)
 
-        self.parsed_tree = None
+        self._parsed_tree = None
         self.etch_code = None
         if etch_code:
             self.parse(etch_code)
+
+    @property
+    def parsed_tree(self):
+        if self._parsed_tree:
+            return self._parsed_tree
+        else:
+            raise NoParsedEtchSource()
 
     def parse(self, etch_code):
         """Parses the input code and stores the parsed tree"""
         assert isinstance(etch_code, str), "Expecting string"
         self.etch_code = etch_code
         try:
-            self.parsed_tree = self.parser.parse(etch_code)
+            self._parsed_tree = self.parser.parse(etch_code)
         except (LarkError, GrammarError, ParseError, LexError, UnexpectedInput,
                 UnexpectedCharacters, UnexpectedToken, VisitError) as e:
             logging.warning("Etch parsing failed, shard masks will be set to wildcard")

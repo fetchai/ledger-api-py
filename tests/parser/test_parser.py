@@ -80,7 +80,7 @@ class ParserTests(unittest.TestCase):
     def setUp(self) -> None:
         try:
             self.parser = EtchParser(CONTRACT_TEXT)
-            self.assertIsNotNone(self.parser.parsed_tree, "Parsed tree missing when code passed")
+            self.assertIsNotNone(self.parser._parsed_tree, "Parsed tree missing when code passed")
         except ParseError as e:
             self.fail("Failed to parse contract text: \n" + str(e))
 
@@ -89,7 +89,7 @@ class ParserTests(unittest.TestCase):
         # TODO: Grammar is loaded from a file, which may impact unit test performance
         try:
             parser = EtchParser()
-            self.assertIsNone(parser.parsed_tree, "Parsed tree present when no code passed")
+            self.assertIsNone(parser._parsed_tree, "Parsed tree present when no code passed")
         except GrammarError as e:
             self.fail("Etch grammar failed to load with: \n" + str(e))
 
