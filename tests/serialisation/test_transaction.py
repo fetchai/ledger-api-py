@@ -3,11 +3,12 @@ import json
 import unittest
 from unittest import mock
 
+from fetchai.ledger.serialisation.sha256 import sha256_hex
 from fetchai.ledger.serialisation.transaction import encode_payload
 
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Entity, Identity
-from fetchai.ledger.serialisation import encode_transaction, decode_transaction, bytearray, sha256_hash
+from fetchai.ledger.serialisation.transaction import encode_transaction, decode_transaction, bytearray
 from fetchai.ledger.transaction import Transaction
 
 _PRIVATE_KEYS = (
@@ -69,7 +70,7 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         buffer = io.BytesIO()
         encode_payload(buffer, payload)
-        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
+        self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_multiple_transfers(self):
         EXPECTED_DIGEST = "7e6a95a8c773755d349209d8f3bb60ec2a5f3c683075540f953863f124eb1250"
@@ -105,7 +106,7 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         buffer = io.BytesIO()
         encode_payload(buffer, payload)
-        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
+        self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_synergetic_data_submission(self):
         EXPECTED_DIGEST = "9397fd490b60a394ea0af5526435608a1e853e2cb6b09bc7cafec8f6a0aa2cf6"
@@ -145,7 +146,7 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         buffer = io.BytesIO()
         encode_payload(buffer, payload)
-        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
+        self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_chain_code(self):
         EXPECTED_DIGEST = "7032dd625b0a93aec85fa03696d0ecbc9de19d834ce3fd1d1ed9cf8a56d9f62e"
@@ -182,7 +183,7 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         buffer = io.BytesIO()
         encode_payload(buffer, payload)
-        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
+        self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_smart_contract(self):
         EXPECTED_DIGEST = "032a72029ae2ac5cdbf9e07cf57d9ecab97a6de34ed5cdf785d1d98037cd5dcd"
@@ -220,7 +221,7 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         buffer = io.BytesIO()
         encode_payload(buffer, payload)
-        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
+        self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_validity_ranges(self):
         EXPECTED_DIGEST = "98f10e8aa0bf4507db9eca66f0ff0b6a3eff35fe4def9ed86150c7ce72e71e80"
@@ -263,7 +264,7 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         buffer = io.BytesIO()
         encode_payload(buffer, payload)
-        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
+        self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_contract_with_2bit_shard_mask(self):
         EXPECTED_DIGEST = "8dbbee60c084b8ef88de39c961dec10df493c62623035972b28d1c5f1a3802a9"
@@ -305,7 +306,7 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         buffer = io.BytesIO()
         encode_payload(buffer, payload)
-        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
+        self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_contract_with_4bit_shard_mask(self):
         EXPECTED_DIGEST = "7915d6393fb07dbb4ff6896ef0f57025e5153b744d3a652b0f4815f129a9033c"
@@ -348,7 +349,7 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         buffer = io.BytesIO()
         encode_payload(buffer, payload)
-        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
+        self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_contract_with_large_shard_mask(self):
         EXPECTED_DIGEST = "a4eff45d0374d29f259aba25fb06dd67394149b636927d199062102d91c0f7bf"
@@ -399,7 +400,7 @@ class TransactionSerialisation(unittest.TestCase):
         # Check payload digest
         buffer = io.BytesIO()
         encode_payload(buffer, payload)
-        self.assertEqual(sha256_hash(buffer.getvalue()), EXPECTED_DIGEST)
+        self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_invalid_magic(self):
         encoded = bytes([0x00])
