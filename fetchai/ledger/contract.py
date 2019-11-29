@@ -157,7 +157,8 @@ class Contract:
             # Generate shard mask from resource addresses
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        return self._api(api).action(self._digest, self.address, name, fee, self.owner, signers, *args,
+        return self._api(api).action(self._digest, self.address, name, fee,
+                                     Address(signers[0]) if len(signers) == 1 else None, signers, *args,
                                      shard_mask=shard_mask)
 
     @staticmethod
