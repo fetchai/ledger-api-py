@@ -1,13 +1,14 @@
 import io
 import random
 import struct
-from typing import List
+from typing import Union, List, Set
 
 from fetchai.ledger import bitvector
 from fetchai.ledger import crypto
 from fetchai.ledger import transaction
 
 from . import address, integer, bytearray, identity
+
 
 MAGIC = 0xA1
 VERSION = 2
@@ -16,6 +17,9 @@ NO_CONTRACT = 0
 SMART_CONTRACT = 1
 CHAIN_CODE = 2
 SYNERGETIC = 3
+
+
+Signers = Union[List[crypto.ISigner], Set[crypto.ISigner]]
 
 
 def _log2(value: int) -> int:
@@ -144,7 +148,7 @@ def encode_payload(buffer: io.BytesIO, payload: transaction.Transaction):
         identity.encode(buffer, signer)
 
 
-def encode_transaction(payload: transaction.Transaction, signers: List[crypto.Entity]):
+def encode_transaction(payload: transaction.Transaction, signers: Signers):
     # encode the contents of the transaction
     buffer = io.BytesIO()
     encode_payload(buffer, payload)
@@ -152,11 +156,18 @@ def encode_transaction(payload: transaction.Transaction, signers: List[crypto.En
     # extract the payload buffer
     payload_bytes = buffer.getvalue()
 
-    # append all the signatures of the signers in order
-    for signer in payload.signers.keys():
-        if signer not in signers:
-            raise RuntimeError('Missing signer signing set')
+    if isinstance(signers, list):
+        signers_set = set(signers)
+    elif isinstance(signers, set):
+        signers_set = signers
+    else:
+        raise RuntimeError('Type of provided signers is neither List nor Set.')
 
+    if signers_set != payload.signers.keys():
+        raise RuntimeError('Missing signer signing set')
+
+    # append all the signatures of the signers in order
+    for signer in signers_set:
         # find the index to the appropriate index and lookup the entity
         entity = signers[signers.index(signer)]
 
