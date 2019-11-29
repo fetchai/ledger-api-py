@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from fetchai.ledger.crypto import Entity
 
@@ -148,7 +149,9 @@ class ParserTests(unittest.TestCase):
     def test_global_addresses(self):
         """Test accurate parsing of globals used in entry points"""
 
-        glob_addresses = self.parser.used_globals_to_addresses('transfer', ['abc', 'def', 100])
+        with patch('logging.warning') as mock_warn:
+            glob_addresses = self.parser.used_globals_to_addresses('transfer', ['abc', 'def', 100])
+            self.assertEqual(mock_warn.call_count, 1)
         self.assertEqual(len(glob_addresses), 5)
         # Unsharded use statement
         self.assertEqual(glob_addresses[0], 'owner_name')
@@ -161,28 +164,36 @@ class ParserTests(unittest.TestCase):
     def test_scope(self):
         """Tests which instructions are allowed at each scope"""
         # Regular instructions are not allowed at global scope
-        with self.assertRaises(UnexpectedCharacters):
-            self.parser.parse("var a = 5;")
+        with patch('logging.warning') as mock_warn:
+            self.assertFalse(self.parser.parse("var a = 5;"))
+            self.assertEqual(mock_warn.call_count, 2)
 
         # Allowed at global scope
         try:
             # Persistent global declaration
-            self.parser.parse("persistent sharded balance_state : UInt64;")
-            self.parser.parse("persistent owner : String;")
+            self.assertTrue(self.parser.parse("persistent sharded balance_state : UInt64;")
+                            is not False)
+            self.assertTrue(self.parser.parse("persistent owner : String;")
+                            is not False)
 
             # Functions
-            self.parser.parse("""function a(owner : String)
-            var b = owner;
-            endfunction""")
+            self.assertTrue(
+                self.parser.parse("""function a(owner : String)
+                var b = owner;
+                endfunction""")
+                is not False)
 
             # Annotated functions
-            self.parser.parse("""@action
-            function a(owner : String)
-            var b = owner;
-            endfunction""")
+            self.assertTrue(
+                self.parser.parse("""@action
+                function a(owner : String)
+                var b = owner;
+                endfunction""")
+                is not False)
 
             # Comments
-            self.parser.parse("// A comment")
+            self.assertTrue(self.parser.parse("// A comment")
+                            is not False)
         except UnexpectedCharacters as e:
             self.fail("Etch parsing of top level statement failed: \n" + str(e))
 
@@ -326,6 +337,7 @@ class ParserTests(unittest.TestCase):
         """Check that nested function calls are supported by parser"""
         try:
             tree = self.parser.parse(NESTED_FUNCTION)
+            self.assertTrue(tree is not False)
         except:
             self.fail("Parsing of dot nested function calls failed")
 
@@ -377,50 +389,58 @@ class ParserTests(unittest.TestCase):
         var b: Int64 = 0;
         {}""")
 
-        try:
-            # Simple if block
-            tree = self.parser.parse(PARTIAL_BLOCK.format("""
-            if (a > 5)
-                b = 6;
-            endif"""))
+        # Simple if block
+        tree = self.parser.parse(PARTIAL_BLOCK.format("""
+        if (a > 5)
+            b = 6;
+        endif"""))
+        self.assertTrue(tree is not False)
 
-            # If-else block
-            tree = self.parser.parse(PARTIAL_BLOCK.format("""
-            if (a > 5)
-                b = 6;
-            else
-                b = 7;
-            endif"""))
+        # If-else block
+        tree = self.parser.parse(PARTIAL_BLOCK.format("""
+        if (a > 5)
+            b = 6;
+        else
+            b = 7;
+        endif"""))
+        self.assertTrue(tree is not False)
 
-            # Nested if-else-if block
-            tree = self.parser.parse(PARTIAL_BLOCK.format("""
-            if (a > 5)
-                b = 6;
-            else if (a < 5)
-                    b = 4;
-                endif
-            endif"""))
-
-            # If-elseif block
-            tree = self.parser.parse(PARTIAL_BLOCK.format("""
-            if (a > 5)
-                b = 6;
-            elseif (a < 5)
+        # Nested if-else-if block
+        tree = self.parser.parse(PARTIAL_BLOCK.format("""
+        if (a > 5)
+            b = 6;
+        else if (a < 5)
                 b = 4;
-            endif"""))
+            endif
+        endif"""))
+        self.assertTrue(tree is not False)
 
-            # Complex example
-            tree = self.parser.parse(PARTIAL_BLOCK.format("""
-            if (a > 5 && a < 100)
-                b = 6;
-            elseif (a < 2 || a > 100)
-                if (a < 0)
-                    b = 4;
-                else
-                    b = 2;
-                endif
+        # If-elseif block
+        tree = self.parser.parse(PARTIAL_BLOCK.format("""
+        if (a > 5)
+            b = 6;
+        elseif (a < 5)
+            b = 4;
+        endif"""))
+        self.assertTrue(tree is not False)
+
+        # Complex example
+        tree = self.parser.parse(PARTIAL_BLOCK.format("""
+        if (a > 5 && a < 100)
+            b = 6;
+        elseif (a < 2 || a > 100)
+            if (a < 0)
+                b = 4;
             else
-                b = 3;
-            endif"""))
-        except:
-            self.fail()
+                b = 2;
+            endif
+        else
+            b = 3;
+        endif"""))
+        self.assertTrue(tree is not False)
+
+    def test_warn_on_parse_fail(self):
+        with patch('logging.warning') as mock_warn:
+            tree = self.parser.parse("This code is not valid")
+            self.assertFalse(tree)
+            self.assertEqual(mock_warn.call_count, 2)

@@ -1,6 +1,8 @@
 import logging
 
-from lark import Lark, tree, lexer
+from lark import Lark, tree, lexer, ParseError, GrammarError, LexError, UnexpectedInput, UnexpectedCharacters, \
+    UnexpectedToken
+from lark.exceptions import LarkError, VisitError
 from pkg_resources import resource_string
 
 
@@ -194,7 +196,14 @@ class EtchParser:
         """Parses the input code and stores the parsed tree"""
         assert isinstance(etch_code, str), "Expecting string"
         self.etch_code = etch_code
-        self.parsed_tree = self.parser.parse(etch_code)
+        try:
+            self.parsed_tree = self.parser.parse(etch_code)
+        except (LarkError, GrammarError, ParseError, LexError, UnexpectedInput,
+                UnexpectedCharacters, UnexpectedToken, VisitError) as e:
+            logging.warning("Etch parsing failed, shard masks will be set to wildcard")
+            logging.warning(e)
+            return False
+
         return self.parsed_tree
 
     def entry_points(self, valid_entries=None):
