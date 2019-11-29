@@ -77,7 +77,7 @@ class ContractsApi(ApiEndpoint):
 
     def create_transaction(self, contract_digest: Address, contract_address: Address, action: str,
                            fee: int, from_address: Address, signers: EntityList,
-                           *args, transfers: TransferList = None, shard_mask: BitVector = None):
+                           *args, shard_mask: BitVector = None, transfers: TransferList = None):
 
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
@@ -101,7 +101,7 @@ class ContractsApi(ApiEndpoint):
 
     def action(self, contract_digest: Address, contract_address: Address, action: str,
                fee: int, from_address: Address, signers: EntityList,
-               *args, transfers: TransferList = None, shard_mask: BitVector = None):
+               *args, shard_mask: BitVector = None, transfers: TransferList = None):
         tx = self.create_transaction(contract_digest, contract_address, action, fee, from_address, signers,
                                      args, transfers, shard_mask)
         encoded_tx = encode_transaction(tx, signers)
