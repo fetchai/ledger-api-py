@@ -103,7 +103,7 @@ class ContractsApi(ApiEndpoint):
                fee: int, from_address: Address, signers: EntityList,
                *args, shard_mask: BitVector = None, transfers: TransferList = None):
         tx = self.create_transaction(contract_digest, contract_address, action, fee, from_address, signers,
-                                     args, transfers, shard_mask)
+                                     *args, shard_mask=shard_mask, transfers=transfers)
         encoded_tx = encode_transaction(tx, signers)
 
         return self._post_tx_json(encoded_tx, None)

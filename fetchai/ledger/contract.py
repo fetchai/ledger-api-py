@@ -9,7 +9,7 @@ from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Identity
 from fetchai.ledger.parser.etch_parser import EtchParser, UnparsableAddress, UseWildcardShardMask
 from fetchai.ledger.serialisation.shardmask import ShardMask
-from .api import ContractsApi, LedgerApi
+from .api import ContractsApi, LedgerApi, Transfer, TransferList
 from .crypto import Entity, Address
 
 ContractsApiLike = Union[ContractsApi, LedgerApi]
@@ -138,7 +138,7 @@ class Contract:
 
         return response['result']
 
-    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args):
+    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args, transfers: TransferList = None):
         if self._owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
 
@@ -158,7 +158,7 @@ class Contract:
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
         return self._api(api).action(self._digest, self.address, name, fee, self.owner, signers, *args,
-                                     shard_mask=shard_mask)
+                                     shard_mask=shard_mask, transfers=transfers)
 
     @staticmethod
     def _api(api: ContractsApiLike):
