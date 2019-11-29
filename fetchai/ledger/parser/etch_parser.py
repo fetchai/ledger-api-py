@@ -1,4 +1,5 @@
 import logging
+import re
 
 from lark import Lark, tree, lexer, ParseError, GrammarError, LexError, UnexpectedInput, UnexpectedCharacters, \
     UnexpectedToken
@@ -229,12 +230,21 @@ class EtchParser:
             entry_points[ep] = []
 
         # Parse all functions in tree
-        functions = self.get_functions()
+        try:
+            functions = self.get_functions()
 
-        # Add functions with annotation to entry point dict
-        for f in functions:
-            if f.annotation in valid_entries:
-                entry_points[f.annotation].append(f.name)
+            # Add functions with annotation to entry point dict
+            for f in functions:
+                if f.annotation in valid_entries:
+                    entry_points[f.annotation].append(f.name)
+
+        except NoParsedEtchSource:
+            # Fallback method to extract entry points when parsing fails
+            matches = re.findall(r'@([a-zA-Z]+)\nfunction ([a-zA-Z0-9]+)', self.etch_code)
+
+            for ann, func in matches:
+                if ann in valid_entries:
+                    entry_points[ann].append(func)
 
         return entry_points
 
