@@ -148,10 +148,7 @@ def encode_multisig_transaction(payload: 'Transaction', signatures: Dict[Identit
 
     # encode the contents of the transaction
     buffer = io.BytesIO()
-    if isinstance(payload, bytes):
-        buffer.write(payload)
-    else:
-        encode_payload(buffer, payload)
+    encode_payload(buffer, payload)
 
     # append signatures in order
     for signer in payload.signers.keys():
