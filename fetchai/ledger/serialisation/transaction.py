@@ -1,6 +1,6 @@
 import io
 import struct
-from typing import List
+from typing import List, Optional, Union
 
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Entity
@@ -143,6 +143,24 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
         identity.encode(buffer, signer)
 
 
+def encode_multisig_transaction(payload: Union['Transaction', bytes], signatures: List[bytes]):
+    assert isinstance(payload, bytes) or isinstance(payload, transaction.Transaction)
+
+    # encode the contents of the transaction
+    buffer = io.BytesIO()
+    if isinstance(payload, bytes):
+        buffer.write(payload)
+    else:
+        encode_payload(buffer, payload)
+
+    # append signatures
+    for sig in signatures:
+        bytearray.encode(buffer, sig)
+
+    # return the encoded transaction
+    return buffer.getvalue()
+
+
 def encode_transaction(payload: 'Transaction', signers: List[Entity]):
     # encode the contents of the transaction
     buffer = io.BytesIO()
@@ -166,7 +184,7 @@ def encode_transaction(payload: 'Transaction', signers: List[Entity]):
     return buffer.getvalue()
 
 
-def decode_transaction(stream: io.BytesIO) -> (bool, 'Transaction'):
+def decode_payload(stream: io.BytesIO) -> 'Transaction':
     # ensure the at the magic is correctly configured
     magic = stream.read(1)[0]
     if magic != MAGIC:
@@ -284,11 +302,21 @@ def decode_transaction(stream: io.BytesIO) -> (bool, 'Transaction'):
     # extract all the signing public keys from the stream
     public_keys = [identity.decode(stream) for _ in range(num_signatures)]
 
+    for ident in public_keys:
+        tx._signers[ident] = {}
+
+    return tx
+
+
+def decode_transaction(stream: io.BytesIO) -> (bool, 'Transaction'):
+    # decode transaction payload
+    tx = decode_payload(stream)
+
     # extract full copy of the payload
     payload_bytes = stream.getvalue()[:stream.tell()]
 
     verified = []
-    for ident in public_keys:
+    for ident in tx.signers.keys():
         # for n in range(num_signatures):
 
         # extract the signature from the stream

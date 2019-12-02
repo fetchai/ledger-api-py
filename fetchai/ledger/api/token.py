@@ -15,19 +15,18 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-import json
 from typing import Union
 
 from fetchai.ledger.api import ApiEndpoint, ApiError
-from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity, Identity
 from fetchai.ledger.crypto.deed import Deed
 from fetchai.ledger.serialisation import transaction
+from fetchai.ledger.transaction import TransactionFactory
 
 AddressLike = Union[Address, Identity, str, bytes]
 
 
-class TokenApiBase(ApiEndpoint):
+class TokenApi(ApiEndpoint):
     API_PREFIX = 'fetch.token'
 
     def balance(self, address: AddressLike):
@@ -115,131 +114,9 @@ class TokenApiBase(ApiEndpoint):
         return data
 
     def wealth(self, entity: Entity, amount: int):
-        """
-        Creates wealth for specified account
-
-        :param entity: The entity object to create wealth for
-        :param amount: The amount of wealth to be generated
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
-        # build up the basic transaction information
-        tx = self._create_action_tx(1, entity, 'wealth')
-        tx.add_signer(entity)
-
-        # format the transaction payload
-        tx.data = self._encode_json({
-            'address': entity.public_key,
-            'amount': amount
-        })
-
-        return tx
-
-    def deed(self, entity: Entity, deed: Deed, signatories: list = None):
-        tx = self._create_action_tx(10000, entity, 'deed')
-
-        if signatories:
-            for sig in signatories:
-                tx.add_signer(sig)
-        else:
-            tx.add_signer(entity)
-
-        deed_json = deed.deed_creation_json()
-
-        tx.data = self._encode_json(deed_json)
-
-        return tx
-
-    def transfer(self, entity: Entity, to: AddressLike, amount: int, fee: int, signatories: list = None):
-        """
-        Transfers wealth from one account to another account
-
-        :param private_key_bin: The bytes of the private key of the source address
-        :param to_address: The bytes of the targeted address to send funds to
-        :param amount: The amount of funds being transfered
-        :param fee: The fee associated with the transfer
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
-        # build up the basic transaction information
-        tx = self._create_skeleton_tx(fee)
-        tx.from_address = Address(entity)
-        tx.add_transfer(to, amount)
-
-        if signatories:
-            for ent in signatories:
-                tx.add_signer(ent)
-        else:
-            tx.add_signer(entity)
-
-        return tx
-
-    def add_stake(self, entity: Entity, amount: int, fee: int):
-        """
-        Stakes a specific amount of
-
-        :param entity: The entity object that desires to stake
-        :param amount: The amount to stake
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
-
-        # build up the basic transaction information
-        tx = self._create_action_tx(fee, entity, 'addStake')
-        tx.add_signer(entity)
-
-        # format the transaction payload
-        tx.data = self._encode_json({
-            'address': entity.public_key,
-            'amount': amount
-        })
-
-        return tx
-
-    def de_stake(self, entity: Entity, amount: int, fee: int):
-        """
-        Destakes a specific amount of tokens from a staking miner. This will put the
-        tokens in a cool down period
-
-        :param entity: The entity object that desires to destake
-        :param amount: The amount of tokens to destake
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
-
-        # build up the basic transaction information
-        tx = self._create_action_tx(fee, entity, 'deStake')
-        tx.add_signer(entity)
-
-        # format the transaction payload
-        tx.data = self._encode_json({
-            'address': entity.public_key,
-            'amount': amount
-        })
-
-        return tx
-
-    def collect_stake(self, entity: Entity, fee: int):
-        """
-        Collect all stakes that have reached the end of the cooldown period
-
-        :param entity: The entity object that desires to collect
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
-
-        # build up the basic transaction information
-        tx = self._create_action_tx(fee, entity, 'collectStake')
-        tx.add_signer(entity)
-
-        return tx
-
-
-class TokenApi(TokenApiBase):
-    def wealth(self, entity: Entity, amount: int):
         ENDPOINT = 'wealth'
 
-        tx = super().wealth(entity, amount)
+        tx = TransactionFactory.wealth(self, entity, amount)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, [entity])
@@ -250,7 +127,7 @@ class TokenApi(TokenApiBase):
     def deed(self, entity: Entity, deed: Deed, signatories: list = None):
         ENDPOINT = 'deed'
 
-        tx = super().deed(entity, deed, signatories)
+        tx = TransactionFactory.deed(self, entity, deed, signatories)
 
         encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
 
@@ -259,7 +136,7 @@ class TokenApi(TokenApiBase):
     def transfer(self, entity: Entity, to: AddressLike, amount: int, fee: int, signatories: list = None):
         ENDPOINT = 'transfer'
 
-        tx = super().transfer(entity, to, amount, fee, signatories)
+        tx = TransactionFactory.transfer(self, entity, to, amount, fee, signatories)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
@@ -270,7 +147,7 @@ class TokenApi(TokenApiBase):
     def add_stake(self, entity: Entity, amount: int, fee: int):
         ENDPOINT = 'addStake'
 
-        tx = super().add_stake(entity, amount, fee)
+        tx = TransactionFactory.add_stake(self, entity, amount, fee)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, [entity])
@@ -281,7 +158,7 @@ class TokenApi(TokenApiBase):
     def de_stake(self, entity: Entity, amount: int, fee: int):
         ENDPOINT = 'deStake'
 
-        tx = super().de_stake(entity, amount, fee)
+        tx = TransactionFactory.de_stake(self, entity, amount, fee)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, [entity])
@@ -292,7 +169,7 @@ class TokenApi(TokenApiBase):
     def collect_stake(self, entity: Entity, fee: int):
         ENDPOINT = 'collectStake'
 
-        tx = super(self).collect_stake(entity, fee)
+        tx = TransactionFactory.collect_stake(self, entity, fee)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, [entity])
