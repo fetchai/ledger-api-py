@@ -15,13 +15,14 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-from typing import Union
+from typing import Union, Dict
 
 from fetchai.ledger.api import ApiEndpoint, ApiError
 from fetchai.ledger.crypto import Address, Entity, Identity
 from fetchai.ledger.crypto.deed import Deed
 from fetchai.ledger.serialisation import transaction
-from fetchai.ledger.transaction import TransactionFactory
+from fetchai.ledger.serialisation.transaction import encode_multisig_transaction
+from fetchai.ledger.transaction import TransactionFactory, Transaction
 
 AddressLike = Union[Address, Identity, str, bytes]
 
@@ -114,6 +115,15 @@ class TokenApi(ApiEndpoint):
         return data
 
     def wealth(self, entity: Entity, amount: int):
+        """
+        Creates wealth for specified account
+
+        :param entity: The entity object to create wealth for
+        :param amount: The amount of wealth to be generated
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+
         ENDPOINT = 'wealth'
 
         tx = TransactionFactory.wealth(self, entity, amount)
@@ -125,6 +135,16 @@ class TokenApi(ApiEndpoint):
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
     def deed(self, entity: Entity, deed: Deed, signatories: list = None):
+        """
+        Sets the deed for a multi-sig account
+
+        :param entity: The entity object to create wealth for
+        :param deed: The deed to set
+        :param signatories: The entities that will sign this action
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+
         ENDPOINT = 'deed'
 
         tx = TransactionFactory.deed(self, entity, deed, signatories)
@@ -134,6 +154,17 @@ class TokenApi(ApiEndpoint):
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
     def transfer(self, entity: Entity, to: AddressLike, amount: int, fee: int, signatories: list = None):
+        """
+        Transfers wealth from one account to another account
+
+        :param entity: The entity from which to transfer funds
+        :param to: The bytes of the targeted address to send funds to
+        :param amount: The amount of funds being transfered
+        :param fee: The fee associated with the transfer
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+
         ENDPOINT = 'transfer'
 
         tx = TransactionFactory.transfer(self, entity, to, amount, fee, signatories)
@@ -145,6 +176,15 @@ class TokenApi(ApiEndpoint):
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
     def add_stake(self, entity: Entity, amount: int, fee: int):
+        """
+        Stakes a specific amount of
+
+        :param entity: The entity object that desires to stake
+        :param amount: The amount to stake
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+
         ENDPOINT = 'addStake'
 
         tx = TransactionFactory.add_stake(self, entity, amount, fee)
@@ -156,6 +196,16 @@ class TokenApi(ApiEndpoint):
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
     def de_stake(self, entity: Entity, amount: int, fee: int):
+        """
+        Destakes a specific amount of tokens from a staking miner. This will put the
+        tokens in a cool down period
+
+        :param entity: The entity object that desires to destake
+        :param amount: The amount of tokens to destake
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+
         ENDPOINT = 'deStake'
 
         tx = TransactionFactory.de_stake(self, entity, amount, fee)
@@ -167,6 +217,14 @@ class TokenApi(ApiEndpoint):
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
     def collect_stake(self, entity: Entity, fee: int):
+        """
+        Collect all stakes that have reached the end of the cooldown period
+
+        :param entity: The entity object that desires to collect
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+
         ENDPOINT = 'collectStake'
 
         tx = TransactionFactory.collect_stake(self, entity, fee)
@@ -177,4 +235,16 @@ class TokenApi(ApiEndpoint):
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
+    def submit_signed_tx(self, tx: Transaction, signatures: Dict[Identity, bytes]):
+        """
+        Appends signatures to a transaction and submits it, returning the transaction digest
+        :param tx: A pre-assembled transaction
+        :param signatures: A dict of signers signatures
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+        # Encode transaction and append signatures
+        encoded_tx = encode_multisig_transaction(tx, signatures)
 
+        # Submit and return digest
+        return self._post_tx_json(encoded_tx, tx.action)

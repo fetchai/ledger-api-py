@@ -103,9 +103,7 @@ def main():
         signed_txs[Identity(signer)] = signature
 
     # Gather and encode final transaction
-    encoded_tx = encode_multisig_transaction(tx, signed_txs)
-
-    api.sync(api.tokens._post_tx_json(encoded_tx, 'transfer'))
+    api.sync(api.tokens.submit_signed_tx(tx, signed_txs))
 
     print("\nAfter remote multisig-transfer")
     print('Balance 1:', api.tokens.balance(multi_sig_identity))

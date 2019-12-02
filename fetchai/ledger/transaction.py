@@ -188,14 +188,7 @@ class TransactionBuilder:
 class TransactionFactory:
     @staticmethod
     def wealth(api: 'TokenApi', entity: Entity, amount: int):
-        """
-        Creates wealth for specified account
 
-        :param entity: The entity object to create wealth for
-        :param amount: The amount of wealth to be generated
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
         # build up the basic transaction information
         tx = api._create_action_tx(1, entity, 'wealth')
         tx.add_signer(entity)
@@ -226,16 +219,7 @@ class TransactionFactory:
 
     @staticmethod
     def transfer(api: 'TokenApi', entity: Entity, to: AddressLike, amount: int, fee: int, signatories: list = None):
-        """
-        Transfers wealth from one account to another account
 
-        :param entity: The entity from which to transfer funds
-        :param to: The bytes of the targeted address to send funds to
-        :param amount: The amount of funds being transfered
-        :param fee: The fee associated with the transfer
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
         # build up the basic transaction information
         tx = api._create_skeleton_tx(fee)
         tx.from_address = Address(entity)
@@ -251,14 +235,6 @@ class TransactionFactory:
 
     @staticmethod
     def add_stake(api: 'TokenApi', entity: Entity, amount: int, fee: int):
-        """
-        Stakes a specific amount of
-
-        :param entity: The entity object that desires to stake
-        :param amount: The amount to stake
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
 
         # build up the basic transaction information
         tx = api._create_action_tx(fee, entity, 'addStake')
@@ -274,15 +250,6 @@ class TransactionFactory:
 
     @staticmethod
     def de_stake(api: 'TokenApi', entity: Entity, amount: int, fee: int):
-        """
-        Destakes a specific amount of tokens from a staking miner. This will put the
-        tokens in a cool down period
-
-        :param entity: The entity object that desires to destake
-        :param amount: The amount of tokens to destake
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
 
         # build up the basic transaction information
         tx = api._create_action_tx(fee, entity, 'deStake')
@@ -298,13 +265,6 @@ class TransactionFactory:
 
     @staticmethod
     def collect_stake(api: 'TokenApi', entity: Entity, fee: int):
-        """
-        Collect all stakes that have reached the end of the cooldown period
-
-        :param entity: The entity object that desires to collect
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
 
         # build up the basic transaction information
         tx = api._create_action_tx(fee, entity, 'collectStake')
