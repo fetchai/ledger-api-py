@@ -22,7 +22,7 @@ import io
 from build.lib.fetchai.ledger.crypto import Address
 from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.transaction import TransactionFactory, Transaction
-from fetchai.ledger.crypto import Entity
+from fetchai.ledger.crypto import Entity, Identity
 from fetchai.ledger.crypto.deed import Deed
 from fetchai.ledger.serialisation import transaction, bytearray
 from fetchai.ledger.serialisation.transaction import decode_transaction, encode_multisig_transaction
@@ -88,7 +88,7 @@ def main():
     stx = tx.payload
 
     # Have signers individually sign transaction
-    signed_txs = []
+    signed_txs = {}
     for signer in board:
         # Signer decodes payload to inspect transaction
         itx = Transaction.from_payload(stx)
@@ -100,11 +100,9 @@ def main():
         signature = signer.sign(stx)
 
         # Signer returns signed payload to originator
-        signed_txs.append(signature)
+        signed_txs[Identity(signer)] = signature
 
     # Gather and encode final transaction
-    # TODO: signatures must be in order!
-    # signed_txs.reverse()
     encoded_tx = encode_multisig_transaction(tx, signed_txs)
 
     api.sync(api.tokens._post_tx_json(encoded_tx, 'transfer'))

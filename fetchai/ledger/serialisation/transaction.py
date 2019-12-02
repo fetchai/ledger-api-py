@@ -1,9 +1,9 @@
 import io
 import struct
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 
 from fetchai.ledger.bitvector import BitVector
-from fetchai.ledger.crypto import Entity
+from fetchai.ledger.crypto import Entity, Identity
 from fetchai.ledger.serialisation.integer import encode_fixed
 from fetchai.ledger import transaction
 from . import address, integer, bytearray, identity
@@ -143,7 +143,7 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
         identity.encode(buffer, signer)
 
 
-def encode_multisig_transaction(payload: Union['Transaction', bytes], signatures: List[bytes]):
+def encode_multisig_transaction(payload: 'Transaction', signatures: Dict[Identity, bytes]):
     assert isinstance(payload, bytes) or isinstance(payload, transaction.Transaction)
 
     # encode the contents of the transaction
@@ -153,9 +153,9 @@ def encode_multisig_transaction(payload: Union['Transaction', bytes], signatures
     else:
         encode_payload(buffer, payload)
 
-    # append signatures
-    for sig in signatures:
-        bytearray.encode(buffer, sig)
+    # append signatures in order
+    for signer in payload.signers.keys():
+        bytearray.encode(buffer, signatures[signer])
 
     # return the encoded transaction
     return buffer.getvalue()
