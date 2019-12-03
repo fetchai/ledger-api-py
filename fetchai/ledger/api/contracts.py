@@ -5,7 +5,7 @@ import msgpack
 
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity
-from fetchai.ledger.serialisation import encode_transaction
+from fetchai.ledger.serialisation.transaction import encode_transaction
 from fetchai.ledger.transaction import Transaction
 from .common import ApiEndpoint
 
