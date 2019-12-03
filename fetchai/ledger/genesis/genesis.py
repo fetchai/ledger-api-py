@@ -22,7 +22,7 @@ import base58
 import time
 from typing import Tuple, List
 
-from fetchai.ledger.crypto import Entity
+from fetchai.ledger.crypto import Entity, Identity
 from fetchai.ledger.serialisation.sha256 import sha256_hash
 
 
