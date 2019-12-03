@@ -182,7 +182,7 @@ class UnparsableAddress(Exception):
     pass
 
 
-class NoParsedEtchSource(Exception):
+class EtchParserError(Exception):
     pass
 
 
@@ -202,7 +202,7 @@ class EtchParser:
         if self._parsed_tree:
             return self._parsed_tree
         else:
-            raise NoParsedEtchSource()
+            raise EtchParserError()
 
     def parse(self, etch_code):
         """Parses the input code and stores the parsed tree"""
@@ -238,7 +238,7 @@ class EtchParser:
                 if f.annotation in valid_entries:
                     entry_points[f.annotation].append(f.name)
 
-        except NoParsedEtchSource:
+        except EtchParserError:
             # Fallback method to extract entry points when parsing fails
             matches = re.findall(r'@([a-zA-Z]+)\nfunction ([a-zA-Z0-9]+)', self.etch_code)
 

@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from lark import ParseError
 
-from fetchai.ledger.parser.etch_parser import EtchParser, UseWildcardShardMask, UnparsableAddress, NoParsedEtchSource
+from fetchai.ledger.parser.etch_parser import EtchParser, UseWildcardShardMask, UnparsableAddress, EtchParserError
 
 # For testing use statements outside annotated functions
 # @init-setup() calls set_balance(), which uses a global outside an annotated function
@@ -124,5 +124,5 @@ class ShardMaskParsingTests(unittest.TestCase):
             self.parser.parse("This is not valid etch code")
             self.assertEqual(mock_warn.call_count, 2)
 
-        with self.assertRaises(NoParsedEtchSource):
+        with self.assertRaises(EtchParserError):
             used_globals = self.parser.globals_used('entry', [])

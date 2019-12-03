@@ -7,7 +7,7 @@ from typing import Union, List
 
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Identity
-from fetchai.ledger.parser.etch_parser import EtchParser, UnparsableAddress, UseWildcardShardMask, NoParsedEtchSource
+from fetchai.ledger.parser.etch_parser import EtchParser, UnparsableAddress, UseWildcardShardMask, EtchParserError
 from fetchai.ledger.serialisation.shardmask import ShardMask
 from .api import ContractsApi, LedgerApi
 from .crypto import Entity, Address
@@ -110,7 +110,7 @@ class Contract:
             resource_addresses = ['fetch.contract.state.{}'.format(self.digest.to_hex())]
             resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
                                       self._parser.used_globals_to_addresses(self._init, [self._owner]))
-        except (UnparsableAddress, UseWildcardShardMask, NoParsedEtchSource):
+        except (UnparsableAddress, UseWildcardShardMask, EtchParserError):
             logging.warning("Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
         else:
@@ -150,7 +150,7 @@ class Contract:
             # Generate resource addresses used by persistent globals
             resource_addresses = [ShardMask.state_to_address(address, self) for address in
                                   self._parser.used_globals_to_addresses(name, list(args))]
-        except (UnparsableAddress, UseWildcardShardMask, NoParsedEtchSource):
+        except (UnparsableAddress, UseWildcardShardMask, EtchParserError):
             logging.warning("Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
         else:
