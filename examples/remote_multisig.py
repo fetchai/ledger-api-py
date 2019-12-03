@@ -109,6 +109,21 @@ def main():
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
+    # Distributed change to deed
+    deed.transfer_threshold = 4
+    tx = TransactionFactory.deed(api.tokens, multi_sig_identity, deed, board)
+    stx = tx.payload
+
+    signed_txs = {}
+    for signer in board:
+        # Signers locally decode transaction
+        signature = signer.sign(stx)
+
+        # Signer returns signed payload to originator
+        signed_txs[Identity(signer)] = signature
+
+    api.sync(api.tokens.submit_signed_tx(tx, signed_txs))
+
 
 if __name__ == '__main__':
     main()
