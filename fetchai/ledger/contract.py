@@ -8,6 +8,7 @@ from typing import Union, List
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Identity
 from fetchai.ledger.parser.etch_parser import EtchParser, UnparsableAddress, UseWildcardShardMask
+from fetchai.ledger.serialisation import sha256_hash
 from fetchai.ledger.serialisation.shardmask import ShardMask
 from .api import ContractsApi, LedgerApi
 from .crypto import Entity, Address
@@ -17,9 +18,7 @@ AddressLike = Union[Address, Identity]
 
 
 def _compute_digest(source) -> Address:
-    hash_func = hashlib.sha256()
-    hash_func.update(source.encode('ascii'))
-    return Address(hash_func.digest())
+    return Address(sha256_hash(source.encode('ascii')))
 
 
 class Contract:
@@ -157,7 +156,8 @@ class Contract:
             # Generate shard mask from resource addresses
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        return self._api(api).action(self.address, name, fee, self.owner, signers, *args,
+        return self._api(api).action(self.address, name, fee,
+                                     Address(signers[0]) if len(signers) == 1 else None, signers, *args,
                                      shard_mask=shard_mask)
 
     @staticmethod

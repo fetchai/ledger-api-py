@@ -3,10 +3,10 @@ import random
 import struct
 from typing import List
 
-from fetchai.ledger.bitvector import BitVector
-from fetchai.ledger.crypto import Entity
-from fetchai.ledger.serialisation.integer import encode_fixed
-from fetchai.ledger.transaction import Transaction
+from fetchai.ledger import bitvector
+from fetchai.ledger import crypto
+from fetchai.ledger import transaction
+
 from . import address, integer, bytearray, identity
 
 MAGIC = 0xA1
@@ -30,7 +30,7 @@ def _byte(value: int) -> bytes:
     return bytes([value])
 
 
-def _map_contract_mode(payload: Transaction):
+def _map_contract_mode(payload: transaction.Transaction):
     if payload.synergetic_data_submission:
         return SYNERGETIC
 
@@ -42,7 +42,7 @@ def _map_contract_mode(payload: Transaction):
         return NO_CONTRACT
 
 
-def encode_payload(buffer: io.BytesIO, payload: Transaction):
+def encode_payload(buffer: io.BytesIO, payload: transaction.Transaction):
     num_transfers = len(payload.transfers)
     num_signatures = len(payload.signers)
 
@@ -67,7 +67,7 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
     buffer.write(bytes([MAGIC, header0, header1]))
 
     reserved = 0
-    encode_fixed(buffer, value=reserved, num_bytes=1)
+    integer.encode_fixed(buffer, value=reserved, num_bytes=1)
 
     address.encode(buffer, payload.from_address)
     if num_transfers > 1:
@@ -131,7 +131,7 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
         bytearray.encode(buffer, payload.data)
 
     # Counter value
-    encode_fixed(buffer, value=payload.counter, num_bytes=8)
+    integer.encode_fixed(buffer, value=payload.counter, num_bytes=8)
 
     if num_extra_signatures > 0:
         integer.encode(buffer, num_extra_signatures)
@@ -141,7 +141,7 @@ def encode_payload(buffer: io.BytesIO, payload: Transaction):
         identity.encode(buffer, signer)
 
 
-def encode_transaction(payload: Transaction, signers: List[Entity]):
+def encode_transaction(payload: transaction.Transaction, signers: List[crypto.Entity]):
     # encode the contents of the transaction
     buffer = io.BytesIO()
     encode_payload(buffer, payload)
@@ -164,7 +164,7 @@ def encode_transaction(payload: Transaction, signers: List[Entity]):
     return buffer.getvalue()
 
 
-def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
+def decode_transaction(stream: io.BytesIO) -> (bool, transaction.Transaction):
     # ensure the at the magic is correctly configured
     magic = stream.read(1)[0]
     if magic != MAGIC:
@@ -192,7 +192,7 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
     # Ready empty reserved byte
     stream.read(1)
 
-    tx = Transaction()
+    tx = transaction.Transaction()
 
     # decode the address from the thread
     tx.from_address = address.decode(stream)
@@ -226,7 +226,7 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
 
         wildcard = bool(contract_header & 0x80)
 
-        shard_mask = BitVector()
+        shard_mask = bitvector.BitVector()
         if not wildcard:
             extended_shard_mask_flag = bool(contract_header & 0x40)
 
@@ -240,7 +240,7 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
                     bit_size = 2
 
                 # extract the shard mask from the header
-                shard_mask = BitVector.from_bytes(bytes([contract_header & mask]), bit_size)
+                shard_mask = bitvector.BitVector.from_bytes(bytes([contract_header & mask]), bit_size)
 
             else:
                 bit_length = 1 << ((contract_header & 0x3F) + 3)
@@ -249,7 +249,7 @@ def decode_transaction(stream: io.BytesIO) -> (bool, Transaction):
                 assert (bit_length % 8) == 0  # this should be enforced as part of the spec
 
                 # extract the mask from the next N bytes
-                shard_mask = BitVector.from_bytes(stream.read(byte_length), bit_length)
+                shard_mask = bitvector.BitVector.from_bytes(stream.read(byte_length), bit_length)
 
         if contract_type == SMART_CONTRACT or contract_type == SYNERGETIC:
             contract_digest = address.decode(stream)
