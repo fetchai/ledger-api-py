@@ -128,7 +128,7 @@ class Contract:
                 '{} is not an valid query name. Valid options are: {}'.format(name, ','.join(list(self._queries))))
 
         # make the required query on the API
-        success, response = self._api(api).query(self._digest, self.address, name, **kwargs)
+        success, response = self._api(api).query(self.address, name, **kwargs)
 
         if not success:
             if response is not None and "msg" in response:
@@ -157,7 +157,7 @@ class Contract:
             # Generate shard mask from resource addresses
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        return self._api(api).action(self._digest, self.address, name, fee, self.owner, signers, *args,
+        return self._api(api).action(self.address, name, fee, self.owner, signers, *args,
                                      shard_mask=shard_mask)
 
     @staticmethod
