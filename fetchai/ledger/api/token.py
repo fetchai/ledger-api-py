@@ -248,3 +248,4 @@ class TokenApi(ApiEndpoint):
 
         # Submit and return digest
         return self._post_tx_json(encoded_tx, tx.action)
+

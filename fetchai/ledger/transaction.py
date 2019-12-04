@@ -1,8 +1,9 @@
 import io
+import logging
 import random
 from collections import OrderedDict
 from io import BytesIO
-from typing import Union
+from typing import Union, Optional, List
 
 from fetchai.ledger.crypto import Entity
 from fetchai.ledger.crypto.deed import Deed
@@ -271,3 +272,49 @@ class TransactionFactory:
         tx.add_signer(entity)
 
         return tx
+
+    class Contract:
+        @staticmethod
+        def action(api: 'ContractsApi',
+                   contract_digest: Address, contract_address: Address, action: str,
+                   fee: int, from_address: Address, signers: List[Entity], *args,
+                   shard_mask: Optional[BitVector] = None) -> Transaction:
+
+            # Default to wildcard shard mask if none supplied
+            if not shard_mask:
+                logging.warning("Defaulting to wildcard shard mask as none supplied")
+                shard_mask = BitVector()
+
+            # build up the basic transaction information
+            tx = api._create_skeleton_tx(fee)
+            tx.from_address = Address(from_address)
+            tx.target_contract(contract_digest, contract_address, shard_mask)
+            tx.action = str(action)
+            tx.data = api._encode_msgpack_payload(*args)
+
+            for signer in signers:
+                tx.add_signer(signer)
+
+            return tx
+
+        @staticmethod
+        def create(api: 'ContractsApi', owner: Entity, contract: 'Contract', fee: int,
+                   shard_mask: Optional[BitVector] = None) -> Transaction:
+            # Default to wildcard shard mask if none supplied
+            if not shard_mask:
+                logging.warning("Defaulting to wildcard shard mask as none supplied")
+                shard_mask = BitVector()
+
+            # build up the basic transaction information
+            tx = api._create_skeleton_tx(fee)
+            tx.from_address = Address(owner)
+            tx.target_chain_code(api.API_PREFIX, shard_mask)
+            tx.action = 'create'
+            tx.data = api._encode_json({
+                'nonce': contract.nonce,
+                'text': contract.encoded_source,
+                'digest': contract.digest.to_hex()
+            })
+            tx.add_signer(owner)
+
+            return tx

@@ -6,7 +6,7 @@ import msgpack
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity
 from fetchai.ledger.serialisation import transaction
-from fetchai.ledger.transaction import Transaction
+from fetchai.ledger.transaction import Transaction, TransactionFactory
 from .common import ApiEndpoint
 
 EntityList = List[Entity]
@@ -20,22 +20,7 @@ class ContractsApi(ApiEndpoint):
 
         logging.debug('Deploying contract', contract.address)
 
-        # Default to wildcard shard mask if none supplied
-        if not shard_mask:
-            logging.warning("Defaulting to wildcard shard mask as none supplied")
-            shard_mask = BitVector()
-
-        # build up the basic transaction information
-        tx = self._create_skeleton_tx(fee)
-        tx.from_address = Address(owner)
-        tx.target_chain_code(self.API_PREFIX, shard_mask)
-        tx.action = ENDPOINT
-        tx.data = self._encode_json({
-            'nonce': contract.nonce,
-            'text': contract.encoded_source,
-            'digest': contract.digest.to_hex()
-        })
-        tx.add_signer(owner)
+        tx = TransactionFactory.Contract.create(self, owner, contract, fee, shard_mask)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, [owner])
@@ -72,20 +57,10 @@ class ContractsApi(ApiEndpoint):
     def action(self, contract_digest: Address, contract_address: Address, action: str,
                fee: int, from_address: Address, signers: EntityList,
                *args, shard_mask: BitVector = None):
-        # Default to wildcard shard mask if none supplied
-        if not shard_mask:
-            logging.warning("Defaulting to wildcard shard mask as none supplied")
-            shard_mask = BitVector()
 
-        # build up the basic transaction information
-        tx = self._create_skeleton_tx(fee)
-        tx.from_address = Address(from_address)
-        tx.target_contract(contract_digest, contract_address, shard_mask)
-        tx.action = str(action)
-        tx.data = self._encode_msgpack_payload(*args)
-
-        for signer in signers:
-            tx.add_signer(signer)
+        tx = TransactionFactory.Contract.action(self, contract_digest, contract_address,
+                                                action, fee, from_address, signers,
+                                                *args, shard_mask=shard_mask)
 
         encoded_tx = transaction.encode_transaction(tx, signers)
 
