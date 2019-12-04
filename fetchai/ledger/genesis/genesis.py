@@ -16,13 +16,14 @@
 #
 # ------------------------------------------------------------------------------
 
-import json
 import base64
-import base58
+import json
 import time
 from typing import Tuple, List
 
-from fetchai.ledger.crypto import Entity
+import base58
+
+from fetchai.ledger.crypto import Identity
 from fetchai.ledger.serialisation.sha256 import sha256_hash
 
 
