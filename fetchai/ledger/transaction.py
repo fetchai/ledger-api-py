@@ -27,7 +27,7 @@ TransferList = List[Transfer]
 class Transaction:
     def __init__(self):
         self._from = None
-        self._transfers: TransferList = []
+        self._transfers = []
         self._valid_from = 0
         self._valid_until = 0
         self._charge_rate = 0
