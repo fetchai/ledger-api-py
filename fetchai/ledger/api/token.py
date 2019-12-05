@@ -15,15 +15,13 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-from typing import Union, Dict
+from typing import Union
 
 from fetchai.ledger.api import ApiEndpoint, ApiError
 from fetchai.ledger.api.common import TransactionFactory
 from fetchai.ledger.crypto import Address, Entity, Identity
 from fetchai.ledger.crypto.deed import Deed
 from fetchai.ledger.serialisation import transaction
-from fetchai.ledger.serialisation.transaction import encode_multisig_transaction
-from fetchai.ledger.transaction import Transaction
 
 AddressLike = Union[Address, Identity, str, bytes]
 
@@ -241,20 +239,6 @@ class TokenApi(ApiEndpoint):
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
-
-    def submit_signed_tx(self, tx: Transaction, signatures: Dict[Identity, bytes]):
-        """
-        Appends signatures to a transaction and submits it, returning the transaction digest
-        :param tx: A pre-assembled transaction
-        :param signatures: A dict of signers signatures
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
-        # Encode transaction and append signatures
-        encoded_tx = encode_multisig_transaction(tx, signatures)
-
-        # Submit and return digest
-        return self._post_tx_json(encoded_tx, tx.action)
 
 
 class TokenTxFactory(TransactionFactory):

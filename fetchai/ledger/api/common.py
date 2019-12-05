@@ -18,17 +18,20 @@
 
 import base64
 import json
-from typing import Optional
+from typing import Optional, Dict, Union
 
 import msgpack
 import requests
 from fetchai.ledger.bitvector import BitVector
 
-from fetchai.ledger.crypto import Address, Entity
+from fetchai.ledger.crypto import Address, Identity
 
 from fetchai.ledger.transaction import Transaction
+from fetchai.ledger.serialisation import transaction
 
 DEFAULT_BLOCK_VALIDITY_PERIOD = 100
+
+AddressLike = Union[Address, Identity]
 
 
 def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: Optional[str], protocol: str = None):
@@ -266,6 +269,21 @@ class ApiEndpoint(object):
         if len(tx_list):
             return tx_list[0]
 
+    def submit_signed_tx(self, tx: Transaction, signatures: Dict[Identity, bytes]):
+        """
+        Appends signatures to a transaction and submits it, returning the transaction digest
+        :param tx: A pre-assembled transaction
+        :param signatures: A dict of signers signatures
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+        # Encode transaction and append signatures
+        encoded_tx = transaction.encode_multisig_transaction(tx, signatures)
+
+        # Submit and return digest
+        return self._post_tx_json(encoded_tx, tx.action)
+
+
 
 class TransactionFactory:
     API_PREFIX = None
@@ -280,7 +298,7 @@ class TransactionFactory:
         return tx
 
     @classmethod
-    def _create_action_tx(cls, fee: int, entity: Entity, action: str, shard_mask: Optional[BitVector] = None):
+    def _create_action_tx(cls, fee: int, entity: AddressLike, action: str, shard_mask: Optional[BitVector] = None):
         tx = cls._create_skeleton_tx(fee)
         tx.from_address = Address(entity)
         tx.target_chain_code(cls.API_PREFIX, shard_mask if shard_mask else BitVector())

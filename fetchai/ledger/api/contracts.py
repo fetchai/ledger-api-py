@@ -124,10 +124,8 @@ class ContractTxFactory(TransactionFactory):
             shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = cls._create_skeleton_tx(fee)
-        tx.from_address = Address(from_address)
+        tx = cls._create_action_tx(fee, from_address, action, shard_mask)
         tx.target_contract(contract_digest, contract_address, shard_mask)
-        tx.action = str(action)
         tx.data = cls._encode_msgpack_payload(*args)
 
         for signer in signers:
@@ -144,10 +142,7 @@ class ContractTxFactory(TransactionFactory):
             shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = cls._create_skeleton_tx(fee)
-        tx.from_address = Address(owner)
-        tx.target_chain_code(cls.API_PREFIX, shard_mask)
-        tx.action = 'create'
+        tx = cls._create_action_tx(fee, owner, 'create', shard_mask)
         tx.data = cls._encode_json({
             'nonce': contract.nonce,
             'text': contract.encoded_source,

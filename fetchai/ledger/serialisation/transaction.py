@@ -1,6 +1,6 @@
 import io
 import struct
-from typing import List, Optional, Union, Dict
+from typing import List, Dict
 
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Entity, Identity
