@@ -1,6 +1,6 @@
 import random
 from collections import OrderedDict
-from typing import Union
+from typing import Union, List
 
 from .bitvector import BitVector
 from .crypto import Address, Identity
@@ -8,10 +8,26 @@ from .crypto import Address, Identity
 Identifier = Union[Address, Identity]
 
 
+class Transfer:
+    def __init__(self, to: Identifier, amount: int):
+        # ensure the address is correct
+        self.to: Address = Address(to)
+        self.amount: int = amount
+
+    def __eq__(self, other):
+        return isinstance(other, Transfer) and self.to == other.to and self.amount == other.amount
+
+    def __hash__(self):
+        return hash((self.to, self.amount))
+
+
+TransferList = List[Transfer]
+
+
 class Transaction:
     def __init__(self):
         self._from = None
-        self._transfers = OrderedDict()
+        self._transfers: TransferList = []
         self._valid_from = 0
         self._valid_until = 0
         self._charge_rate = 0
@@ -39,7 +55,7 @@ class Transaction:
         self._from = Address(address)
 
     @property
-    def transfers(self):
+    def transfers(self) -> TransferList:
         return self._transfers
 
     @property
@@ -119,11 +135,7 @@ class Transaction:
         return self._signers
 
     def add_transfer(self, address: Identifier, amount: int):
-        assert amount > 0
-
-        # ensure the address is correct
-        address = Address(address)
-        self._transfers[address] = self._transfers.get(address, 0) + amount
+        self._transfers.append(Transfer(to=address, amount=amount))
 
     def target_contract(self, digest: Address, address: Address, mask: BitVector):
         self._contract_digest = Address(digest)

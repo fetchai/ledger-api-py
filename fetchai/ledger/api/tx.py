@@ -76,14 +76,14 @@ class TxContents:
         self.valid_until = valid_until
         self.charge = charge
         self.charge_limit = charge_limit
-        self.transfers = {Address(t['to']): t['amount'] for t in transfers}
+        self.transfers = [{Address(t['to']): int(t['amount'])} for t in transfers]
         self.signatories = signatories
         self.data = data
 
     def transfers_to(self, address: AddressLike) -> int:
         """Returns the amount of FET transferred to an address by this transaction, if any"""
         address = Address(address)
-        return self.transfers.get(address, 0)
+        return [t[address] for t in self.transfers if address in t]
 
     @staticmethod
     def from_json(data: Union[dict, str]):

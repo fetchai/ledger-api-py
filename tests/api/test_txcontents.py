@@ -69,7 +69,7 @@ class TXContentsTest(TestCase):
         self.assertEqual(a.valid_until, 100)
         self.assertEqual(a.charge, 2)
         self.assertEqual(a.charge_limit, 5)
-        self.assertEqual(a.transfers, {})
+        self.assertEqual(a.transfers, [])
         self.assertEqual(a.data, 'def')
 
     def test_transfers(self):
@@ -96,6 +96,6 @@ class TXContentsTest(TestCase):
 
         a = TxContents.from_json(data)
 
-        self.assertEqual(a.transfers_to(to1), 200)
-        self.assertEqual(a.transfers_to(to2), 300)
-        self.assertEqual(a.transfers_to(to3), 0)
+        self.assertEqual(a.transfers_to(to1), [200])
+        self.assertEqual(a.transfers_to(to2), [300])
+        self.assertEqual(a.transfers_to(to3), [])
