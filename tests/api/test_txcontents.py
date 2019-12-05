@@ -96,6 +96,6 @@ class TXContentsTest(TestCase):
 
         a = TxContents.from_json(data)
 
-        self.assertEqual(a.transfers_to(to1), [200])
-        self.assertEqual(a.transfers_to(to2), [300])
-        self.assertEqual(a.transfers_to(to3), [])
+        self.assertEqual(a.transfers_to(to1), 200)
+        self.assertEqual(a.transfers_to(to2), 300)
+        self.assertEqual(a.transfers_to(to3), 0)

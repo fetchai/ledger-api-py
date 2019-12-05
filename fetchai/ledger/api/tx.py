@@ -83,7 +83,7 @@ class TxContents:
     def transfers_to(self, address: AddressLike) -> int:
         """Returns the amount of FET transferred to an address by this transaction, if any"""
         address = Address(address)
-        return [t[address] for t in self.transfers if address in t]
+        return sum(t[address] for t in self.transfers if address in t)
 
     @staticmethod
     def from_json(data: Union[dict, str]):

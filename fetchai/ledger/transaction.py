@@ -11,8 +11,8 @@ Identifier = Union[Address, Identity]
 class Transfer:
     def __init__(self, to: Identifier, amount: int):
         # ensure the address is correct
-        self.to: Address = Address(to)
-        self.amount: int = amount
+        self.to = Address(to)
+        self.amount = amount
 
     def __eq__(self, other):
         return isinstance(other, Transfer) and self.to == other.to and self.amount == other.amount
