@@ -18,11 +18,12 @@
 from typing import Union, Dict
 
 from fetchai.ledger.api import ApiEndpoint, ApiError
+from fetchai.ledger.api.common import TransactionFactory
 from fetchai.ledger.crypto import Address, Entity, Identity
 from fetchai.ledger.crypto.deed import Deed
 from fetchai.ledger.serialisation import transaction
 from fetchai.ledger.serialisation.transaction import encode_multisig_transaction
-from fetchai.ledger.transaction import TransactionFactory, Transaction
+from fetchai.ledger.transaction import Transaction
 
 AddressLike = Union[Address, Identity, str, bytes]
 
@@ -126,7 +127,8 @@ class TokenApi(ApiEndpoint):
 
         ENDPOINT = 'wealth'
 
-        tx = TransactionFactory.wealth(self, entity, amount)
+        tx = TokenTxFactory.wealth(entity, amount)
+        self._set_validity_period(tx)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, [entity])
@@ -147,7 +149,8 @@ class TokenApi(ApiEndpoint):
 
         ENDPOINT = 'deed'
 
-        tx = TransactionFactory.deed(self, entity, deed, signatories)
+        tx = TokenTxFactory.deed(entity, deed, signatories)
+        self._set_validity_period(tx)
 
         encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
 
@@ -167,7 +170,8 @@ class TokenApi(ApiEndpoint):
 
         ENDPOINT = 'transfer'
 
-        tx = TransactionFactory.transfer(self, entity, to, amount, fee, signatories)
+        tx = TokenTxFactory.transfer(entity, to, amount, fee, signatories)
+        self._set_validity_period(tx)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
@@ -187,7 +191,8 @@ class TokenApi(ApiEndpoint):
 
         ENDPOINT = 'addStake'
 
-        tx = TransactionFactory.add_stake(self, entity, amount, fee)
+        tx = TokenTxFactory.add_stake(entity, amount, fee)
+        self._set_validity_period(tx)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, [entity])
@@ -208,7 +213,8 @@ class TokenApi(ApiEndpoint):
 
         ENDPOINT = 'deStake'
 
-        tx = TransactionFactory.de_stake(self, entity, amount, fee)
+        tx = TokenTxFactory.de_stake(entity, amount, fee)
+        self._set_validity_period(tx)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, [entity])
@@ -227,7 +233,8 @@ class TokenApi(ApiEndpoint):
 
         ENDPOINT = 'collectStake'
 
-        tx = TransactionFactory.collect_stake(self, entity, fee)
+        tx = TokenTxFactory.collect_stake(entity, fee)
+        self._set_validity_period(tx)
 
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, [entity])
@@ -249,3 +256,93 @@ class TokenApi(ApiEndpoint):
         # Submit and return digest
         return self._post_tx_json(encoded_tx, tx.action)
 
+
+class TokenTxFactory(TransactionFactory):
+    API_PREFIX = 'fetch.token'
+
+    @classmethod
+    def wealth(cls, entity: Entity, amount: int):
+
+        # build up the basic transaction information
+        tx = cls._create_action_tx(1, entity, 'wealth')
+
+        tx.add_signer(entity)
+
+        # format the transaction payload
+        tx.data = cls._encode_json({
+            'address': entity.public_key,
+            'amount': amount
+        })
+
+        return tx
+
+    @classmethod
+    def deed(cls, entity: Entity, deed: Deed, signatories: list = None):
+        tx = cls._create_action_tx(10000, entity, 'deed')
+
+        if signatories:
+            for sig in signatories:
+                tx.add_signer(sig)
+        else:
+            tx.add_signer(entity)
+
+        deed_json = deed.deed_creation_json()
+
+        tx.data = cls._encode_json(deed_json)
+
+        return tx
+
+    @classmethod
+    def transfer(cls, entity: Entity, to: AddressLike, amount: int, fee: int, signatories: list = None):
+
+        # build up the basic transaction information
+        tx = cls._create_skeleton_tx(fee)
+        tx.from_address = Address(entity)
+        tx.add_transfer(to, amount)
+
+        if signatories:
+            for ent in signatories:
+                tx.add_signer(ent)
+        else:
+            tx.add_signer(entity)
+
+        return tx
+
+    @classmethod
+    def add_stake(cls, entity: Entity, amount: int, fee: int):
+
+        # build up the basic transaction information
+        tx = cls._create_action_tx(fee, entity, 'addStake')
+        tx.add_signer(entity)
+
+        # format the transaction payload
+        tx.data = cls._encode_json({
+            'address': entity.public_key,
+            'amount': amount
+        })
+
+        return tx
+
+    @classmethod
+    def de_stake(cls, entity: Entity, amount: int, fee: int):
+
+        # build up the basic transaction information
+        tx = cls._create_action_tx(fee, entity, 'deStake')
+        tx.add_signer(entity)
+
+        # format the transaction payload
+        tx.data = cls._encode_json({
+            'address': entity.public_key,
+            'amount': amount
+        })
+
+        return tx
+
+    @classmethod
+    def collect_stake(cls, entity: Entity, fee: int):
+
+        # build up the basic transaction information
+        tx = cls._create_action_tx(fee, entity, 'collectStake')
+        tx.add_signer(entity)
+
+        return tx

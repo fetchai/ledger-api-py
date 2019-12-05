@@ -1,12 +1,10 @@
 import io
-import logging
 import random
 from collections import OrderedDict
 from io import BytesIO
-from typing import Union, Optional, List
+from typing import Union
 
 from fetchai.ledger.crypto import Entity
-from fetchai.ledger.crypto.deed import Deed
 from fetchai.ledger.serialisation import transaction
 from fetchai.ledger.serialisation.transaction import decode_transaction, decode_payload
 from .bitvector import BitVector
@@ -14,6 +12,7 @@ from .crypto import Address, Identity
 
 Identifier = Union[Address, Identity]
 AddressLike = Union[Address, Identity, str, bytes]
+
 
 class Transaction:
     def __init__(self):
@@ -179,142 +178,3 @@ class Transaction:
             self._signers[Identity(signer)] = {
                 'signature': signer.sign(self._payload)
             }
-
-class TransactionBuilder:
-    @staticmethod
-    def wealth():
-        pass
-
-
-class TransactionFactory:
-    @staticmethod
-    def wealth(api: 'TokenApi', entity: Entity, amount: int):
-
-        # build up the basic transaction information
-        tx = api._create_action_tx(1, entity, 'wealth')
-        tx.add_signer(entity)
-
-        # format the transaction payload
-        tx.data = api._encode_json({
-            'address': entity.public_key,
-            'amount': amount
-        })
-
-        return tx
-
-    @staticmethod
-    def deed(api: 'TokenApi', entity: Entity, deed: Deed, signatories: list = None):
-        tx = api._create_action_tx(10000, entity, 'deed')
-
-        if signatories:
-            for sig in signatories:
-                tx.add_signer(sig)
-        else:
-            tx.add_signer(entity)
-
-        deed_json = deed.deed_creation_json()
-
-        tx.data = api._encode_json(deed_json)
-
-        return tx
-
-    @staticmethod
-    def transfer(api: 'TokenApi', entity: Entity, to: AddressLike, amount: int, fee: int, signatories: list = None):
-
-        # build up the basic transaction information
-        tx = api._create_skeleton_tx(fee)
-        tx.from_address = Address(entity)
-        tx.add_transfer(to, amount)
-
-        if signatories:
-            for ent in signatories:
-                tx.add_signer(ent)
-        else:
-            tx.add_signer(entity)
-
-        return tx
-
-    @staticmethod
-    def add_stake(api: 'TokenApi', entity: Entity, amount: int, fee: int):
-
-        # build up the basic transaction information
-        tx = api._create_action_tx(fee, entity, 'addStake')
-        tx.add_signer(entity)
-
-        # format the transaction payload
-        tx.data = api._encode_json({
-            'address': entity.public_key,
-            'amount': amount
-        })
-
-        return tx
-
-    @staticmethod
-    def de_stake(api: 'TokenApi', entity: Entity, amount: int, fee: int):
-
-        # build up the basic transaction information
-        tx = api._create_action_tx(fee, entity, 'deStake')
-        tx.add_signer(entity)
-
-        # format the transaction payload
-        tx.data = api._encode_json({
-            'address': entity.public_key,
-            'amount': amount
-        })
-
-        return tx
-
-    @staticmethod
-    def collect_stake(api: 'TokenApi', entity: Entity, fee: int):
-
-        # build up the basic transaction information
-        tx = api._create_action_tx(fee, entity, 'collectStake')
-        tx.add_signer(entity)
-
-        return tx
-
-    class Contract:
-        @staticmethod
-        def action(api: 'ContractsApi',
-                   contract_digest: Address, contract_address: Address, action: str,
-                   fee: int, from_address: Address, signers: List[Entity], *args,
-                   shard_mask: Optional[BitVector] = None) -> Transaction:
-
-            # Default to wildcard shard mask if none supplied
-            if not shard_mask:
-                logging.warning("Defaulting to wildcard shard mask as none supplied")
-                shard_mask = BitVector()
-
-            # build up the basic transaction information
-            tx = api._create_skeleton_tx(fee)
-            tx.from_address = Address(from_address)
-            tx.target_contract(contract_digest, contract_address, shard_mask)
-            tx.action = str(action)
-            tx.data = api._encode_msgpack_payload(*args)
-
-            for signer in signers:
-                tx.add_signer(signer)
-
-            return tx
-
-        @staticmethod
-        def create(api: 'ContractsApi', owner: Entity, contract: 'Contract', fee: int,
-                   shard_mask: Optional[BitVector] = None) -> Transaction:
-            # Default to wildcard shard mask if none supplied
-            if not shard_mask:
-                logging.warning("Defaulting to wildcard shard mask as none supplied")
-                shard_mask = BitVector()
-
-            # build up the basic transaction information
-            tx = api._create_skeleton_tx(fee)
-            tx.from_address = Address(owner)
-            tx.target_chain_code(api.API_PREFIX, shard_mask)
-            tx.action = 'create'
-            tx.data = api._encode_json({
-                'nonce': contract.nonce,
-                'text': contract.encoded_source,
-                'digest': contract.digest.to_hex()
-            })
-            tx.add_signer(owner)
-
-            return tx

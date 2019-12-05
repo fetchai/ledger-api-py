@@ -20,6 +20,7 @@ import base64
 import json
 from typing import Optional
 
+import msgpack
 import requests
 from fetchai.ledger.bitvector import BitVector
 
@@ -158,13 +159,13 @@ class ApiEndpoint(object):
 
         return tx
 
-    def _create_action_tx(self, fee: int, entity: Entity, action: str, shard_mask: Optional[BitVector] = None,
-                          validity_period: Optional[int] = None):
-        tx = self._create_skeleton_tx(fee, validity_period)
-        tx.from_address = Address(entity)
-        tx.target_chain_code(self.API_PREFIX, shard_mask if shard_mask else BitVector())
-        tx.action = action
-        return tx
+    def _set_validity_period(self, tx: Transaction, validity_period: Optional[int] = None):
+        validity_period = validity_period or DEFAULT_BLOCK_VALIDITY_PERIOD
+
+        # query what the current block number is on the node
+        current_block = self._current_block_number()
+
+        tx.valid_until = current_block + validity_period
 
     def _current_block_number(self):
         success, data = self._get_json('status/chain', size=1)
@@ -264,3 +265,48 @@ class ApiEndpoint(object):
         tx_list = response.get('txs', [])
         if len(tx_list):
             return tx_list[0]
+
+
+class TransactionFactory:
+    API_PREFIX = None
+
+    @classmethod
+    def _create_skeleton_tx(cls, fee: int):
+        # build up the basic transaction information
+        tx = Transaction()
+        tx.charge_rate = 1
+        tx.charge_limit = fee
+
+        return tx
+
+    @classmethod
+    def _create_action_tx(cls, fee: int, entity: Entity, action: str, shard_mask: Optional[BitVector] = None):
+        tx = cls._create_skeleton_tx(fee)
+        tx.from_address = Address(entity)
+        tx.target_chain_code(cls.API_PREFIX, shard_mask if shard_mask else BitVector())
+        tx.action = action
+        return tx
+
+    @classmethod
+    def _encode_json(cls, obj):
+        return json.dumps(obj).encode('ascii')
+
+    @classmethod
+    def _encode_msgpack_payload(cls, *args):
+        items = []
+        for value in args:
+            if cls._is_primitive(value):
+                items.append(value)
+            elif isinstance(value, Address):
+                items.append(msgpack.ExtType(77, bytes(value)))
+            else:
+                raise RuntimeError('Unknown item to pack: ' + value.__class__.__name__)
+        return msgpack.packb(items)
+
+    @staticmethod
+    def _is_primitive(value):
+        for type in (bool, int, float, str):
+            if isinstance(value, type):
+                return True
+        return False
+

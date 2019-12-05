@@ -17,15 +17,11 @@
 # ------------------------------------------------------------------------------
 
 # Demonstrates the distributed sharing of a multi-sig transaction before submisssion
-import io
-
-from build.lib.fetchai.ledger.crypto import Address
 from fetchai.ledger.api import LedgerApi
-from fetchai.ledger.transaction import TransactionFactory, Transaction
+from fetchai.ledger.transaction import Transaction
+from fetchai.ledger.api.token import TokenTxFactory
 from fetchai.ledger.crypto import Entity, Identity
 from fetchai.ledger.crypto.deed import Deed
-from fetchai.ledger.serialisation import transaction, bytearray
-from fetchai.ledger.serialisation.transaction import decode_transaction, encode_multisig_transaction
 
 HOST = '127.0.0.1'
 PORT = 8000
@@ -82,7 +78,8 @@ def main():
     print_signing_votes(voting_weights, board[:3])
 
     # Add intended signers to transaction
-    tx = TransactionFactory.transfer(api.tokens, multi_sig_identity, other_identity, 250, 20, signatories=board)
+    tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board)
+    api.tokens._set_validity_period(tx)
 
     # Serialize and send to be signed
     stx = tx.payload
@@ -111,7 +108,9 @@ def main():
 
     # Distributed change to deed
     deed.transfer_threshold = 4
-    tx = TransactionFactory.deed(api.tokens, multi_sig_identity, deed, board)
+    tx = TokenTxFactory.deed(multi_sig_identity, deed, board)
+    api.tokens._set_validity_period(tx
+                                    )
     stx = tx.payload
 
     signed_txs = {}
