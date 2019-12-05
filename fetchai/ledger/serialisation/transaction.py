@@ -10,7 +10,7 @@ from fetchai.ledger import transaction
 from . import address, integer, bytearray, identity
 
 MAGIC = 0xA1
-VERSION = 2
+VERSION = 3
 
 NO_CONTRACT = 0
 SMART_CONTRACT = 1
