@@ -7,7 +7,7 @@ from fetchai.ledger.serialisation.sha256 import sha256_hex
 from fetchai.ledger.serialisation.transaction import encode_payload
 
 from fetchai.ledger.bitvector import BitVector
-from fetchai.ledger.crypto import Entity, Identity
+from fetchai.ledger.crypto import Entity, Identity, Address
 from fetchai.ledger.serialisation.transaction import encode_transaction, decode_transaction, bytearray
 from fetchai.ledger.transaction import Transaction
 
@@ -109,13 +109,12 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_synergetic_data_submission(self):
-        EXPECTED_DIGEST = "9397fd490b60a394ea0af5526435608a1e853e2cb6b09bc7cafec8f6a0aa2cf6"
+        EXPECTED_DIGEST = "2d169e6b6b6f3b2c913495e56edae1e31e9fd3976eede7fd7ede929dc70bcb5b"
         EXPECTED_PAYLOAD = \
             "a140c000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4c1271001c3000000e8d4" \
-            "a5100080da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af6de6672a9d98da667e5dc2" \
-            "5b2bca8acf9644a7ac0797f01cb5968abf39de011df204646174610f7b2276616c7565223a20313233347d000000" \
-            "00000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c" \
-            "258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
+            "a5100080e6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df204646174610f7b227661" \
+            "6c7565223a20313233347d00000000000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4f" \
+            "dffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
         with mock.patch('random.getrandbits') as mock_counter:
@@ -123,7 +122,7 @@ class TransactionSerialisation(unittest.TestCase):
             payload = Transaction()
         payload.from_address = IDENTITIES[0]
         payload.valid_until = 10000
-        payload.target_contract(IDENTITIES[3], IDENTITIES[4], BitVector())
+        payload.target_contract(Address(IDENTITIES[4]), BitVector())
         payload.charge_rate = 1
         payload.charge_limit = 1000000000000
         payload.action = 'data'
@@ -186,13 +185,12 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_smart_contract(self):
-        EXPECTED_DIGEST = "032a72029ae2ac5cdbf9e07cf57d9ecab97a6de34ed5cdf785d1d98037cd5dcd"
+        EXPECTED_DIGEST = "fcece5706b346bd45e9aa4dfa440b2cb174b631f28b4d11ff91ac84fa9ec85d9"
         EXPECTED_PAYLOAD = \
             "a1404000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
-            "da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af6de6672a9d98da667e5dc25b2bca8a" \
-            "cf9644a7ac0797f01cb5968abf39de011df2066c61756e636802676f00000000000000000418c2a33af8bd2cba7f" \
-            "a714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758b" \
-            "cc4961bbdc75a0251c"
+            "e6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df2066c61756e636802676f00000000" \
+            "000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c25" \
+            "8cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
         with mock.patch('random.getrandbits') as mock_counter:
@@ -202,7 +200,7 @@ class TransactionSerialisation(unittest.TestCase):
         payload.add_signer(IDENTITIES[0])
         payload.charge_rate = 1000
         payload.charge_limit = 1000000
-        payload.target_contract(IDENTITIES[3], IDENTITIES[4], BitVector())
+        payload.target_contract(Address(IDENTITIES[4]), BitVector())
         payload.action = 'launch'
         payload.data = 'go'.encode('ascii')
 

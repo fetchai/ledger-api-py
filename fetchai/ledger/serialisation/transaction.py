@@ -252,10 +252,9 @@ def decode_transaction(stream: io.BytesIO) -> (bool, transaction.Transaction):
                 shard_mask = bitvector.BitVector.from_bytes(stream.read(byte_length), bit_length)
 
         if contract_type == SMART_CONTRACT or contract_type == SYNERGETIC:
-            contract_digest = address.decode(stream)
             contract_address = address.decode(stream)
 
-            tx.target_contract(contract_digest, contract_address, shard_mask)
+            tx.target_contract(contract_address, shard_mask)
 
         elif contract_type == CHAIN_CODE:
             encoded_chain_code_name = bytearray.decode(stream)
