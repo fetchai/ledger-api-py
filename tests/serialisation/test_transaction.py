@@ -42,7 +42,7 @@ class TransactionSerialisation(unittest.TestCase):
     def test_simple_transfer(self):
         EXPECTED_DIGEST = "7fff24ca77fbb23b9b3c460104ab1a74011bafe3965e15dc6ea6f25a4ac44392"
         EXPECTED_PAYLOAD = \
-            "a1440000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d44235130ac5aab442e39f" \
+            "a1640000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d44235130ac5aab442e39f" \
             "9aa27118956695229212dd2f1ab5b714e9f6bd581511c1010000000000000000000000000418c2a33af8bd2cba7f" \
             "a714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758b" \
             "cc4961bbdc75a0251c"
@@ -75,7 +75,7 @@ class TransactionSerialisation(unittest.TestCase):
     def test_multiple_transfers(self):
         EXPECTED_DIGEST = "7e6a95a8c773755d349209d8f3bb60ec2a5f3c683075540f953863f124eb1250"
         EXPECTED_PAYLOAD = \
-            "a1460000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4014235130ac5aab442e3" \
+            "a1660000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4014235130ac5aab442e3" \
             "9f9aa27118956695229212dd2f1ab5b714e9f6bd581511c1010020f478c7f74b50c187bf9a8836f382bd62977bae" \
             "eaf19625608e7e912aa60098c10200da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af" \
             "6dc2000186a000000000000000000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe" \
@@ -111,7 +111,7 @@ class TransactionSerialisation(unittest.TestCase):
     def test_synergetic_data_submission(self):
         EXPECTED_DIGEST = "2d169e6b6b6f3b2c913495e56edae1e31e9fd3976eede7fd7ede929dc70bcb5b"
         EXPECTED_PAYLOAD = \
-            "a140c000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4c1271001c3000000e8d4" \
+            "a160c000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4c1271001c3000000e8d4" \
             "a5100080e6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df204646174610f7b227661" \
             "6c7565223a20313233347d00000000000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4f" \
             "dffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
@@ -150,7 +150,7 @@ class TransactionSerialisation(unittest.TestCase):
     def test_chain_code(self):
         EXPECTED_DIGEST = "7032dd625b0a93aec85fa03696d0ecbc9de19d834ce3fd1d1ed9cf8a56d9f62e"
         EXPECTED_PAYLOAD = \
-            "a1408000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
+            "a1608000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
             "0b666f6f2e6261722e62617a066c61756e636802676f00000000000000000418c2a33af8bd2cba7fa714a840a308" \
             "a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75" \
             "a0251c"
@@ -187,7 +187,7 @@ class TransactionSerialisation(unittest.TestCase):
     def test_smart_contract(self):
         EXPECTED_DIGEST = "fcece5706b346bd45e9aa4dfa440b2cb174b631f28b4d11ff91ac84fa9ec85d9"
         EXPECTED_PAYLOAD = \
-            "a1404000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
+            "a1604000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
             "e6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df2066c61756e636802676f00000000" \
             "000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c25" \
             "8cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
@@ -224,7 +224,7 @@ class TransactionSerialisation(unittest.TestCase):
     def test_validity_ranges(self):
         EXPECTED_DIGEST = "98f10e8aa0bf4507db9eca66f0ff0b6a3eff35fe4def9ed86150c7ce72e71e80"
         EXPECTED_PAYLOAD = \
-            "a1470000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4024235130ac5aab442e3" \
+            "a1670000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4024235130ac5aab442e3" \
             "9f9aa27118956695229212dd2f1ab5b714e9f6bd581511c103e820f478c7f74b50c187bf9a8836f382bd62977bae" \
             "eaf19625608e7e912aa60098c103e8da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af" \
             "6dc103e8e6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df2c103e864c0c8c103e8c2" \
@@ -267,7 +267,7 @@ class TransactionSerialisation(unittest.TestCase):
     def test_contract_with_2bit_shard_mask(self):
         EXPECTED_DIGEST = "8dbbee60c084b8ef88de39c961dec10df493c62623035972b28d1c5f1a3802a9"
         EXPECTED_PAYLOAD = \
-            "a1418000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
+            "a1618000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
             "40010b666f6f2e6261722e62617a066c61756e63680000000000000000000418c2a33af8bd2cba7fa714a840a308" \
             "a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75" \
             "a0251c"
@@ -309,7 +309,7 @@ class TransactionSerialisation(unittest.TestCase):
     def test_contract_with_4bit_shard_mask(self):
         EXPECTED_DIGEST = "7915d6393fb07dbb4ff6896ef0f57025e5153b744d3a652b0f4815f129a9033c"
         EXPECTED_PAYLOAD = \
-            "a1418000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
+            "a1618000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
             "401c0b666f6f2e6261722e62617a066c61756e63680000000000000000000418c2a33af8bd2cba7fa714a840a308" \
             "a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75" \
             "a0251c"
@@ -352,7 +352,7 @@ class TransactionSerialisation(unittest.TestCase):
     def test_contract_with_large_shard_mask(self):
         EXPECTED_DIGEST = "a4eff45d0374d29f259aba25fb06dd67394149b636927d199062102d91c0f7bf"
         EXPECTED_PAYLOAD = \
-            "a1418000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
+            "a1618000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
             "4041eaab0b666f6f2e6261722e62617a066c61756e63680000000000000000000418c2a33af8bd2cba7fa714a840" \
             "a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bb" \
             "dc75a0251c"
