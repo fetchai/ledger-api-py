@@ -122,9 +122,10 @@ class Contract:
         if self._owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any queries. Did you deploy it?')
 
-        if name not in self._queries:
-            raise RuntimeError(
-                '{} is not an valid query name. Valid options are: {}'.format(name, ','.join(list(self._queries))))
+        # TODO(WK): Reinstate without breaking contract-to-contract calls
+        # if name not in self._queries:
+        #     raise RuntimeError(
+        #         '{} is not an valid query name. Valid options are: {}'.format(name, ','.join(list(self._queries))))
 
         # make the required query on the API
         success, response = self._api(api).query(self.address, name, **kwargs)
@@ -141,9 +142,10 @@ class Contract:
         if self._owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
 
-        if name not in self._actions:
-            raise RuntimeError(
-                '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
+        # TODO(WK): Reinstate without breaking contract-to-contract calls
+        # if name not in self._actions:
+        #     raise RuntimeError(
+        #         '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
 
         try:
             # Generate resource addresses used by persistent globals
