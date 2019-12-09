@@ -1,7 +1,7 @@
 # Ledger version that this API is compatible with
-__version__ = '0.11.0-a2'
+__version__ = '0.11.0-a3'
 # This API is compatible with ledgers that meet all the requirements listed here:
-__compatible__ = ['<0.12.0-0', '>=0.10.1-0']
+__compatible__ = ['>=0.11.0-alpha7']
 
 
 class IncompatibleLedgerVersion(Exception):
