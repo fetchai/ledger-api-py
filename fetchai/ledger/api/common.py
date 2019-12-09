@@ -170,6 +170,8 @@ class ApiEndpoint(object):
 
         tx.valid_until = current_block + validity_period
 
+        return tx.valid_until
+
     def _current_block_number(self):
         success, data = self._get_json('status/chain', size=1)
         if success:

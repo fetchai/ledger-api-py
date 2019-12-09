@@ -152,7 +152,10 @@ def encode_multisig_transaction(payload: 'Transaction', signatures: Dict[Identit
 
     # append signatures in order
     for signer in payload.signers.keys():
-        bytearray.encode(buffer, signatures[signer])
+        if isinstance(signatures[signer], bytes):
+            bytearray.encode(buffer, signatures[signer])
+        else:
+            bytearray.encode(buffer, signatures[signer]['signature'])
 
     # return the encoded transaction
     return buffer.getvalue()
@@ -290,7 +293,7 @@ def decode_payload(stream: io.BytesIO) -> 'Transaction':
         tx.data = bytearray.decode(stream)
 
     # Read counter value
-    tx.counter = struct.unpack('<Q', stream.read(8))[0]
+    tx.counter = struct.unpack('>Q', stream.read(8))[0]
 
     if signature_count_minus1 == 0x3F:
         additional_signatures = integer.decode(stream)

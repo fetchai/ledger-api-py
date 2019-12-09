@@ -87,6 +87,7 @@ def main():
     # Have signers individually sign transaction
     signed_txs = {}
     for signer in board:
+
         # Signer decodes payload to inspect transaction
         itx = Transaction.from_payload(stx)
         print("Signer {} signing transaction:".format(signer.public_key[:8]))
@@ -106,11 +107,87 @@ def main():
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
+    ## Scatter/gather example
+    # Add intended signers to transaction
+    tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board)
+    valid_until = api.tokens._set_validity_period(tx)
+    counter = tx.counter
+
+    # Serialize and send to be signed
+    stx = tx.encode_partial()
+
+    # Have signers individually sign transaction
+    signed_txs = []
+    for signer in board:
+        # Signer builds their own transaction to compare to
+        signer_tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board)
+        signer_tx.valid_until = valid_until
+        signer_tx.counter = tx.counter
+
+        # Signer decodes payload to inspect transaction
+        itx = Transaction.decode_partial(stx)
+
+        print("Transactions match" if signer_tx.compare(itx) else
+              "Transactions do not match")
+
+        # Signers locally decode transaction
+        itx.sign(signer)
+
+        # Serialize for return to origin
+        signed_txs.append(itx.encode_partial())
+
+    # Gather and encode final transaction
+    stxs = [Transaction.decode_partial(s) for s in signed_txs]
+    for st in stxs:
+        tx.merge_signatures(st)
+    api.sync(api.tokens.submit_signed_tx(tx, tx.signers))
+
+    print("\nAfter remote multisig-transfer")
+    print('Balance 1:', api.tokens.balance(multi_sig_identity))
+    print('Balance 2:', api.tokens.balance(other_identity))
+
+
+    # Add intended signers to transaction
+    tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board)
+    valid_until = api.tokens._set_validity_period(tx)
+    counter = tx.counter
+
+    # Serialize and send to be signed
+    stx = tx.encode_partial()
+
+    # Have signers individually sign transaction
+    signed_txs = {}
+    for signer in board:
+        # Signer builds their own transaction to compare to
+        signer_tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board)
+        signer_tx.valid_until = valid_until
+        signer_tx.counter = tx.counter
+
+        # Signer decodes payload to inspect transaction
+        itx = Transaction.decode_partial(stx)
+
+        print("Transactions match" if signer_tx.compare(itx) else
+              "Transactions do not match")
+
+        # Signers locally decode transaction
+        itx.sign(signer)
+
+        # Signer re-encodes transaction and forwards to the next signer
+        stx = itx.encode_partial()
+
+    # Gather and encode final transaction
+    itx = Transaction.decode_partial(stx)
+    api.sync(api.tokens.submit_signed_tx(itx, itx.signers))
+
+    print("\nAfter remote multisig-transfer")
+    print('Balance 1:', api.tokens.balance(multi_sig_identity))
+    print('Balance 2:', api.tokens.balance(other_identity))
+
     # Distributed change to deed
     deed.transfer_threshold = 4
     tx = TokenTxFactory.deed(multi_sig_identity, deed, board)
-    api.tokens._set_validity_period(tx
-                                    )
+    api.tokens._set_validity_period(tx)
+
     stx = tx.payload
 
     signed_txs = {}
