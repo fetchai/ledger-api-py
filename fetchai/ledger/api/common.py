@@ -87,7 +87,7 @@ def submit_json_transaction(host: str, port: int, tx_data, session=None, protoco
     # The following code is to get the transaction id
     if not success:
         raise ApiError(
-            'Unable to fulfil transaction request {}.{}. Status Code {}'.format(self.API_PREFIX, endpoint,
+            'Unable to fulfill transaction request {}.{}. Status Code {}'.format(uri, endpoint,
                                                                                 r.status_code))
 
     # parse the response

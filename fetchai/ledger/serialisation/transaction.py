@@ -10,7 +10,7 @@ from fetchai.ledger import transaction
 from . import address, integer, bytearray, identity
 
 MAGIC = 0xA1
-VERSION = 2
+VERSION = 3
 
 NO_CONTRACT = 0
 SMART_CONTRACT = 1
@@ -37,8 +37,6 @@ def _map_contract_mode(payload: transaction.Transaction):
     if payload.action:
         if payload.chain_code:
             return CHAIN_CODE
-        assert payload.contract_digest is not None
-
         return SMART_CONTRACT
     else:
         return NO_CONTRACT
@@ -120,7 +118,6 @@ def encode_payload(buffer: io.BytesIO, payload: transaction.Transaction):
                 buffer.write(shard_mask_bytes)
 
         if SMART_CONTRACT == contract_mode or SYNERGETIC == contract_mode:
-            address.encode(buffer, payload.contract_digest)
             address.encode(buffer, payload.contract_address)
         elif CHAIN_CODE == contract_mode:
             encoded_chain_code = payload.chain_code.encode('ascii')
@@ -255,10 +252,9 @@ def decode_transaction(stream: io.BytesIO) -> (bool, transaction.Transaction):
                 shard_mask = bitvector.BitVector.from_bytes(stream.read(byte_length), bit_length)
 
         if contract_type == SMART_CONTRACT or contract_type == SYNERGETIC:
-            contract_digest = address.decode(stream)
             contract_address = address.decode(stream)
 
-            tx.target_contract(contract_digest, contract_address, shard_mask)
+            tx.target_contract(contract_address, shard_mask)
 
         elif contract_type == CHAIN_CODE:
             encoded_chain_code_name = bytearray.decode(stream)
