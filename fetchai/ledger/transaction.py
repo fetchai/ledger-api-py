@@ -211,8 +211,10 @@ class Transaction:
 
     def sign(self, signer: Entity):
         if Identity(signer) in self._signers:
+            signature = signer.sign(self.payload)
             self._signers[Identity(signer)] = {
-                'signature': signer.sign(self.payload)
+                'signature': signature,
+                'verified': signer.verify(self.payload, signature)
             }
 
             self._signers[Identity(signer)]['verified'] = signer.verify(self.payload, self._signers[Identity(signer)]['signature'])
@@ -251,6 +253,10 @@ class Transaction:
         for i in range(num_sigs):
             signer = identity.decode(buffer)
             signature = bytearray.decode(buffer)
-            tx.signers[signer] = {'signature': signature}
+            tx.signers[signer] = {'signature': signature,
+                                  'verified': signer.verify(tx.payload, signature)}
+
+        if not all(s['verified'] for s in tx.signers.values() if 'verified' in s):
+            logging.warning("Some signatures failed to verify")
 
         return tx
