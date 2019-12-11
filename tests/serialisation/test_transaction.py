@@ -7,9 +7,13 @@ from fetchai.ledger.serialisation.sha256 import sha256_hex
 from fetchai.ledger.serialisation.transaction import encode_payload
 
 from fetchai.ledger.bitvector import BitVector
-from fetchai.ledger.serialisation import transaction, bytearray, sha256_hash
-from fetchai.ledger.serialisation.transaction import encode_transaction, decode_transaction, bytearray
+from fetchai.ledger.serialisation import transaction
+from fetchai.ledger.serialisation.transaction import bytearray
 from fetchai.ledger.transaction import Transaction
+
+from fetchai.ledger.crypto.identity import Identity
+from fetchai.ledger.crypto.entity import Entity
+from fetchai.ledger.crypto.address import Address
 
 _PRIVATE_KEYS = (
     '1411d53f88e736eac7872430dbe5b55ac28c17a3e648c388e0bd1b161ab04427',

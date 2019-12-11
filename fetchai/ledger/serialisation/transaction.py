@@ -2,10 +2,11 @@ import io
 import struct
 from typing import List, Dict
 
+from fetchai.ledger.crypto import Identity
+
 from fetchai.ledger import bitvector
 from fetchai.ledger import crypto
 from fetchai.ledger import transaction
-from fetchai.ledger.serialisation.integer import encode_fixed
 
 from . import address, integer, bytearray, identity
 
@@ -159,7 +160,7 @@ def encode_multisig_transaction(payload: 'Transaction', signatures: Dict[Identit
     return buffer.getvalue()
 
 
-def encode_transaction(payload: transaction.Transaction, signers: List[crypto.Entity]):
+def encode_transaction(payload: 'Transaction', signers: List[crypto.Entity]):
     # encode the contents of the transaction
     buffer = io.BytesIO()
     encode_payload(buffer, payload)
