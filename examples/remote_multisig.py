@@ -16,13 +16,12 @@
 #
 # ------------------------------------------------------------------------------
 
-# Demonstrates the distributed sharing of a multi-sig transaction before submisssion
-import math
+# Demonstrates the distributed sharing of a multi-sig transaction before submission
 
 from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.transaction import Transaction
 from fetchai.ledger.api.token import TokenTxFactory
-from fetchai.ledger.crypto import Entity, Identity
+from fetchai.ledger.crypto import Entity
 from fetchai.ledger.crypto.deed import Deed
 
 HOST = '127.0.0.1'
