@@ -2,11 +2,10 @@ import logging
 from typing import List, Optional
 
 import msgpack
-
 from fetchai.ledger.api.common import TransactionFactory
+from fetchai.ledger.serialisation import transaction
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity
-from fetchai.ledger.serialisation import transaction
 from fetchai.ledger.transaction import Transaction
 from .common import ApiEndpoint
 
@@ -32,12 +31,12 @@ class ContractsApi(ApiEndpoint):
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
-    def submit_data(self, entity: Entity, contract_digest: Address, contract_address: Address, **kwargs):
+    def submit_data(self, entity: Entity, contract_address: Address, **kwargs):
         # build up the basic transaction information
         tx = Transaction()
         tx.from_address = Address(entity)
         tx.valid_until = 10000
-        tx.target_contract(contract_digest, contract_address, BitVector())
+        tx.target_contract(contract_address, BitVector())
         tx.charge_rate = 1
         tx.charge_limit = 1000000000000
         tx.action = 'data'
@@ -51,17 +50,20 @@ class ContractsApi(ApiEndpoint):
         # submit the transaction to the catch-all endpoint
         return self._post_tx_json(encoded_tx, None)
 
-    def query(self, contract_digest: Address, contract_owner: Address, query: str, **kwargs):
-        prefix = '{}.{}'.format(contract_digest.to_hex(), str(contract_owner))
-        return self._post_json(query, prefix=prefix, data=self._encode_json_payload(**kwargs))
+    def query(self, contract_owner: Address, query: str, **kwargs):
+        return self._post_json(query, prefix=str(contract_owner), data=self._encode_json_payload(**kwargs))
 
-    def action(self, contract_digest: Address, contract_address: Address, action: str,
+    def action(self, contract_address: Address, action: str,
                fee: int, from_address: Address, signers: EntityList,
                *args, shard_mask: BitVector = None):
 
         tx = ContractTxFactory.action(contract_digest, contract_address,
                                       action, fee, from_address, signers,
                                       *args, shard_mask=shard_mask)
+        tx.data = self._encode_msgpack_payload(*args)
+
+        for signer in signers:
+            tx.add_signer(signer)
 
         encoded_tx = transaction.encode_transaction(tx, signers)
 

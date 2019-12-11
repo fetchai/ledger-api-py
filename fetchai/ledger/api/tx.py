@@ -37,6 +37,10 @@ class TxStatus:
                self.status not in self._SUCCESSFUL_TERMINAL_STATES
 
     @property
+    def non_terminal(self):
+        return self.status in self._NON_TERMINAL_STATES
+
+    @property
     def digest_hex(self):
         return self._digest_hex
 

@@ -2,14 +2,15 @@ import io
 import struct
 from typing import List, Dict
 
-from fetchai.ledger.bitvector import BitVector
-from fetchai.ledger.crypto import Entity, Identity
-from fetchai.ledger.serialisation.integer import encode_fixed
+from fetchai.ledger import bitvector
+from fetchai.ledger import crypto
 from fetchai.ledger import transaction
+from fetchai.ledger.serialisation.integer import encode_fixed
+
 from . import address, integer, bytearray, identity
 
 MAGIC = 0xA1
-VERSION = 2
+VERSION = 3
 
 NO_CONTRACT = 0
 SMART_CONTRACT = 1
@@ -36,8 +37,6 @@ def _map_contract_mode(payload: 'Transaction'):
     if payload.action:
         if payload.chain_code:
             return CHAIN_CODE
-        assert payload.contract_digest is not None
-
         return SMART_CONTRACT
     else:
         return NO_CONTRACT
@@ -68,7 +67,7 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
     buffer.write(bytes([MAGIC, header0, header1]))
 
     reserved = 0
-    encode_fixed(buffer, value=reserved, num_bytes=1)
+    integer.encode_fixed(buffer, value=reserved, num_bytes=1)
 
     address.encode(buffer, payload.from_address)
     if num_transfers > 1:
@@ -119,7 +118,6 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
                 buffer.write(shard_mask_bytes)
 
         if SMART_CONTRACT == contract_mode or SYNERGETIC == contract_mode:
-            address.encode(buffer, payload.contract_digest)
             address.encode(buffer, payload.contract_address)
         elif CHAIN_CODE == contract_mode:
             encoded_chain_code = payload.chain_code.encode('ascii')
@@ -133,7 +131,7 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
         bytearray.encode(buffer, payload.data)
 
     # Counter value
-    encode_fixed(buffer, value=payload.counter, num_bytes=8)
+    integer.encode_fixed(buffer, value=payload.counter, num_bytes=8)
 
     if num_extra_signatures > 0:
         integer.encode(buffer, num_extra_signatures)
@@ -161,7 +159,7 @@ def encode_multisig_transaction(payload: 'Transaction', signatures: Dict[Identit
     return buffer.getvalue()
 
 
-def encode_transaction(payload: 'Transaction', signers: List[Entity]):
+def encode_transaction(payload: transaction.Transaction, signers: List[crypto.Entity]):
     # encode the contents of the transaction
     buffer = io.BytesIO()
     encode_payload(buffer, payload)
@@ -249,7 +247,7 @@ def decode_payload(stream: io.BytesIO) -> 'Transaction':
 
         wildcard = bool(contract_header & 0x80)
 
-        shard_mask = BitVector()
+        shard_mask = bitvector.BitVector()
         if not wildcard:
             extended_shard_mask_flag = bool(contract_header & 0x40)
 
@@ -263,7 +261,7 @@ def decode_payload(stream: io.BytesIO) -> 'Transaction':
                     bit_size = 2
 
                 # extract the shard mask from the header
-                shard_mask = BitVector.from_bytes(bytes([contract_header & mask]), bit_size)
+                shard_mask = bitvector.BitVector.from_bytes(bytes([contract_header & mask]), bit_size)
 
             else:
                 bit_length = 1 << ((contract_header & 0x3F) + 3)
@@ -272,13 +270,12 @@ def decode_payload(stream: io.BytesIO) -> 'Transaction':
                 assert (bit_length % 8) == 0  # this should be enforced as part of the spec
 
                 # extract the mask from the next N bytes
-                shard_mask = BitVector.from_bytes(stream.read(byte_length), bit_length)
+                shard_mask = bitvector.BitVector.from_bytes(stream.read(byte_length), bit_length)
 
         if contract_type == SMART_CONTRACT or contract_type == SYNERGETIC:
-            contract_digest = address.decode(stream)
             contract_address = address.decode(stream)
 
-            tx.target_contract(contract_digest, contract_address, shard_mask)
+            tx.target_contract(contract_address, shard_mask)
 
         elif contract_type == CHAIN_CODE:
             encoded_chain_code_name = bytearray.decode(stream)

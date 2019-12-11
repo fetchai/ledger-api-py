@@ -1,21 +1,15 @@
-import hashlib
 import unittest
 
 import base58
 
 from fetchai.ledger.crypto.address import Address
 from fetchai.ledger.crypto.entity import Entity
-
-
-def _calc_digest(data):
-    hash_func = hashlib.sha256()
-    hash_func.update(data)
-    return hash_func.digest()
+from fetchai.ledger.serialisation.sha256 import sha256_hash
 
 
 def _calc_address(public_key_bytes):
-    bytes = _calc_digest(public_key_bytes)
-    display_bytes = bytes + _calc_digest(bytes)[:4]
+    bytes = sha256_hash(public_key_bytes)
+    display_bytes = bytes + sha256_hash(bytes)[:4]
     display = base58.b58encode(display_bytes).decode()
     return bytes, display
 
