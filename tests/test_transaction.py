@@ -1,4 +1,5 @@
 from unittest import TestCase
+from unittest.mock import patch
 
 from fetchai.ledger.bitvector import BitVector
 
@@ -46,7 +47,10 @@ class TransactionTests(TestCase):
 
         encoded = self.mstx.encode_partial()
 
-        tx2 = Transaction.decode_partial(encoded)
+        with patch('logging.warning') as mock_warn:
+            tx2 = Transaction.decode_partial(encoded)
+            self.assertEqual(mock_warn.call_count, 1)
+
         self.assertFalse(tx2.signers[self.multi_sig_board[0]]['verified'])
 
     def test_merge_tx_signatures(self):
