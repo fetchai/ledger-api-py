@@ -207,7 +207,7 @@ class Transaction:
 
     def add_signer(self, signer: Identity):
         if signer not in self._signers:
-            self._signers[signer] = None  # will be replaced with a signature in the future
+            self._signers[signer] = {}  # will be replaced with a signature in the future
 
     def sign(self, signer: Entity):
         if Identity(signer) in self._signers:
@@ -216,8 +216,6 @@ class Transaction:
                 'signature': signature,
                 'verified': signer.verify(self.payload, signature)
             }
-
-            self._signers[Identity(signer)]['verified'] = signer.verify(self.payload, self._signers[Identity(signer)]['signature'])
 
     def merge_signatures(self, tx2: 'Transaction'):
         if self.payload != tx2.payload:

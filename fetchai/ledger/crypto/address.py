@@ -78,6 +78,8 @@ class Address:
         return hash(self._address)
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return bytes(self) == bytes(other)
 
     def to_hex(self):
