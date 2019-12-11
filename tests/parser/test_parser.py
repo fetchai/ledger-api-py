@@ -1,5 +1,9 @@
 import unittest
+from unittest.mock import patch
 
+from fetchai.ledger.crypto import Entity
+
+from fetchai.ledger.contract import Contract
 from lark import GrammarError, ParseError, UnexpectedCharacters
 
 from fetchai.ledger.parser.etch_parser import EtchParser, Function
@@ -57,12 +61,26 @@ function query_block_number_state() : UInt64
   return State<UInt64>('block_number_state').get(0u64);
 endfunction"""
 
+TEMPLATE_GLOBAL = """
+persistent users : Array<Address>;
+persistent sharded sharded_users : Array<Address>;
+@action
+function A()
+    use users;
+endfunction
+
+@action
+function B()
+    use sharded_users['abc'];
+endfunction
+"""
+
 
 class ParserTests(unittest.TestCase):
     def setUp(self) -> None:
         try:
             self.parser = EtchParser(CONTRACT_TEXT)
-            self.assertIsNotNone(self.parser.parsed_tree, "Parsed tree missing when code passed")
+            self.assertIsNotNone(self.parser._parsed_tree, "Parsed tree missing when code passed")
         except ParseError as e:
             self.fail("Failed to parse contract text: \n" + str(e))
 
@@ -71,7 +89,7 @@ class ParserTests(unittest.TestCase):
         # TODO: Grammar is loaded from a file, which may impact unit test performance
         try:
             parser = EtchParser()
-            self.assertIsNone(parser.parsed_tree, "Parsed tree present when no code passed")
+            self.assertIsNone(parser._parsed_tree, "Parsed tree present when no code passed")
         except GrammarError as e:
             self.fail("Etch grammar failed to load with: \n" + str(e))
 
@@ -131,7 +149,9 @@ class ParserTests(unittest.TestCase):
     def test_global_addresses(self):
         """Test accurate parsing of globals used in entry points"""
 
-        glob_addresses = self.parser.used_globals_to_addresses('transfer', ['abc', 'def', 100])
+        with patch('logging.warning') as mock_warn:
+            glob_addresses = self.parser.used_globals_to_addresses('transfer', ['abc', 'def', 100])
+            self.assertEqual(mock_warn.call_count, 1)
         self.assertEqual(len(glob_addresses), 5)
         # Unsharded use statement
         self.assertEqual(glob_addresses[0], 'owner_name')
@@ -144,28 +164,36 @@ class ParserTests(unittest.TestCase):
     def test_scope(self):
         """Tests which instructions are allowed at each scope"""
         # Regular instructions are not allowed at global scope
-        with self.assertRaises(UnexpectedCharacters):
-            self.parser.parse("var a = 5;")
+        with patch('logging.warning') as mock_warn:
+            self.assertFalse(self.parser.parse("var a = 5;"))
+            self.assertEqual(mock_warn.call_count, 2)
 
         # Allowed at global scope
         try:
             # Persistent global declaration
-            self.parser.parse("persistent sharded balance_state : UInt64;")
-            self.parser.parse("persistent owner : String;")
+            self.assertTrue(self.parser.parse("persistent sharded balance_state : UInt64;")
+                            is not False)
+            self.assertTrue(self.parser.parse("persistent owner : String;")
+                            is not False)
 
             # Functions
-            self.parser.parse("""function a(owner : String)
-            var b = owner;
-            endfunction""")
+            self.assertTrue(
+                self.parser.parse("""function a(owner : String)
+                var b = owner;
+                endfunction""")
+                is not False)
 
             # Annotated functions
-            self.parser.parse("""@action
-            function a(owner : String)
-            var b = owner;
-            endfunction""")
+            self.assertTrue(
+                self.parser.parse("""@action
+                function a(owner : String)
+                var b = owner;
+                endfunction""")
+                is not False)
 
             # Comments
-            self.parser.parse("// A comment")
+            self.assertTrue(self.parser.parse("// A comment")
+                            is not False)
         except UnexpectedCharacters as e:
             self.fail("Etch parsing of top level statement failed: \n" + str(e))
 
@@ -309,6 +337,7 @@ class ParserTests(unittest.TestCase):
         """Check that nested function calls are supported by parser"""
         try:
             tree = self.parser.parse(NESTED_FUNCTION)
+            self.assertTrue(tree is not False)
         except:
             self.fail("Parsing of dot nested function calls failed")
 
@@ -326,3 +355,92 @@ class ParserTests(unittest.TestCase):
         tree = self.parser.parse(FUNCTION_BLOCK.format("var a = 2i32 == 3i32;"))
         # Type cast
         tree = self.parser.parse(FUNCTION_BLOCK.format("var a = Int64(3i32);"))
+
+    def test_assignments(self):
+        """Check successful parsing of assignment operators"""
+        FB_WITH_DECLARATION = FUNCTION_BLOCK.format("var a : Int64; {}")
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a += 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a -= 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a *= 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a /= 5;"))
+        tree = self.parser.parse(FB_WITH_DECLARATION.format("a %= 5;"))
+
+    def test_assert_statement(self):
+        """Check boolean expressions valid in any context"""
+        tree = self.parser.parse(FUNCTION_BLOCK.format("assert(a >= 0 && a <= 15);"))
+
+    def test_template_global(self):
+        """Checks correct parsing of globals with template types"""
+        self.parser.parse(TEMPLATE_GLOBAL)
+
+        # Function A contains a non-sharded global of type Array<Address>
+        addresses = self.parser.used_globals_to_addresses('A', [])
+        self.assertEqual(addresses, ['users'])
+
+        # Function B contains a sharded global of type Array<Address>
+        addresses = self.parser.used_globals_to_addresses('B', [])
+        self.assertEqual(addresses, ['sharded_users.abc'])
+
+    def test_if_blocks(self):
+        """Checks correct parsing of if blocks"""
+        # Partial contract text with function block and variable instantiation
+        PARTIAL_BLOCK = FUNCTION_BLOCK.format("""
+        var a: Int64 = 5;
+        var b: Int64 = 0;
+        {}""")
+
+        # Simple if block
+        tree = self.parser.parse(PARTIAL_BLOCK.format("""
+        if (a > 5)
+            b = 6;
+        endif"""))
+        self.assertTrue(tree is not False)
+
+        # If-else block
+        tree = self.parser.parse(PARTIAL_BLOCK.format("""
+        if (a > 5)
+            b = 6;
+        else
+            b = 7;
+        endif"""))
+        self.assertTrue(tree is not False)
+
+        # Nested if-else-if block
+        tree = self.parser.parse(PARTIAL_BLOCK.format("""
+        if (a > 5)
+            b = 6;
+        else if (a < 5)
+                b = 4;
+            endif
+        endif"""))
+        self.assertTrue(tree is not False)
+
+        # If-elseif block
+        tree = self.parser.parse(PARTIAL_BLOCK.format("""
+        if (a > 5)
+            b = 6;
+        elseif (a < 5)
+            b = 4;
+        endif"""))
+        self.assertTrue(tree is not False)
+
+        # Complex example
+        tree = self.parser.parse(PARTIAL_BLOCK.format("""
+        if (a > 5 && a < 100)
+            b = 6;
+        elseif (a < 2 || a > 100)
+            if (a < 0)
+                b = 4;
+            else
+                b = 2;
+            endif
+        else
+            b = 3;
+        endif"""))
+        self.assertTrue(tree is not False)
+
+    def test_warn_on_parse_fail(self):
+        with patch('logging.warning') as mock_warn:
+            tree = self.parser.parse("This code is not valid")
+            self.assertFalse(tree)
+            self.assertEqual(mock_warn.call_count, 2)

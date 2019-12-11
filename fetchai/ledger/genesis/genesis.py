@@ -16,23 +16,23 @@
 #
 # ------------------------------------------------------------------------------
 
-import json
-import hashlib
 import base64
-import base58
+import json
 import time
 from typing import Tuple, List
 
+import base58
+
 from fetchai.ledger.crypto import Identity
+from fetchai.ledger.serialisation.sha256 import sha256_hash
 
 
 def calc_resource_id(resource_address):
     """
     Convenience function to take a string and return its hash as a b64
     """
-    hasher = hashlib.sha256()
-    hasher.update(resource_address.encode())
-    return base64.b64encode(hasher.digest()).decode()
+    address_hash = sha256_hash(resource_address.encode())
+    return base64.b64encode(address_hash).decode()
 
 
 def generate_token_address(muddle_address):
@@ -41,13 +41,9 @@ def generate_token_address(muddle_address):
     """
     raw_muddle_address = base64.b64decode(muddle_address)
 
-    hasher1 = hashlib.sha256()
-    hasher1.update(raw_muddle_address)
-    token_address_base = hasher1.digest()
+    token_address_base = sha256_hash(raw_muddle_address)
 
-    hasher2 = hashlib.sha256()
-    hasher2.update(token_address_base)
-    token_address_checksum = hasher2.digest()[:4]
+    token_address_checksum = sha256_hash(token_address_base)[:4]
 
     final_address = token_address_base + token_address_checksum
 

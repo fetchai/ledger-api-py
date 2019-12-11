@@ -1,6 +1,9 @@
 import logging
+import re
 
-from lark import Lark, tree, lexer
+from lark import Lark, tree, lexer, ParseError, GrammarError, LexError, UnexpectedInput, UnexpectedCharacters, \
+    UnexpectedToken
+from lark.exceptions import LarkError, VisitError
 from pkg_resources import resource_string
 
 
@@ -179,22 +182,40 @@ class UnparsableAddress(Exception):
     pass
 
 
+class EtchParserError(Exception):
+    pass
+
+
 class EtchParser:
     def __init__(self, etch_code=None):
         # Load grammar
         self.grammar = resource_string(__name__, 'etch.grammar').decode('ascii')
         self.parser = Lark(self.grammar, propagate_positions=True)
 
-        self.parsed_tree = None
+        self._parsed_tree = None
         self.etch_code = None
         if etch_code:
             self.parse(etch_code)
+
+    @property
+    def parsed_tree(self):
+        if self._parsed_tree:
+            return self._parsed_tree
+        else:
+            raise EtchParserError()
 
     def parse(self, etch_code):
         """Parses the input code and stores the parsed tree"""
         assert isinstance(etch_code, str), "Expecting string"
         self.etch_code = etch_code
-        self.parsed_tree = self.parser.parse(etch_code)
+        try:
+            self._parsed_tree = self.parser.parse(etch_code)
+        except (LarkError, GrammarError, ParseError, LexError, UnexpectedInput,
+                UnexpectedCharacters, UnexpectedToken, VisitError) as e:
+            logging.warning("Etch parsing failed, shard masks will be set to wildcard")
+            logging.warning(e)
+            return False
+
         return self.parsed_tree
 
     def entry_points(self, valid_entries=None):
@@ -209,12 +230,21 @@ class EtchParser:
             entry_points[ep] = []
 
         # Parse all functions in tree
-        functions = self.get_functions()
+        try:
+            functions = self.get_functions()
 
-        # Add functions with annotation to entry point dict
-        for f in functions:
-            if f.annotation in valid_entries:
-                entry_points[f.annotation].append(f.name)
+            # Add functions with annotation to entry point dict
+            for f in functions:
+                if f.annotation in valid_entries:
+                    entry_points[f.annotation].append(f.name)
+
+        except EtchParserError:
+            # Fallback method to extract entry points when parsing fails
+            matches = re.findall(r'@([a-zA-Z]+)\nfunction ([a-zA-Z0-9]+)', self.etch_code)
+
+            for ann, func in matches:
+                if ann in valid_entries:
+                    entry_points[ann].append(func)
 
         return entry_points
 
@@ -294,7 +324,7 @@ class EtchParser:
             else:
                 assert g_name_node.children[0].type == 'NAME'
                 g_name = g_name_node.children[0].value
-                g_type = g_name_node.children[1].value
+                g_type = _template_to_string(g_name_node.children[1])
 
             assert g_name not in persistent_globals, "Duplicate global definition: " + g_name
             persistent_globals[g_name] = PersistentGlobal(g_name, is_sharded, g_type)

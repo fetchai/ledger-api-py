@@ -18,10 +18,4 @@
 import hashlib
 from typing import Union
 
-def sha256_hash(data: Union[str, bytes], to_hex: bool = True) -> str:
-    hasher = hashlib.sha256()
-    hasher.update(data)
-    if to_hex:
-        return hasher.digest().hex()
-    else:
-        return hasher.digest()
+from .sha256 import sha256_hash
