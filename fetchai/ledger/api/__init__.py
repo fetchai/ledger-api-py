@@ -68,6 +68,10 @@ def _pre_process_version(reported_version):
     if match is not None:
         server_version = '{}-{}.{}+{}'.format(match.group(1), match.group(2), match.group(3), match.group(4))
 
+    match = re.match(r'^(\d+\.\d+\.\d+)-(alpha|beta|rc)(\d+)$', str(server_version))
+    if match is not None:
+        server_version = '{}-{}.{}'.format(match.group(1), match.group(2), match.group(3))
+
     return server_version
 
 
