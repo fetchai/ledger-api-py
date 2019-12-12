@@ -16,51 +16,95 @@
 #
 # ------------------------------------------------------------------------------
 import logging
+from enum import Enum, auto
 from typing import Union
 
 from fetchai.ledger.crypto import Address, Identity, Entity
 
 AddressLike = Union[Address, Identity]
 
-class Deed:
-    def __init__(self, address: Entity):
-        self._address = address
-        self._amend_threshold = None
-        self._transfer_threshold = None
-        self._signees = {}
 
-    def add_signee(self, signee: Entity, voting_weight: int):
-        self._signees[signee] = voting_weight
+class InvalidDeedError(Exception):
+    pass
+
+
+class Operation(Enum):
+    amend = auto()
+    transfer = auto()
+    execute = auto()
+    stake = auto()
+
+    def __repr__(self):
+        return '<%s.%s>' % (self.__class__.__name__, self.name)
+
+    def __str__(self):
+        return self.name
+
+
+class Deed:
+    def __init__(self, address: AddressLike):
+        self._address = address
+        self._signees = {}
+        self._thresholds = {}
+
+    def set_signee(self, signee: Entity, voting_weight: int):
+        self._signees[signee] = int(voting_weight)
+
+    def remove_signee(self, signee: Entity):
+        if signee in self._signees:
+            del self._signees[signee]
+
+    def set_threshold(self, operation: Operation, threshold: int):
+        if threshold > self.total_votes:
+            raise InvalidDeedError("Attempting to set threshold higher than available votes - it will never be met")
+
+        self._thresholds[str(operation)] = int(threshold)
+
+    def remove_threshold(self, operation: Operation):
+        if str(operation) in self._thresholds:
+            del self._signees[str(operation)]
+
+    def return_threshold(self, operation: Operation):
+        return self._thresholds[str(operation)] if  \
+            str(operation) in self._thresholds else None
+
+    @property
+    def total_votes(self):
+        return sum(v for v in self._signees.values())
 
     @property
     def amend_threshold(self):
-        return self._amend_threshold
+        return self._thresholds['amend'] if \
+            'amend' in self._thresholds else None
 
     @amend_threshold.setter
     def amend_threshold(self, value):
-        self._amend_threshold = value
+        self.set_threshold(Operation.amend, value)
 
-    @property
-    def transfer_threshold(self):
-        return self._transfer_threshold
-
-    @transfer_threshold.setter
-    def transfer_threshold(self, value):
-        self._transfer_threshold = value
-
-    def deed_creation_json(self):
+    def deed_creation_json(self, allow_no_amend=False):
         deed = {
             'address': Address(self._address)._display,
             'signees': {Address(k)._display: v for k, v in self._signees.items()},
             'thresholds': {}
         }
 
-        if self._amend_threshold:
-            deed['thresholds']['amend'] = self._amend_threshold
-        else:
-            logging.warning("Creating deed without amend threshold - future amendment will be impossible")
+        if self.amend_threshold:
+            # Error if amend threshold un-meetable
+            if self.amend_threshold > self.total_votes:
+                raise InvalidDeedError("Amend threshold greater than total voting power - future amendment will be impossible")
 
-        if self._transfer_threshold:
-            deed['thresholds']['transfer'] = self._transfer_threshold
+            deed['thresholds']['amend'] = self.amend_threshold
+
+        # Warnings/errors if no amend threshold set
+        elif allow_no_amend:
+            logging.warning("Creating deed without amend threshold - future amendment will be impossible")
+        else:
+            raise InvalidDeedError("Creating deed without amend threshold - future amendment will be impossible")
+
+        # Add other thresholds
+        for key in self._thresholds:
+            if key == 'amend':
+                continue
+            deed['thresholds'][key] = self._thresholds[key]
 
         return deed
