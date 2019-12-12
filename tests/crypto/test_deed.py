@@ -54,6 +54,10 @@ class DeedTests(TestCase):
         self.assertEqual(str(Operation.transfer), 'transfer')
         self.assertEqual(str(Operation.execute), 'execute')
         self.assertEqual(str(Operation.stake), 'stake')
+        self.assertEqual(repr(Operation.amend), '<Operation.amend>')
+        self.assertEqual(repr(Operation.transfer), '<Operation.transfer>')
+        self.assertEqual(repr(Operation.execute), '<Operation.execute>')
+        self.assertEqual(repr(Operation.stake), '<Operation.stake>')
 
     def test_warn_on_no_amend_threshold(self):
         """Checks a warning is printed when creating a deed with no amend threshold"""
