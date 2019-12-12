@@ -286,7 +286,6 @@ class ApiEndpoint(object):
         return self._post_tx_json(encoded_tx, tx.action)
 
 
-
 class TransactionFactory:
     API_PREFIX = None
 

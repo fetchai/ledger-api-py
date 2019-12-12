@@ -76,7 +76,7 @@ class DeedTests(TestCase):
         self.assertEqual(json['thresholds'], {})
 
         # Adding an amend threshold greater than the available voting power should cause error
-        deed.amend_threshold = deed.total_votes + 1
+        deed._thresholds['amend'] = deed.total_votes + 1
         with self.assertRaises(InvalidDeedError):
             json = deed.deed_creation_json()
 

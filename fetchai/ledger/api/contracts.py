@@ -57,7 +57,7 @@ class ContractsApi(ApiEndpoint):
                fee: int, from_address: Address, signers: EntityList,
                *args, shard_mask: BitVector = None):
 
-        tx = ContractTxFactory.action(contract_digest, contract_address,
+        tx = ContractTxFactory.action(contract_address,
                                       action, fee, from_address, signers,
                                       *args, shard_mask=shard_mask)
         tx.data = self._encode_msgpack_payload(*args)
@@ -116,7 +116,7 @@ class ContractTxFactory(TransactionFactory):
     API_PREFIX = 'fetch.contract'
 
     @classmethod
-    def action(cls, contract_digest: Address, contract_address: Address, action: str,
+    def action(cls, contract_address: Address, action: str,
                fee: int, from_address: Address, signers: List[Entity], *args,
                shard_mask: Optional[BitVector] = None) -> Transaction:
 
@@ -127,7 +127,7 @@ class ContractTxFactory(TransactionFactory):
 
         # build up the basic transaction information
         tx = cls._create_action_tx(fee, from_address, action, shard_mask)
-        tx.target_contract(contract_digest, contract_address, shard_mask)
+        tx.target_contract(contract_address, shard_mask)
         tx.data = cls._encode_msgpack_payload(*args)
 
         for signer in signers:
