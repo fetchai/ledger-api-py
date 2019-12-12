@@ -293,11 +293,15 @@ class TokenTxFactory(TransactionFactory):
         return tx
 
     @classmethod
-    def add_stake(cls, entity: Entity, amount: int, fee: int):
+    def add_stake(cls, entity: Entity, amount: int, fee: int, signatories: list = None):
 
         # build up the basic transaction information
         tx = cls._create_action_tx(fee, entity, 'addStake')
-        tx.add_signer(entity)
+        if signatories:
+            for ent in signatories:
+                tx.add_signer(ent)
+        else:
+            tx.add_signer(entity)
 
         # format the transaction payload
         tx.data = cls._encode_json({
@@ -308,11 +312,15 @@ class TokenTxFactory(TransactionFactory):
         return tx
 
     @classmethod
-    def de_stake(cls, entity: Entity, amount: int, fee: int):
+    def de_stake(cls, entity: Entity, amount: int, fee: int, signatories: list = None):
 
         # build up the basic transaction information
         tx = cls._create_action_tx(fee, entity, 'deStake')
-        tx.add_signer(entity)
+        if signatories:
+            for ent in signatories:
+                tx.add_signer(ent)
+        else:
+            tx.add_signer(entity)
 
         # format the transaction payload
         tx.data = cls._encode_json({
@@ -323,10 +331,14 @@ class TokenTxFactory(TransactionFactory):
         return tx
 
     @classmethod
-    def collect_stake(cls, entity: Entity, fee: int):
+    def collect_stake(cls, entity: Entity, fee: int, signatories: list = None):
 
         # build up the basic transaction information
         tx = cls._create_action_tx(fee, entity, 'collectStake')
-        tx.add_signer(entity)
+        if signatories:
+            for ent in signatories:
+                tx.add_signer(ent)
+        else:
+            tx.add_signer(entity)
 
         return tx

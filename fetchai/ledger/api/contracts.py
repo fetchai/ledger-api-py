@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional
 
 import msgpack
+
 from fetchai.ledger.api.common import TransactionFactory
 from fetchai.ledger.serialisation import transaction
 from fetchai.ledger.bitvector import BitVector
@@ -61,6 +62,7 @@ class ContractsApi(ApiEndpoint):
                                       action, fee, from_address, signers,
                                       *args, shard_mask=shard_mask)
         tx.data = self._encode_msgpack_payload(*args)
+        self._set_validity_period(tx)
 
         for signer in signers:
             tx.add_signer(signer)
@@ -115,9 +117,21 @@ class ContractsApi(ApiEndpoint):
 class ContractTxFactory(TransactionFactory):
     API_PREFIX = 'fetch.contract'
 
-    @classmethod
-    def action(cls, contract_address: Address, action: str,
-               fee: int, from_address: Address, signers: List[Entity], *args,
+    def __init__(self, api: 'LedgerApi'):
+        self._api = api
+
+    @property
+    def server(self):
+        """Replicate server interface for fetching number of lanes"""
+        return self._api.server
+
+    def _set_validity_period(self, tx: Transaction, validity_period: Optional[int] = None):
+        """Replicate setting of validity period using server"""
+        self._api.server._set_validity_period(tx, validity_period=validity_period)
+
+    def action(self, contract_address: Address, action: str,
+               fee: int, from_address: Address, *args,
+               signers: Optional[List[Entity]] = None,
                shard_mask: Optional[BitVector] = None) -> Transaction:
 
         # Default to wildcard shard mask if none supplied
@@ -126,17 +140,20 @@ class ContractTxFactory(TransactionFactory):
             shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = cls._create_action_tx(fee, from_address, action, shard_mask)
+        tx = self._create_action_tx(fee, from_address, action, shard_mask)
         tx.target_contract(contract_address, shard_mask)
-        tx.data = cls._encode_msgpack_payload(*args)
+        tx.data = self._encode_msgpack_payload(*args)
+        self._set_validity_period(tx)
 
-        for signer in signers:
-            tx.add_signer(signer)
+        if signers:
+            for signer in signers:
+                tx.add_signer(signer)
+        else:
+            tx.add_signer(from_address)
 
         return tx
 
-    @classmethod
-    def create(cls, owner: Entity, contract: 'Contract', fee: int,
+    def create(self, owner: Entity, contract: 'Contract', fee: int, signers: Optional[List[Entity]] = None,
                shard_mask: Optional[BitVector] = None) -> Transaction:
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
@@ -144,12 +161,18 @@ class ContractTxFactory(TransactionFactory):
             shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = cls._create_action_tx(fee, owner, 'create', shard_mask)
-        tx.data = cls._encode_json({
+        tx = self._create_action_tx(fee, owner, 'create', shard_mask)
+        tx.data = self._encode_json({
             'nonce': contract.nonce,
             'text': contract.encoded_source,
             'digest': contract.digest.to_hex()
         })
-        tx.add_signer(owner)
+        self._set_validity_period(tx)
+
+        if signers:
+            for signer in signers:
+                tx.add_signer(signer)
+        else:
+            tx.add_signer(owner)
 
         return tx
