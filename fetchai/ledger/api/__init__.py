@@ -17,6 +17,7 @@
 # ------------------------------------------------------------------------------
 
 import logging
+import re
 import time
 from datetime import datetime, timedelta
 from typing import Sequence, Union
@@ -43,6 +44,7 @@ def _iterable(value):
 
     return False
 
+
 def _get_or_set_default_time(d, key, default):
     """
     Dictionary helper. If the key is not in the d dictionary or the value is set to -1 it will set the key to default
@@ -56,6 +58,31 @@ def _get_or_set_default_time(d, key, default):
         return d[key]
     d[key] = default
     return default
+
+
+def _pre_process_version(reported_version):
+    server_version = reported_version.lstrip('v')
+
+    # remove trailing git version if present
+    match = re.match(r'^(\d+\.\d+\.\d+)-(alpha|beta|rc)(\d+)-\d+-(g[a-f0-9]+)$', str(server_version))
+    if match is not None:
+        server_version = '{}-{}.{}+{}'.format(match.group(1), match.group(2), match.group(3), match.group(4))
+
+    match = re.match(r'^(\d+\.\d+\.\d+)-(alpha|beta|rc)(\d+)$', str(server_version))
+    if match is not None:
+        server_version = '{}-{}.{}'.format(match.group(1), match.group(2), match.group(3))
+
+    return server_version
+
+
+def check_version_compatibility(reported_version, compatible_versions):
+    server_version = _pre_process_version(reported_version)
+    if server_version.startswith('Unknown version with hash'):
+        logging.warning('Using development version')
+    elif not all(semver.match(server_version, c) for c in compatible_versions):
+        raise IncompatibleLedgerVersion("Ledger version running on server is not compatible with this API" +
+                                        "\nServer version: {} \nExpected version: {}".format(
+                                            server_version, ', '.join(compatible_versions)))
 
 
 class LedgerApi:
@@ -72,13 +99,7 @@ class LedgerApi:
         self.server = ServerApi(host, port)
 
         # Check that ledger version is compatible with API version
-        server_version = self.server.version().lstrip('v')
-        if server_version.startswith('Unknown version with hash'):
-            logging.warning('Using development version')
-        elif not all(semver.match(server_version, c) for c in __compatible__):
-            raise IncompatibleLedgerVersion("Ledger version running on server is not compatible with this API" +
-                                            "\nServer version: {} \nExpected version: {}".format(
-                                                server_version, ', '.join(__compatible__)))
+        check_version_compatibility(self.server.version(), __compatible__)
 
     def sync(self, txs: Transactions, timeout=None, hold_state_sec=0, extend_success_status = []):
         """
