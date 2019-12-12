@@ -29,11 +29,11 @@ class InvalidDeedError(Exception):
 
 
 class Operation(Enum):
-    amend = auto()
-    transfer = auto()
-    execute = auto()
-    stake = auto()
-    create = auto()
+    amend = 1
+    transfer = 2
+    execute = 3
+    stake = 4
+    create = 5
 
     def __repr__(self):
         return '<%s.%s>' % (self.__class__.__name__, self.name)
