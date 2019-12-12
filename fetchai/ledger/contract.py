@@ -49,7 +49,7 @@ class Contract:
 
     @property
     def name(self):
-        return '{}.{}'.format(self.digest.to_hex(), self.address)
+        return '{}'.format(self.address)
 
     def dumps(self):
         return json.dumps(self._to_json_object())
@@ -106,6 +106,7 @@ class Contract:
 
         # Generate resource addresses used by persistent globals
         try:
+            # TODO: Check if this is still correct:
             resource_addresses = ['fetch.contract.state.{}'.format(self.digest.to_hex())]
             resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
                                       self._parser.used_globals_to_addresses(self._init, [self._owner]))
