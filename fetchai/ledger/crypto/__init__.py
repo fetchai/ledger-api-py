@@ -17,5 +17,5 @@
 # ------------------------------------------------------------------------------
 
 from .address import Address
-from .entity import ISigner, Entity
+from .entity import Entity
 from .identity import Identity

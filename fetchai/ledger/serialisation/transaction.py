@@ -1,7 +1,7 @@
 import io
 import random
 import struct
-from typing import Union, List, Set
+from typing import List
 
 from fetchai.ledger import bitvector
 from fetchai.ledger import crypto
@@ -9,17 +9,13 @@ from fetchai.ledger import transaction
 
 from . import address, integer, bytearray, identity
 
-
 MAGIC = 0xA1
-VERSION = 2
+VERSION = 3
 
 NO_CONTRACT = 0
 SMART_CONTRACT = 1
 CHAIN_CODE = 2
 SYNERGETIC = 3
-
-
-Signers = Union[List[crypto.ISigner], Set[crypto.ISigner]]
 
 
 def _log2(value: int) -> int:
@@ -41,8 +37,6 @@ def _map_contract_mode(payload: transaction.Transaction):
     if payload.action:
         if payload.chain_code:
             return CHAIN_CODE
-        assert payload.contract_digest is not None
-
         return SMART_CONTRACT
     else:
         return NO_CONTRACT
@@ -124,7 +118,6 @@ def encode_payload(buffer: io.BytesIO, payload: transaction.Transaction):
                 buffer.write(shard_mask_bytes)
 
         if SMART_CONTRACT == contract_mode or SYNERGETIC == contract_mode:
-            address.encode(buffer, payload.contract_digest)
             address.encode(buffer, payload.contract_address)
         elif CHAIN_CODE == contract_mode:
             encoded_chain_code = payload.chain_code.encode('ascii')
@@ -148,7 +141,7 @@ def encode_payload(buffer: io.BytesIO, payload: transaction.Transaction):
         identity.encode(buffer, signer)
 
 
-def encode_transaction(payload: transaction.Transaction, signers: Signers):
+def encode_transaction(payload: transaction.Transaction, signers: List[crypto.Entity]):
     # encode the contents of the transaction
     buffer = io.BytesIO()
     encode_payload(buffer, payload)
@@ -156,18 +149,11 @@ def encode_transaction(payload: transaction.Transaction, signers: Signers):
     # extract the payload buffer
     payload_bytes = buffer.getvalue()
 
-    if isinstance(signers, list):
-        signers_set = set(signers)
-    elif isinstance(signers, set):
-        signers_set = signers
-    else:
-        raise RuntimeError('Type of provided signers is neither List nor Set.')
-
-    if signers_set != payload.signers.keys():
-        raise RuntimeError('Missing signer signing set')
-
     # append all the signatures of the signers in order
-    for signer in signers_set:
+    for signer in payload.signers.keys():
+        if signer not in signers:
+            raise RuntimeError('Missing signer signing set')
+
         # find the index to the appropriate index and lookup the entity
         entity = signers[signers.index(signer)]
 
@@ -266,10 +252,9 @@ def decode_transaction(stream: io.BytesIO) -> (bool, transaction.Transaction):
                 shard_mask = bitvector.BitVector.from_bytes(stream.read(byte_length), bit_length)
 
         if contract_type == SMART_CONTRACT or contract_type == SYNERGETIC:
-            contract_digest = address.decode(stream)
             contract_address = address.decode(stream)
 
-            tx.target_contract(contract_digest, contract_address, shard_mask)
+            tx.target_contract(contract_address, shard_mask)
 
         elif contract_type == CHAIN_CODE:
             encoded_chain_code_name = bytearray.decode(stream)

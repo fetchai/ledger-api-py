@@ -22,7 +22,6 @@ import logging
 import os
 import re
 from typing import Tuple
-from abc import ABCMeta, abstractmethod
 
 import ecdsa
 import pyaes
@@ -31,15 +30,7 @@ from hashlib import pbkdf2_hmac
 from .identity import Identity
 
 
-class ISigner(metaclass=ABCMeta):
-    @abstractmethod
-    def sign(self, data: bytes): pass
-
-    @abstractmethod
-    def sign_digest(self, digest: bytes): pass
-
-
-class Entity(Identity, ISigner):
+class Entity(Identity):
     """
     An entity is a full private/public key pair.
     """
@@ -104,9 +95,6 @@ class Entity(Identity, ISigner):
 
     def sign(self, message: bytes):
         return self._signing_key.sign(message)
-
-    def sign_digest(self, digest: bytes):
-        return self._signing_key.sign_digest(digest)
 
     def prompt_dump(self, fp):
         password = input("Please enter password")

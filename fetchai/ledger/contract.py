@@ -7,10 +7,10 @@ from typing import Union, List
 
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Identity
-from fetchai.ledger.parser.etch_parser import EtchParser, UnparsableAddress, UseWildcardShardMask
+from fetchai.ledger.parser.etch_parser import EtchParser, UnparsableAddress, UseWildcardShardMask, EtchParserError
 from fetchai.ledger.serialisation import sha256_hash
 from fetchai.ledger.serialisation.shardmask import ShardMask
-from .api import ContractsApi, LedgerApi, Transfer, TransferList
+from .api import ContractsApi, LedgerApi
 from .crypto import Entity, Address
 
 ContractsApiLike = Union[ContractsApi, LedgerApi]
@@ -109,7 +109,7 @@ class Contract:
             resource_addresses = ['fetch.contract.state.{}'.format(self.digest.to_hex())]
             resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
                                       self._parser.used_globals_to_addresses(self._init, [self._owner]))
-        except (UnparsableAddress, UseWildcardShardMask):
+        except (UnparsableAddress, UseWildcardShardMask, EtchParserError):
             logging.warning("Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
         else:
@@ -122,12 +122,13 @@ class Contract:
         if self._owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any queries. Did you deploy it?')
 
-        if name not in self._queries:
-            raise RuntimeError(
-                '{} is not an valid query name. Valid options are: {}'.format(name, ','.join(list(self._queries))))
+        # TODO(WK): Reinstate without breaking contract-to-contract calls
+        # if name not in self._queries:
+        #     raise RuntimeError(
+        #         '{} is not an valid query name. Valid options are: {}'.format(name, ','.join(list(self._queries))))
 
         # make the required query on the API
-        success, response = self._api(api).query(self._digest, self.address, name, **kwargs)
+        success, response = self._api(api).query(self.address, name, **kwargs)
 
         if not success:
             if response is not None and "msg" in response:
@@ -137,27 +138,29 @@ class Contract:
 
         return response['result']
 
-    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args, transfers: TransferList = None):
+    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args):
         if self._owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
 
-        if name not in self._actions:
-            raise RuntimeError(
-                '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
+        # TODO(WK): Reinstate without breaking contract-to-contract calls
+        # if name not in self._actions:
+        #     raise RuntimeError(
+        #         '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
 
         try:
             # Generate resource addresses used by persistent globals
             resource_addresses = [ShardMask.state_to_address(address, self) for address in
                                   self._parser.used_globals_to_addresses(name, list(args))]
-        except (UnparsableAddress, UseWildcardShardMask):
+        except (UnparsableAddress, UseWildcardShardMask, EtchParserError):
             logging.warning("Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
         else:
             # Generate shard mask from resource addresses
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        return self._api(api).action(self._digest, self.address, name, fee, self.owner, signers, *args,
-                                     shard_mask=shard_mask, transfers=transfers)
+        return self._api(api).action(self.address, name, fee,
+                                     Address(signers[0]) if len(signers) == 1 else None, signers, *args,
+                                     shard_mask=shard_mask)
 
     @staticmethod
     def _api(api: ContractsApiLike):

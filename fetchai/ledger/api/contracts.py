@@ -2,7 +2,6 @@ import logging
 from typing import List
 
 import msgpack
-
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity
 from fetchai.ledger.serialisation.transaction import encode_transaction
@@ -11,12 +10,6 @@ from .common import ApiEndpoint
 
 EntityList = List[Entity]
 
-class Transfer:
-    def __init__(self, to: Address, amount: int):
-        self.to: Address = to
-        self.amount: int = amount
-
-TransferList = List[Transfer]
 
 class ContractsApi(ApiEndpoint):
     API_PREFIX = 'fetch.contract'
@@ -52,12 +45,12 @@ class ContractsApi(ApiEndpoint):
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
-    def submit_data(self, entity: Entity, contract_digest: Address, contract_address: Address, **kwargs):
+    def submit_data(self, entity: Entity, contract_address: Address, **kwargs):
         # build up the basic transaction information
         tx = Transaction()
         tx.from_address = Address(entity)
         tx.valid_until = 10000
-        tx.target_contract(contract_digest, contract_address, BitVector())
+        tx.target_contract(contract_address, BitVector())
         tx.charge_rate = 1
         tx.charge_limit = 1000000000000
         tx.action = 'data'
@@ -71,14 +64,12 @@ class ContractsApi(ApiEndpoint):
         # submit the transaction to the catch-all endpoint
         return self._post_tx_json(encoded_tx, None)
 
-    def query(self, contract_digest: Address, contract_owner: Address, query: str, **kwargs):
-        prefix = '{}.{}'.format(contract_digest.to_hex(), str(contract_owner))
-        return self._post_json(query, prefix=prefix, data=self._encode_json_payload(**kwargs))
+    def query(self, contract_owner: Address, query: str, **kwargs):
+        return self._post_json(query, prefix=str(contract_owner), data=self._encode_json_payload(**kwargs))
 
-    def create_transaction(self, contract_digest: Address, contract_address: Address, action: str,
-                           fee: int, from_address: Address, signers: EntityList,
-                           *args, shard_mask: BitVector = None, transfers: TransferList = None):
-
+    def action(self, contract_address: Address, action: str,
+               fee: int, from_address: Address, signers: EntityList,
+               *args, shard_mask: BitVector = None):
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
             logging.warning("Defaulting to wildcard shard mask as none supplied")
@@ -87,23 +78,13 @@ class ContractsApi(ApiEndpoint):
         # build up the basic transaction information
         tx = self._create_skeleton_tx(fee)
         tx.from_address = Address(from_address)
-        tx.target_contract(contract_digest, contract_address, shard_mask)
+        tx.target_contract(contract_address, shard_mask)
         tx.action = str(action)
         tx.data = self._encode_msgpack_payload(*args)
-
-        for t in transfers or []:
-            tx.add_transfer(t.to, t.amount)
 
         for signer in signers:
             tx.add_signer(signer)
 
-        return tx
-
-    def action(self, contract_digest: Address, contract_address: Address, action: str,
-               fee: int, from_address: Address, signers: EntityList,
-               *args, shard_mask: BitVector = None, transfers: TransferList = None):
-        tx = self.create_transaction(contract_digest, contract_address, action, fee, from_address, signers,
-                                     *args, shard_mask=shard_mask, transfers=transfers)
         encoded_tx = encode_transaction(tx, signers)
 
         return self._post_tx_json(encoded_tx, None)

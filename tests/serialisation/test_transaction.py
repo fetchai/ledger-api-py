@@ -7,7 +7,7 @@ from fetchai.ledger.serialisation.sha256 import sha256_hex
 from fetchai.ledger.serialisation.transaction import encode_payload
 
 from fetchai.ledger.bitvector import BitVector
-from fetchai.ledger.crypto import Entity, Identity
+from fetchai.ledger.crypto import Entity, Identity, Address
 from fetchai.ledger.serialisation.transaction import encode_transaction, decode_transaction, bytearray
 from fetchai.ledger.transaction import Transaction
 
@@ -40,9 +40,9 @@ class TransactionSerialisation(unittest.TestCase):
     EXPECTED_SERIAL_SIGNATURE_LENGTH = EXPECTED_SIGNATURE_BYTE_LEN + EXPECTED_SIGNATURE_LENGTH_FIELD_LEN
 
     def test_simple_transfer(self):
-        EXPECTED_DIGEST = "7fff24ca77fbb23b9b3c460104ab1a74011bafe3965e15dc6ea6f25a4ac44392"
+        EXPECTED_DIGEST = "257c5e1de3a0a895d66d57792f1a44425336bb05bc6c8479be83b4572e1b4d45"
         EXPECTED_PAYLOAD = \
-            "a1440000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d44235130ac5aab442e39f" \
+            "a1640000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d44235130ac5aab442e39f" \
             "9aa27118956695229212dd2f1ab5b714e9f6bd581511c1010000000000000000000000000418c2a33af8bd2cba7f" \
             "a714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758b" \
             "cc4961bbdc75a0251c"
@@ -73,9 +73,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_multiple_transfers(self):
-        EXPECTED_DIGEST = "7e6a95a8c773755d349209d8f3bb60ec2a5f3c683075540f953863f124eb1250"
+        EXPECTED_DIGEST = "35c19ceff72218a36f9807c370e5625efc36e43ce4e9f2047f1b820162b8b3d9"
         EXPECTED_PAYLOAD = \
-            "a1460000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4014235130ac5aab442e3" \
+            "a1660000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4014235130ac5aab442e3" \
             "9f9aa27118956695229212dd2f1ab5b714e9f6bd581511c1010020f478c7f74b50c187bf9a8836f382bd62977bae" \
             "eaf19625608e7e912aa60098c10200da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af" \
             "6dc2000186a000000000000000000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe" \
@@ -109,13 +109,12 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_synergetic_data_submission(self):
-        EXPECTED_DIGEST = "9397fd490b60a394ea0af5526435608a1e853e2cb6b09bc7cafec8f6a0aa2cf6"
+        EXPECTED_DIGEST = "261ba516c9b7b4d3ecb39f349dbb0a35db0d9fc362f2b9cc81c7d844be4d0081"
         EXPECTED_PAYLOAD = \
-            "a140c000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4c1271001c3000000e8d4" \
-            "a5100080da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af6de6672a9d98da667e5dc2" \
-            "5b2bca8acf9644a7ac0797f01cb5968abf39de011df204646174610f7b2276616c7565223a20313233347d000000" \
-            "00000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c" \
-            "258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
+            "a160c000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4c1271001c3000000e8d4" \
+            "a5100080e6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df204646174610f7b227661" \
+            "6c7565223a20313233347d00000000000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4f" \
+            "dffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
         with mock.patch('random.getrandbits') as mock_counter:
@@ -123,7 +122,7 @@ class TransactionSerialisation(unittest.TestCase):
             payload = Transaction()
         payload.from_address = IDENTITIES[0]
         payload.valid_until = 10000
-        payload.target_contract(IDENTITIES[3], IDENTITIES[4], BitVector())
+        payload.target_contract(Address(IDENTITIES[4]), BitVector())
         payload.charge_rate = 1
         payload.charge_limit = 1000000000000
         payload.action = 'data'
@@ -149,9 +148,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_chain_code(self):
-        EXPECTED_DIGEST = "7032dd625b0a93aec85fa03696d0ecbc9de19d834ce3fd1d1ed9cf8a56d9f62e"
+        EXPECTED_DIGEST = "25cc72ca7d4871aaaabd027af129ecd4327adde5ec0c9977bfe11018d4bab64a"
         EXPECTED_PAYLOAD = \
-            "a1408000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
+            "a1608000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
             "0b666f6f2e6261722e62617a066c61756e636802676f00000000000000000418c2a33af8bd2cba7fa714a840a308" \
             "a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75" \
             "a0251c"
@@ -186,13 +185,12 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_smart_contract(self):
-        EXPECTED_DIGEST = "032a72029ae2ac5cdbf9e07cf57d9ecab97a6de34ed5cdf785d1d98037cd5dcd"
+        EXPECTED_DIGEST = "9ea094e71cbe846192429db3d7e8b02b649730c8b525c3268eb9ff5633c27130"
         EXPECTED_PAYLOAD = \
-            "a1404000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
-            "da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af6de6672a9d98da667e5dc25b2bca8a" \
-            "cf9644a7ac0797f01cb5968abf39de011df2066c61756e636802676f00000000000000000418c2a33af8bd2cba7f" \
-            "a714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758b" \
-            "cc4961bbdc75a0251c"
+            "a1604000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
+            "e6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df2066c61756e636802676f00000000" \
+            "000000000418c2a33af8bd2cba7fa714a840a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c25" \
+            "8cfd7025a2b9a942770e5b17758bcc4961bbdc75a0251c"
 
         # build the payload bytes for the transaction
         with mock.patch('random.getrandbits') as mock_counter:
@@ -202,7 +200,7 @@ class TransactionSerialisation(unittest.TestCase):
         payload.add_signer(IDENTITIES[0])
         payload.charge_rate = 1000
         payload.charge_limit = 1000000
-        payload.target_contract(IDENTITIES[3], IDENTITIES[4], BitVector())
+        payload.target_contract(Address(IDENTITIES[4]), BitVector())
         payload.action = 'launch'
         payload.data = 'go'.encode('ascii')
 
@@ -224,9 +222,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_validity_ranges(self):
-        EXPECTED_DIGEST = "98f10e8aa0bf4507db9eca66f0ff0b6a3eff35fe4def9ed86150c7ce72e71e80"
+        EXPECTED_DIGEST = "5451e302ba1fd323b623c1c9a0fc626b9c9249bb5d91ec60be1bb924efa3f1ac"
         EXPECTED_PAYLOAD = \
-            "a1470000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4024235130ac5aab442e3" \
+            "a1670000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d4024235130ac5aab442e3" \
             "9f9aa27118956695229212dd2f1ab5b714e9f6bd581511c103e820f478c7f74b50c187bf9a8836f382bd62977bae" \
             "eaf19625608e7e912aa60098c103e8da2e9c3191e3768d1c59ea43f6318367ed9b21e6974f46a60d0dd8976740af" \
             "6dc103e8e6672a9d98da667e5dc25b2bca8acf9644a7ac0797f01cb5968abf39de011df2c103e864c0c8c103e8c2" \
@@ -267,9 +265,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_contract_with_2bit_shard_mask(self):
-        EXPECTED_DIGEST = "8dbbee60c084b8ef88de39c961dec10df493c62623035972b28d1c5f1a3802a9"
+        EXPECTED_DIGEST = "6b6f94837fb1167e09507b66697b18336d668fbbada2f746f874c8491b8886c7"
         EXPECTED_PAYLOAD = \
-            "a1418000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
+            "a1618000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
             "40010b666f6f2e6261722e62617a066c61756e63680000000000000000000418c2a33af8bd2cba7fa714a840a308" \
             "a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75" \
             "a0251c"
@@ -309,9 +307,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_contract_with_4bit_shard_mask(self):
-        EXPECTED_DIGEST = "7915d6393fb07dbb4ff6896ef0f57025e5153b744d3a652b0f4815f129a9033c"
+        EXPECTED_DIGEST = "e1ac018356792e492aaac92bf6928af1e47ed987761b81cafb51f1106f403eee"
         EXPECTED_PAYLOAD = \
-            "a1418000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
+            "a1618000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
             "401c0b666f6f2e6261722e62617a066c61756e63680000000000000000000418c2a33af8bd2cba7fa714a840a308" \
             "a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bbdc75" \
             "a0251c"
@@ -352,9 +350,9 @@ class TransactionSerialisation(unittest.TestCase):
         self.assertEqual(sha256_hex(buffer.getvalue()), EXPECTED_DIGEST)
 
     def test_contract_with_large_shard_mask(self):
-        EXPECTED_DIGEST = "a4eff45d0374d29f259aba25fb06dd67394149b636927d199062102d91c0f7bf"
+        EXPECTED_DIGEST = "86a1c9e380fe5154243af3d50603aadb75327513373c0e2917b8319d3391b3ae"
         EXPECTED_PAYLOAD = \
-            "a1418000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
+            "a1618000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d464c0c8c103e8c2000f42" \
             "4041eaab0b666f6f2e6261722e62617a066c61756e63680000000000000000000418c2a33af8bd2cba7fa714a840" \
             "a308a217aa4483880b1ef14b4fdffe08ab956e3f4b921cec33be7c258cfd7025a2b9a942770e5b17758bcc4961bb" \
             "dc75a0251c"

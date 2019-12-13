@@ -125,8 +125,7 @@ class Transaction:
         address = Address(address)
         self._transfers[address] = self._transfers.get(address, 0) + amount
 
-    def target_contract(self, digest: Address, address: Address, mask: BitVector):
-        self._contract_digest = Address(digest)
+    def target_contract(self, address: Address, mask: BitVector):
         self._contract_address = Address(address)
         self._shard_mask = BitVector(mask)
         self._chain_code = None
