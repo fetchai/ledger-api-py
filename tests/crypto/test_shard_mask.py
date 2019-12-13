@@ -7,11 +7,10 @@ from fetchai.ledger.serialisation.shardmask import ShardMask
 class TestShardMask(unittest.TestCase):
     def test_state_to_address(self):
         contract = mock.Mock()
-        contract.digest.to_hex.side_effect = ['abc']
         contract.owner = 'def'
 
         address = ShardMask.state_to_address('xyz', contract)
-        self.assertEqual(address, 'abc.def.state.xyz')
+        self.assertEqual(address, 'def.state.xyz')
 
     def test_resource_to_shard(self):
         # Test rejection of invalid lane number
