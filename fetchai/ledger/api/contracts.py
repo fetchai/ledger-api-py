@@ -16,7 +16,8 @@ EntityList = List[Entity]
 class ContractsApi(ApiEndpoint):
     API_PREFIX = 'fetch.contract'
 
-    def create(self, owner: Entity, contract: 'Contract', fee: int, shard_mask: BitVector = None):
+    def create(self, owner: Entity, contract: 'Contract', fee: int, signers: Optional[List[int]] = None,
+               shard_mask: BitVector = None):
         ENDPOINT = 'create'
 
         logging.debug('Deploying contract', contract.address)
@@ -24,7 +25,8 @@ class ContractsApi(ApiEndpoint):
         tx = ContractTxFactory.create(owner, contract, fee, shard_mask)
 
         # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction(tx, [owner])
+        # TODO: Is multisig contract creation possible?
+        encoded_tx = transaction.encode_transaction(tx, signers if signers else [owner])
 
         # update the contracts owner
         contract.owner = owner
