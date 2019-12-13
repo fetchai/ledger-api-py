@@ -28,7 +28,7 @@ from fetchai.ledger import __compatible__, IncompatibleLedgerVersion
 from fetchai.ledger.api import bootstrap
 from fetchai.ledger.api.server import ServerApi
 from .common import ApiEndpoint, ApiError, submit_json_transaction
-from .contracts import ContractsApi
+from .contracts import ContractsApi, TransferList, Transfer
 from .token import TokenApi
 from .tx import TransactionApi
 
