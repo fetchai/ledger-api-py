@@ -15,10 +15,9 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-from contextlib import contextmanager
 from typing import List
 
-from fetchai.ledger.api import LedgerApi, TokenApi
+from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.api.contracts import ContractTxFactory
 from fetchai.ledger.contract import Contract
 from fetchai.ledger.crypto import Entity, Address
@@ -57,10 +56,10 @@ function balanceOf(address: Address) : UInt64
 endfunction
 
 @action
-function transfer(from: Address, to: Address, value: UInt64) : Bool
+function transfer(from: Address, to: Address, value: UInt64) : Int64
 
     if(!from.signedTx())
-      return false;
+      return 0i64;
     endif
 
     use balance_state[from, to];
@@ -68,7 +67,7 @@ function transfer(from: Address, to: Address, value: UInt64) : Bool
     var to_balance = balance_state.get(to, 0u64);
 
     if(from_balance < value)
-      return false;
+      return 0i64;
     endif
 
     var u_from = from_balance - value;
@@ -76,7 +75,7 @@ function transfer(from: Address, to: Address, value: UInt64) : Bool
 
     balance_state.set(from, u_from);
     balance_state.set(to, u_to);
-    return true;
+    return 1i64;
 
 endfunction
 
@@ -112,48 +111,56 @@ def main():
 
     # build the ledger API
     api = LedgerApi('127.0.0.1', 8000)
-
     # create contract factory
     contract_factory = ContractTxFactory(api)
 
     # create wealth so that we have the funds to be able to create contracts on the network
     api.sync(api.tokens.wealth(multi_sig_identity, 10000))
+    api.sync([api.tokens.wealth(sig, 10000) for sig in board])
 
     # create a multisig deed for multi_sig_identity
-    # Submit deed
     print("\nCreating deed...")
     deed = Deed(multi_sig_identity)
     for sig, weight in voting_weights.items():
         deed.set_signee(sig, weight)
     deed.amend_threshold = 4
-    # TODO: What is the correct operation for contract creation?
+    # Both the transfer and execute thresholds must be met to create a contract
+    # TODO: Contract creation both requires meeting the thresholds below, and can only be signed by a single
+    #  signatory. Therefore a single board member must be able to exceed these thresholds for creation
     deed.set_threshold(Operation.execute, 2)
-    deed.set_threshold(Operation.create, 2)
+    deed.set_threshold(Operation.transfer, 2)
 
+    # Submit deed
     api.sync(api.tokens.deed(multi_sig_identity, deed))
 
     # create the smart contract
+    print('\nSetting up smart contract')
     contract = Contract(CONTRACT_TEXT, multi_sig_identity)
 
-    tx = contract.create(contract_factory, multi_sig_identity, 4000, board)
-    for signee in board:
-        tx.sign(signee)
+    # TODO: Must be signed by single board member with sufficient votes
+    tx = contract.create(contract_factory, multi_sig_identity, 4000, [board[3]])
+    tx.sign(board[3])
 
-    # TODO: Will fail due to permission denied
     api.sync(api.contracts.submit_signed_tx(tx, tx.signers))
 
-    # TODO: Complete the rest once contract creation succeeds
-    # # print the current status of all the tokens
-    # print('-- BEFORE --')
-    # print_address_balances(api, contract, [multi_sig_address, address2])
-    #
-    # # transfer from one to the other using our newly deployed contract
-    # tok_transfer_amount = 200
-    # fet_tx_fee = 160
-    # api.sync(contract.action(api, 'transfer', fet_tx_fee, [multi_sig_identity], multi_sig_address, address2, tok_transfer_amount))
-    #
-    # print('-- AFTER --')
-    # print_address_balances(api, contract, [multi_sig_address, address2])
+    # print the current status of all the tokens
+    print('-- BEFORE --')
+    print_address_balances(api, contract, [multi_sig_address, address2])
+
+    # transfer from one to the other using our newly deployed contract
+    tok_transfer_amount = 200
+    fet_tx_fee = 160
+
+    print("Building contract call transaction...")
+    tx = contract.action(contract_factory, 'transfer', fet_tx_fee, multi_sig_address, address2, tok_transfer_amount,
+                         signers=board)
+    for signer in board:
+        tx.sign(signer)
+
+    api.sync(api.contracts.submit_signed_tx(tx, tx.signers))
+
+    print('-- AFTER --')
+    print_address_balances(api, contract, [multi_sig_address, address2])
 
 
 if __name__ == '__main__':

@@ -117,7 +117,7 @@ class ApiError(RuntimeError):
 class ApiEndpoint(object):
     API_PREFIX = None
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, api: 'LedgerApi'):
         if '://' in host:
             protocol, host = host.split('://')
         else:
@@ -127,6 +127,7 @@ class ApiEndpoint(object):
         self._host = str(host)
         self._port = int(port)
         self._session = requests.session()
+        self._parent_api = api
 
     @property
     def protocol(self):
@@ -253,7 +254,7 @@ class ApiEndpoint(object):
 
         # format the URL
         url = format_contract_url(self.host, self.port, self.API_PREFIX, endpoint, protocol=self.protocol)
-
+        print(url)
         # make the request
         r = self._session.post(url, json=tx_payload, headers=headers)
         success = 200 <= r.status_code < 300

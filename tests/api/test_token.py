@@ -1,5 +1,5 @@
-from unittest import TestCase, mock
-from unittest.mock import patch, create_autospec
+from unittest import TestCase
+from unittest.mock import patch
 
 from fetchai.ledger.api import TokenApi
 from fetchai.ledger.api.token import TokenTxFactory
@@ -15,7 +15,7 @@ class TokenAPITests(TestCase):
         self.to_address = Address(Entity())
 
         with patch('requests.session') as mock_session:
-            self.api = TokenApi('127.0.0.1', 8000)
+            self.api = TokenApi('127.0.0.1', 8000, None)
 
     def query_test(self, function, action: str):
         with patch('fetchai.ledger.api.TokenApi._post_json') as mock_post:

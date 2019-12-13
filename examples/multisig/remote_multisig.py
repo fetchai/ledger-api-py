@@ -22,7 +22,7 @@ from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.transaction import Transaction
 from fetchai.ledger.api.token import TokenTxFactory
 from fetchai.ledger.crypto import Entity
-from fetchai.ledger.crypto.deed import Deed
+from fetchai.ledger.crypto.deed import Deed, Operation
 
 HOST = '127.0.0.1'
 PORT = 8000
@@ -64,7 +64,7 @@ def main():
     for sig, weight in voting_weights.items():
         deed.set_signee(sig, weight)
     deed.amend_threshold = 4
-    deed.transfer_threshold = 3
+    deed.set_threshold(Operation.transfer, 3)
 
     api.sync(api.tokens.deed(multi_sig_identity, deed))
 

@@ -5,7 +5,7 @@ import requests
 
 from fetchai.ledger.api import TransactionApi
 from fetchai.ledger.api.tx import TxContents
-from fetchai.ledger.crypto import Address, Identity, Entity
+from fetchai.ledger.crypto import Address, Entity
 
 
 class TXContentsTest(TestCase):
@@ -16,7 +16,7 @@ class TXContentsTest(TestCase):
     def test_contents(self, mock_contents):
         """Check that transcation api correctly queries for and returns contents"""
         # Api object
-        api = TransactionApi('abc', 1234)
+        api = TransactionApi('abc', 1234, None)
 
         # Sessions mock for receiving URL request
         mock_session = Mock(spec=requests.Session)

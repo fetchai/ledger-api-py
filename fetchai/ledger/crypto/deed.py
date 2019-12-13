@@ -29,11 +29,14 @@ class InvalidDeedError(Exception):
 
 
 class Operation(Enum):
+    """Enables future amendments to the deed"""
     amend = 1
+    """Enables FET transfers"""
     transfer = 2
+    """Enab"""
     execute = 3
+
     stake = 4
-    create = 5
 
     def __repr__(self):
         return '<%s.%s>' % (self.__class__.__name__, self.name)

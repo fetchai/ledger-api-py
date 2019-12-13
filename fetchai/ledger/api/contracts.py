@@ -22,7 +22,7 @@ class ContractsApi(ApiEndpoint):
 
         logging.debug('Deploying contract', contract.address)
 
-        tx = ContractTxFactory.create(owner, contract, fee, shard_mask)
+        tx = ContractTxFactory(self._parent_api).create(owner, contract, fee, shard_mask)
 
         # encode and sign the transaction
         # TODO: Is multisig contract creation possible?
@@ -57,12 +57,12 @@ class ContractsApi(ApiEndpoint):
         return self._post_json(query, prefix=str(contract_owner), data=self._encode_json_payload(**kwargs))
 
     def action(self, contract_address: Address, action: str,
-               fee: int, from_address: Address, signers: EntityList,
-               *args, shard_mask: BitVector = None):
+               fee: int, from_address: Address, *args,
+               signers: EntityList, shard_mask: BitVector = None):
 
-        tx = ContractTxFactory.action(contract_address,
-                                      action, fee, from_address, signers,
-                                      *args, shard_mask=shard_mask)
+        tx = ContractTxFactory(self._parent_api).action(contract_address,
+                                                        action, fee, from_address, *args,
+                                                        signers=signers, shard_mask=shard_mask)
         tx.data = self._encode_msgpack_payload(*args)
         self._set_validity_period(tx)
 
@@ -114,6 +114,9 @@ class ContractsApi(ApiEndpoint):
             if key.endswith('_'):
                 key = key[:-1]
             yield key, value
+
+    def _post_tx_json(self, tx_data: bytes, endpoint: Optional[str]):
+        return super()._post_tx_json(tx_data=tx_data, endpoint=None)
 
 
 class ContractTxFactory(TransactionFactory):
