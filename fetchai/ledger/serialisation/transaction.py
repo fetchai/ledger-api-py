@@ -141,7 +141,6 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
     for signer in payload.signers.keys():
         identity.encode(buffer, signer)
 
-
 def encode_multisig_transaction(payload: 'Transaction', signatures: Dict[Identity, bytes]):
     assert isinstance(payload, bytes) or isinstance(payload, transaction.Transaction)
 
