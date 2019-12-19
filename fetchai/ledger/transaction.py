@@ -23,7 +23,6 @@ class Transaction:
         self._valid_until = 0
         self._charge_rate = 0
         self._charge_limit = 0
-
         self._contract_digest = None
         self._contract_address = None
         self._counter = random.getrandbits(64)

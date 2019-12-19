@@ -99,7 +99,7 @@ class LedgerApi:
         self.server = ServerApi(host, port, self)
 
         # Check that ledger version is compatible with API version
-        check_version_compatibility(self.server.version(), __compatible__)
+        #check_version_compatibility(self.server.version(), __compatible__)
 
     def sync(self, txs: Transactions, timeout=None, hold_state_sec=0, extend_success_status = []):
         """

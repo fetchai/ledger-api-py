@@ -46,8 +46,7 @@ class Operation(Enum):
 
 
 class Deed:
-    def __init__(self, address: AddressLike):
-        self._address = address
+    def __init__(self):
         self._signees = {}
         self._thresholds = {}
 
@@ -87,7 +86,6 @@ class Deed:
 
     def deed_creation_json(self, allow_no_amend=False):
         deed = {
-            'address': Address(self._address)._display,
             'signees': {Address(k)._display: v for k, v in self._signees.items()},
             'thresholds': {}
         }

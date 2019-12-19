@@ -91,13 +91,18 @@ def print_address_balances(api: LedgerApi, contract: Contract, addresses: List[A
 
 def main():
     # generate a random identity
-    multi_sig_identity = Entity()
+    multi_sig_identity = Entity.from_hex("e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8")
 
     # create our first private key pair
     multi_sig_address = Address(multi_sig_identity)
 
     # generate a board to control multi-sig account, with variable voting weights
-    board = [Entity() for _ in range(4)]
+    board = []
+    board.append(Entity.from_hex("6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b"))
+    board.append(Entity.from_hex("4083a476c4872f25cb40839ac8d994924bcef12d83e2ba4bd3ed6c9705959860"))
+    board.append(Entity.from_hex("7da0e3fa62a916238decd4f54d43301c809595d66dd469f82f29e076752b155c"))
+    board.append(Entity.from_hex("20293422c4b5faefba3422ed436427f2d37f310673681e98ac8637b04e756de3"))
+
     voting_weights = {
         board[0]: 1,
         board[1]: 1,
@@ -114,13 +119,13 @@ def main():
     # create contract factory
     contract_factory = ContractTxFactory(api)
 
-    # create wealth so that we have the funds to be able to create contracts on the network
-    api.sync(api.tokens.wealth(multi_sig_identity, 10000))
-    api.sync([api.tokens.wealth(sig, 10000) for sig in board])
+    # # create wealth so that we have the funds to be able to create contracts on the network
+    # api.sync(api.tokens.wealth(multi_sig_identity, 10000))
+    # api.sync([api.tokens.wealth(sig, 10000) for sig in board])
 
     # create a multisig deed for multi_sig_identity
     print("\nCreating deed...")
-    deed = Deed(multi_sig_identity)
+    deed = Deed()
     for sig, weight in voting_weights.items():
         deed.set_signee(sig, weight)
     deed.amend_threshold = 4

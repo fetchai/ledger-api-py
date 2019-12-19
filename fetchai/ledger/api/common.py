@@ -160,7 +160,6 @@ class ApiEndpoint(object):
         tx.valid_until = current_block + validity_period
         tx.charge_rate = 1
         tx.charge_limit = fee
-
         return tx
 
     def _set_validity_period(self, tx: Transaction, validity_period: Optional[int] = None):
@@ -169,7 +168,7 @@ class ApiEndpoint(object):
         # query what the current block number is on the node
         current_block = self._current_block_number()
 
-        tx.valid_until = current_block + validity_period
+        tx.valid_until = 1000
 
         return tx.valid_until
 
@@ -296,7 +295,6 @@ class TransactionFactory:
         tx = Transaction()
         tx.charge_rate = 1
         tx.charge_limit = fee
-
         return tx
 
     @classmethod

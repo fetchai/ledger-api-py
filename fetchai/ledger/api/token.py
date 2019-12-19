@@ -128,6 +128,10 @@ class TokenApi(ApiEndpoint):
         tx = TokenTxFactory.wealth(entity, amount)
         self._set_validity_period(tx)
 
+        tx.data = cls._encode_json({
+            'address': entity.public_key,
+            'amount': amount
+        })
         # encode and sign the transaction
         encoded_tx = transaction.encode_transaction(tx, [entity])
 
@@ -151,6 +155,8 @@ class TokenApi(ApiEndpoint):
         self._set_validity_period(tx)
 
         encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
+
+
 
         return self._post_tx_json(encoded_tx, ENDPOINT)
 

@@ -109,19 +109,21 @@ def track_cost(api: TokenApi, entity: Entity, message: str):
 
 
 def main():
+
+    entity1 = Entity.from_hex('6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b')
+    entity2 = Entity.from_hex('e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8')
     # create our first private key pair
-    entity1 = Entity()
+    #entity1 = Entity()
     address1 = Address(entity1)
 
     # create a second private key pair
-    entity2 = Entity()
+    #entity2 = Entity()
     address2 = Address(entity2)
 
     # build the ledger API
     api = LedgerApi('127.0.0.1', 8000)
 
     # create wealth so that we have the funds to be able to create contracts on the network
-    api.sync(api.tokens.wealth(entity1, 10000))
 
     # create the smart contract
     contract = Contract(CONTRACT_TEXT, entity1)

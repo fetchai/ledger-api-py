@@ -13,7 +13,7 @@ class DeedTests(TestCase):
 
     def test_create(self):
         """Test correct creation of deed"""
-        deed = Deed(self.address)
+        deed = Deed()
 
         for signee in self.board:
             deed.set_signee(signee, 1)
@@ -30,7 +30,7 @@ class DeedTests(TestCase):
 
     def test_thresholds(self):
         """Test that thresholds can be correctly set"""
-        deed = Deed(self.address)
+        deed = Deed()
 
         # Add signees with total voting weight of 5
         deed.set_signee(self.board[0], 2)
@@ -61,7 +61,7 @@ class DeedTests(TestCase):
 
     def test_warn_on_no_amend_threshold(self):
         """Checks a warning is printed when creating a deed with no amend threshold"""
-        deed = Deed(self.address)
+        deed = Deed()
 
         # Add signees with total voting weight of 5
         deed.set_signee(self.board[0], 2)

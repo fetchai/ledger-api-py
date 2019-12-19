@@ -40,7 +40,7 @@ def main():
     api = LedgerApi(HOST, PORT)
 
     # generate a random identity
-    multi_sig_identity = Entity()
+    multi_sig_identity = Entity.from_hex("e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8")
     # generate a board to control multi-sig account, with variable voting weights
     board = [Entity() for _ in range(4)]
     voting_weights = {
@@ -53,14 +53,9 @@ def main():
     # generate another entity as a target for transfers
     other_identity = Entity()
 
-    # Create the balance
-    print('\nSubmitting wealth creation...')
-    api.sync(api.tokens.wealth(multi_sig_identity, 100000))
-    print('Balance after wealth:', api.tokens.balance(multi_sig_identity))
-
     # Submit deed
     print("\nCreating deed...")
-    deed = Deed(multi_sig_identity)
+    deed = Deed()
     for sig, weight in voting_weights.items():
         deed.set_signee(sig, weight)
     deed.amend_threshold = 4
