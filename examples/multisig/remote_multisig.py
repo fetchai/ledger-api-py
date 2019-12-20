@@ -60,7 +60,7 @@ def main():
 
     # Submit deed
     print("\nCreating deed...")
-    deed = Deed(multi_sig_identity)
+    deed = Deed()
     for sig, weight in voting_weights.items():
         deed.set_signee(sig, weight)
     deed.amend_threshold = 4

@@ -270,9 +270,12 @@ class TokenTxFactory(TransactionFactory):
         else:
             tx.add_signer(entity)
 
-        deed_json = deed.deed_creation_json()
+        data = "{}".encode('ascii')
+        if deed is not None:
+            deed_json = deed.deed_creation_json()
+            data = cls._encode_json(deed_json)
 
-        tx.data = cls._encode_json(deed_json)
+        tx.data = data
 
         return tx
 

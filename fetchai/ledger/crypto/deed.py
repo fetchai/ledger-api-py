@@ -46,8 +46,8 @@ class Operation(Enum):
 
 
 class Deed:
-    def __init__(self, address: AddressLike):
-        self._address = address
+    def __init__(self, allow_no_amend=False):
+        self._allow_no_amend = allow_no_amend
         self._signees = {}
         self._thresholds = {}
 
@@ -59,6 +59,10 @@ class Deed:
             del self._signees[signee]
 
     def set_threshold(self, operation: Operation, threshold: int):
+        if threshold is None:
+            del self._thresholds[str(operation)]
+            return
+
         if threshold > self.total_votes:
             raise InvalidDeedError("Attempting to set threshold higher than available votes - it will never be met")
 
@@ -77,6 +81,10 @@ class Deed:
         return sum(v for v in self._signees.values())
 
     @property
+    def allow_no_amend(self):
+        return self._allow_no_amend
+
+    @property
     def amend_threshold(self):
         return self._thresholds['amend'] if \
             'amend' in self._thresholds else None
@@ -85,9 +93,8 @@ class Deed:
     def amend_threshold(self, value):
         self.set_threshold(Operation.amend, value)
 
-    def deed_creation_json(self, allow_no_amend=False):
+    def deed_creation_json(self):
         deed = {
-            'address': Address(self._address)._display,
             'signees': {Address(k)._display: v for k, v in self._signees.items()},
             'thresholds': {}
         }
@@ -100,7 +107,7 @@ class Deed:
             deed['thresholds']['amend'] = self.amend_threshold
 
         # Warnings/errors if no amend threshold set
-        elif allow_no_amend:
+        elif self.allow_no_amend:
             logging.warning("Creating deed without amend threshold - future amendment will be impossible")
         else:
             raise InvalidDeedError("Creating deed without amend threshold - future amendment will be impossible")
