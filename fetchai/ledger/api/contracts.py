@@ -26,10 +26,11 @@ class ContractsApi(ApiEndpoint):
 
         # encode and sign the transaction
         # TODO: Is multisig contract creation possible?
+        print(f"signers={signers}")
         encoded_tx = transaction.encode_transaction(tx, signers if signers else [owner])
 
-        # update the contracts owner
-        contract.owner = owner
+        ## update the contracts owner
+        #contract.owner = owner
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)

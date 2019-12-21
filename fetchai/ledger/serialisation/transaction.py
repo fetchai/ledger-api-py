@@ -167,7 +167,7 @@ def encode_transaction(payload: 'Transaction', signers: List[crypto.Entity]):
 
     # extract the payload buffer
     payload_bytes = buffer.getvalue()
-
+    print(f"signers={signers}")
     # append all the signatures of the signers in order
     for signer in payload.signers.keys():
         if signer not in signers:

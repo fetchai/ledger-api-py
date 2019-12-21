@@ -70,9 +70,9 @@ class Contract:
     def owner(self):
         return self._owner
 
-    @owner.setter
-    def owner(self, owner):
-        self._owner = Address(owner)
+    #@owner.setter
+    #def owner(self, owner):
+    #    self._owner = Address(owner)
 
     @property
     def source(self):
@@ -99,8 +99,8 @@ class Contract:
         return base64.b64encode(self.source.encode('ascii')).decode()
 
     def create(self, api: ContractsApiLike, owner: Entity, fee: int, signers: Optional[List[Entity]] = None):
-        # Set contract owner (required for resource prefix)
-        self.owner = owner
+        ## Set contract owner (required for resource prefix)
+        #self.owner = owner
 
         if self._init is None:
             raise RuntimeError("Contract has no initialisation function")
