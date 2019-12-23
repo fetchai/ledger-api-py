@@ -70,10 +70,6 @@ class Contract:
     def owner(self):
         return self._owner
 
-    #@owner.setter
-    #def owner(self, owner):
-    #    self._owner = Address(owner)
-
     @property
     def source(self):
         return self._source
@@ -99,9 +95,6 @@ class Contract:
         return base64.b64encode(self.source.encode('ascii')).decode()
 
     def create(self, api: ContractsApiLike, owner: Entity, fee: int, signers: Optional[List[Entity]] = None):
-        ## Set contract owner (required for resource prefix)
-        #self.owner = owner
-
         if self._init is None:
             raise RuntimeError("Contract has no initialisation function")
 
@@ -117,7 +110,7 @@ class Contract:
             # Generate shard mask from resource addresses
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        return self._api(api).create(owner, self, fee, signers, shard_mask=shard_mask)
+        return self._api(api).create(self.owner, self, fee, signers, shard_mask=shard_mask)
 
     def query(self, api: ContractsApiLike, name: str, **kwargs):
         if self._owner is None:

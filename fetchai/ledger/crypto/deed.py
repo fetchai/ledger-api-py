@@ -127,9 +127,6 @@ class Deed:
         if isinstance(json_deed, str):
             json_deed = json.loads(json_deed)
 
-
-        print(json_deed)
-
         deed = Deed(allow_no_amend=allow_no_amend)
 
         signees = json_deed['signees']

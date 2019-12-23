@@ -138,7 +138,6 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
         integer.encode(buffer, num_extra_signatures)
 
     # write all the signers public keys
-    print(f"signers: {payload.signers.keys()}")
     for signer in payload.signers.keys():
         identity.encode(buffer, signer)
 
@@ -168,7 +167,7 @@ def encode_transaction(payload: 'Transaction', signers: List[crypto.Entity]):
 
     # extract the payload buffer
     payload_bytes = buffer.getvalue()
-    print(f"signers={signers}")
+
     # append all the signatures of the signers in order
     for signer in payload.signers.keys():
         if signer not in signers:
