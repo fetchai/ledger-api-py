@@ -10,8 +10,9 @@ class ServerApi(ApiEndpoint):
         :return: dict of info returned by the /api/status endpoint
         """
         url = '{}://{}:{}/api/status'.format(self.protocol, self.host, self.port)
-
-        response = self._session.get(url).json()
+        response = self._session.get(url)
+        print(str(response.content))
+        response = response.json()
 
         return response
 

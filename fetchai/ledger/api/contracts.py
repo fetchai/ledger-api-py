@@ -22,7 +22,8 @@ class ContractsApi(ApiEndpoint):
 
         logging.debug('Deploying contract', contract.address)
 
-        tx = ContractTxFactory(self._parent_api).create(owner, contract, fee, shard_mask)
+        tx = ContractTxFactory(self._parent_api).create(owner, contract, fee, signers, shard_mask)
+        print(tx.signers)
 
         # encode and sign the transaction
         # TODO: Is multisig contract creation possible?

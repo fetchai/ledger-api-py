@@ -138,6 +138,7 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
         integer.encode(buffer, num_extra_signatures)
 
     # write all the signers public keys
+    print(f"signers: {payload.signers.keys()}")
     for signer in payload.signers.keys():
         identity.encode(buffer, signer)
 

@@ -18,6 +18,7 @@
 import logging
 from enum import Enum
 from typing import Union
+import json
 
 from fetchai.ledger.crypto import Address, Identity, Entity
 
@@ -102,7 +103,8 @@ class Deed:
         if self.amend_threshold:
             # Error if amend threshold un-meetable
             if self.amend_threshold > self.total_votes:
-                raise InvalidDeedError("Amend threshold greater than total voting power - future amendment will be impossible")
+                raise InvalidDeedError(
+                    "Amend threshold greater than total voting power - future amendment will be impossible")
 
             deed['thresholds']['amend'] = self.amend_threshold
 
@@ -119,3 +121,35 @@ class Deed:
             deed['thresholds'][key] = self._thresholds[key]
 
         return deed
+
+    @classmethod
+    def deed_from_json(cls, json_deed, allow_no_amend=False):
+        if isinstance(json_deed, str):
+            json_deed = json.loads(json_deed)
+
+
+        print(json_deed)
+
+        deed = Deed(allow_no_amend=allow_no_amend)
+
+        signees = json_deed['signees']
+        for signee, voting_weight in signees.items():
+            deed.set_signee(Address(signee), voting_weight)
+
+        thresholds = json_deed['thresholds']
+        for operation, threhold in thresholds.items():
+            deed.set_threshold(Operation[operation], threhold)
+
+        if deed.amend_threshold:
+            # Error if amend threshold un-meetable
+            if deed.amend_threshold > deed.total_votes:
+                raise InvalidDeedError("Amend threshold greater than total voting power - future amendment will be impossible")
+
+        # Warnings/errors if no amend threshold set
+        elif deed.allow_no_amend:
+            logging.warning("Creating deed without amend threshold - future amendment will be impossible")
+        else:
+            raise InvalidDeedError("Creating deed without amend threshold - future amendment will be impossible")
+
+        return deed
+
