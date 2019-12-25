@@ -32,6 +32,7 @@ class ContractsApi(ApiEndpoint):
         tx.data = self._encode_json({
             'nonce': contract.nonce,
             'text': contract.encoded_source,
+            # TODO: Is this still necessary:
             'digest': contract.digest.to_hex()
         })
         tx.add_signer(owner)
