@@ -9,7 +9,7 @@ class ShardMask:
     def state_to_address(cls, state, contract):
         # TODO: note circular dependency, as this will be called by contract
         assert contract.owner, "Contract does not have an owner"
-        return "{}.state.{}".format(contract.owner, state)
+        return "{}.state.{}".format(contract.address, state)
 
     @classmethod
     def resources_to_shard_mask(cls, resource_addresses, num_lanes):
