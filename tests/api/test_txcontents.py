@@ -69,7 +69,7 @@ class TXContentsTest(TestCase):
         self.assertEqual(a.valid_until, 100)
         self.assertEqual(a.charge, 2)
         self.assertEqual(a.charge_limit, 5)
-        self.assertEqual(a.transfers, {})
+        self.assertEqual(a.transfers, [])
         self.assertEqual(a.data, 'def')
 
     def test_transfers(self):

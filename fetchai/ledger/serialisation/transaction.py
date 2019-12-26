@@ -73,9 +73,9 @@ def encode_payload(buffer: io.BytesIO, payload: transaction.Transaction):
     if num_transfers > 1:
         integer.encode(buffer, num_transfers - 2)
 
-    for destination, amount in payload.transfers.items():
-        address.encode(buffer, destination)
-        integer.encode(buffer, amount)
+    for transfer in payload.transfers:
+        address.encode(buffer, transfer.to)
+        integer.encode(buffer, transfer.amount)
 
     if has_valid_from:
         integer.encode(buffer, payload.valid_from)

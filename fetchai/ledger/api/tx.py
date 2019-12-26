@@ -3,6 +3,8 @@ from typing import Union, List, Dict, Optional
 
 from fetchai.ledger.crypto import Address, Identity
 from fetchai.ledger.decode import decode_hex_or_b64
+from fetchai.ledger.transaction import Transfer
+
 from .common import ApiEndpoint
 
 AddressLike = Union[Address, Identity, bytes, str]
@@ -76,14 +78,14 @@ class TxContents:
         self.valid_until = valid_until
         self.charge = charge
         self.charge_limit = charge_limit
-        self.transfers = {Address(t['to']): t['amount'] for t in transfers}
+        self.transfers = [Transfer(to=t['to'], amount=int(t['amount'])) for t in transfers]
         self.signatories = signatories
         self.data = data
 
     def transfers_to(self, address: AddressLike) -> int:
         """Returns the amount of FET transferred to an address by this transaction, if any"""
         address = Address(address)
-        return self.transfers.get(address, 0)
+        return sum(t.amount for t in self.transfers if address == t.to)
 
     @staticmethod
     def from_json(data: Union[dict, str]):
