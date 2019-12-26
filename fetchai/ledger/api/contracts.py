@@ -12,8 +12,8 @@ EntityList = List[Entity]
 
 class Transfer:
     def __init__(self, to: Address, amount: int):
-        self.to: Address = to
-        self.amount: int = amount
+        self.to = to
+        self.amount = amount
 
 TransferList = List[Transfer]
 
