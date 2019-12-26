@@ -7,7 +7,7 @@ from fetchai.ledger.serialisation.shardmask import ShardMask
 class TestShardMask(unittest.TestCase):
     def test_state_to_address(self):
         contract = mock.Mock()
-        contract.owner = 'def'
+        contract.address = 'def'
 
         address = ShardMask.state_to_address('xyz', contract)
         self.assertEqual(address, 'def.state.xyz')
