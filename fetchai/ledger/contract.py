@@ -45,7 +45,7 @@ class Contract:
 
         init = entries.get('init', [])
         if len(init) > 1:
-        self._init = init[0] if len(init) else None
+            self._init = init[0] if len(init) else None
 
     @property
     def name(self):
