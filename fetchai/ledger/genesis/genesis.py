@@ -134,6 +134,8 @@ class GenesisFile:
 
         with open(file_name, 'w') as output_file:
             if no_formatting:
-                json.dump(self.as_json_object(), output_file)
+                contents = self.as_json_object()
+                json.dump(contents, output_file)
             else:
-                json.dump(self.as_json_object(), output_file, indent=4, sort_keys=True)
+                contents = self.as_json_object()
+                json.dump(contents, output_file, indent=4, sort_keys=True)

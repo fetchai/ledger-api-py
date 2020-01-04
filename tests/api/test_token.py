@@ -61,7 +61,7 @@ class TokenAPITests(TestCase):
 
     def test_deed(self):
         self.post_test(self.api.deed, 'deed', TokenTxFactory.deed,
-                       self.entity, Deed(), [self.entity])
+                       self.entity, Deed(), [self.entity], False)
 
     def test_transfer(self):
         self.post_test(self.api.transfer, 'transfer', TokenTxFactory.transfer,

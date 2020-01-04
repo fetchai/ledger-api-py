@@ -153,6 +153,8 @@ class TransactionSerialisation(unittest.TestCase):
 
     def test_chain_code(self):
         EXPECTED_DIGEST = "25cc72ca7d4871aaaabd027af129ecd4327adde5ec0c9977bfe11018d4bab64a"
+
+
         EXPECTED_PAYLOAD = \
             "a1608000532398dd883d1990f7dad3fde6a53a53347afc2680a04748f7f15ad03cadc4d400c103e8c2000f424080" \
             "0b666f6f2e6261722e62617a066c61756e636802676f00000000000000000418c2a33af8bd2cba7fa714a840a308" \

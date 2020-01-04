@@ -1,4 +1,5 @@
 import base64
+import json
 import unittest
 
 import ecdsa

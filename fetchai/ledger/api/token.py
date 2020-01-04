@@ -113,36 +113,10 @@ class TokenApi(ApiEndpoint):
         # return the result
         return data
 
-    def wealth(self, entity: Entity, amount: int):
-        """
-        Creates wealth for specified account
-
-        :param entity: The entity object to create wealth for
-        :param amount: The amount of wealth to be generated
-        :return: The digest of the submitted transaction
-        :raises: ApiError on any failures
-        """
-
-        ENDPOINT = 'wealth'
-
-        tx = TokenTxFactory.wealth(entity, amount)
-        self._set_validity_period(tx)
-
-        tx.data = cls._encode_json({
-            'address': entity.public_key,
-            'amount': amount
-        })
-        # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction(tx, [entity])
-
-        # submit the transaction
-        return self._post_tx_json(encoded_tx, ENDPOINT)
-
-    def deed(self, entity: Entity, deed: Deed, signatories: list = None):
+    def deed(self, entity: Entity, deed: Deed, signatories: list = None, allow_no_amend = False):
         """
         Sets the deed for a multi-sig account
-
-        :param entity: The entity object to create wealth for
+        :param entity: The entity object to create deed for
         :param deed: The deed to set
         :param signatories: The entities that will sign this action
         :return: The digest of the submitted transaction
@@ -151,7 +125,7 @@ class TokenApi(ApiEndpoint):
 
         ENDPOINT = 'deed'
 
-        tx = TokenTxFactory.deed(entity, deed, signatories)
+        tx = TokenTxFactory.deed(entity, deed, signatories, allow_no_amend)
         self._set_validity_period(tx)
 
         encoded_tx = transaction.encode_transaction(tx, signatories if signatories else [entity])
@@ -162,7 +136,7 @@ class TokenApi(ApiEndpoint):
 
     def transfer(self, entity: Entity, to: AddressLike, amount: int, fee: int, signatories: list = None):
         """
-        Transfers wealth from one account to another account
+        Transfers funds from one account to another account
 
         :param entity: The entity from which to transfer funds
         :param to: The bytes of the targeted address to send funds to
@@ -250,24 +224,9 @@ class TokenApi(ApiEndpoint):
 class TokenTxFactory(TransactionFactory):
     API_PREFIX = 'fetch.token'
 
-    @classmethod
-    def wealth(cls, entity: Entity, amount: int):
-
-        # build up the basic transaction information
-        tx = cls._create_action_tx(1, entity, 'wealth')
-
-        tx.add_signer(entity)
-
-        # format the transaction payload
-        tx.data = cls._encode_json({
-            'address': entity.public_key,
-            'amount': amount
-        })
-
-        return tx
 
     @classmethod
-    def deed(cls, entity: Entity, deed: Deed, signatories: list = None):
+    def deed(cls, entity: Entity, deed: Deed, signatories: list = None, allow_no_amend = False):
         tx = cls._create_action_tx(10000, entity, 'deed')
 
         if signatories:
@@ -276,7 +235,7 @@ class TokenTxFactory(TransactionFactory):
         else:
             tx.add_signer(entity)
 
-        deed_json = deed.deed_creation_json()
+        deed_json = deed.deed_creation_json(allow_no_amend)
 
         tx.data = cls._encode_json(deed_json)
 

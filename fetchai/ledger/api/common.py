@@ -168,8 +168,7 @@ class ApiEndpoint(object):
         # query what the current block number is on the node
         current_block = self._current_block_number()
 
-        tx.valid_until = 1000
-
+        tx.valid_until = current_block + validity_period
         return tx.valid_until
 
     def _current_block_number(self):

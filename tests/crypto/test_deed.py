@@ -20,7 +20,6 @@ class DeedTests(TestCase):
 
         deed.amend_threshold = 3
 
-        self.assertEqual(deed._address, self.address)
         self.assertEqual(deed.total_votes, 4)
         self.assertEqual(deed.return_threshold(Operation.amend), 3)
         self.assertEqual(deed.amend_threshold, 3)

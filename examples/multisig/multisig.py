@@ -40,8 +40,8 @@ def main():
 
     # generate a random identity
     multi_sig_identity = Entity.from_hex("6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b")
-    # generate a board to control multi-sig account, with variable voting weights
-    # board = [Entity() for _ in range(4)]
+    # Generate a board to control multi-sig account, with variable voting weights.
+    # We use keys for accounts which already have funds.
     board = []
     board.append(Entity.from_hex("e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8"))
     board.append(Entity.from_hex("4083a476c4872f25cb40839ac8d994924bcef12d83e2ba4bd3ed6c9705959860"))
@@ -125,7 +125,8 @@ def main():
     # Warning: if no amend threshold is set, future amendments are impossible
     print("\nAmending deed to remove threshold...")
     deed.amend_threshold = None
-    api.sync(api.tokens.deed(multi_sig_identity, deed, board))
+    allow_no_amend = True
+    api.sync(api.tokens.deed(multi_sig_identity, deed, board, allow_no_amend))
 
     deed.amend_threshold = 1
     print("\nExpecting further amendment to fail...")

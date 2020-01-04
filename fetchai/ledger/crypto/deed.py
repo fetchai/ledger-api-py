@@ -58,10 +58,12 @@ class Deed:
             del self._signees[signee]
 
     def set_threshold(self, operation: Operation, threshold: int):
-        if threshold > self.total_votes:
+        if threshold is None:
+            del self._thresholds[str(operation)]
+        elif threshold > self.total_votes:
             raise InvalidDeedError("Attempting to set threshold higher than available votes - it will never be met")
-
-        self._thresholds[str(operation)] = int(threshold)
+        else:
+            self._thresholds[str(operation)] = int(threshold)
 
     def remove_threshold(self, operation: Operation):
         if str(operation) in self._thresholds:

@@ -56,7 +56,8 @@ class Contract:
         return json.dumps(self._to_json_object())
 
     def dump(self, fp):
-        return json.dump(self._to_json_object(), fp)
+        json = self._to_json_object()
+        return json.dump(json, fp)
 
     @classmethod
     def loads(cls, s):

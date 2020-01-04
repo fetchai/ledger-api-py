@@ -80,6 +80,37 @@ endfunction
 
 """
 
+contract2 = """
+persistent sharded balance_state : UInt64;
+
+@init
+function setup(owner : Address)
+  use balance_state[owner];
+
+  balance_state.set(owner, 1000000u64);
+endfunction
+
+@action
+function transfer(from: Address, to: Address, amount: UInt64)
+  use balance_state[from, to];   
+
+  // Check if the sender has enough balance to proceed
+  if (balance_state.get(from, 0u64) >= amount)
+    // update the account balances
+    balance_state.set(from, balance_state.get(from) - amount);
+    balance_state.set(to, balance_state.get(to, 0u64) + amount);
+  endif
+
+endfunction
+
+@query
+function balance(address: Address) : UInt64
+  use balance_state[address];
+
+  return balance_state.get(address, 0u64);
+endfunction
+    """
+
 
 def print_address_balances(api: LedgerApi, contract: Contract, addresses: List[Address]):
     for idx, address in enumerate(addresses):
@@ -109,37 +140,33 @@ def track_cost(api: TokenApi, entity: Entity, message: str):
 
 
 def main():
-
+    # In examples we use addresses which already have funds
     entity1 = Entity.from_hex('6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b')
     entity2 = Entity.from_hex('e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8')
-    # create our first private key pair
-    #entity1 = Entity()
+
     address1 = Address(entity1)
 
     # create a second private key pair
-    #entity2 = Entity()
     address2 = Address(entity2)
 
     # build the ledger API
     api = LedgerApi('127.0.0.1', 8000)
 
-    # create wealth so that we have the funds to be able to create contracts on the network
-
     # create the smart contract
-    contract = Contract(CONTRACT_TEXT, entity1)
+    contract = Contract(contract2, entity1)
 
     with track_cost(api.tokens, entity1, "Cost of creation: "):
         api.sync(contract.create(api, entity1, 4000))
 
     # print the current status of all the tokens
     print('-- BEFORE --')
-    print_address_balances(api, contract, [address1, address2])
+    # print_address_balances(api, contract, [address1, address2])
 
     # transfer from one to the other using our newly deployed contract
     tok_transfer_amount = 200
     fet_tx_fee = 160
     with track_cost(api.tokens, entity1, "Cost of transfer: "):
-        api.sync(contract.action(api, 'transfer', fet_tx_fee, [entity1], address1, address2, tok_transfer_amount))
+        api.sync(contract.action(api, 'transfer', fet_tx_fee, address1, address2, tok_transfer_amount, [entity1]))
 
     print('-- AFTER --')
     print_address_balances(api, contract, [address1, address2])

@@ -15,9 +15,7 @@ def main():
     # create the APIs
     api = LedgerApi(HOST, PORT)
 
-    # create the balance
-    print('Submitting wealth creation...')
-
+    # Display balance before
     print('Balance:', api.tokens.balance(entity))
 
     print('Stake..:', api.tokens.stake(entity))

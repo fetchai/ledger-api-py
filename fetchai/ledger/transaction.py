@@ -235,7 +235,6 @@ class Transaction:
             if sig:
                 identity.encode(buffer, signer)
                 bytearray.encode(buffer, sig['signature'])
-
         return buffer.getvalue()
 
     @staticmethod

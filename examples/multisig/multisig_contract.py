@@ -136,11 +136,11 @@ def main():
     deed.set_threshold(Operation.transfer, 2)
 
     # Submit deed
-    api.sync(api.tokens.deed(multi_sig_identity, deed))
+    # api.sync(api.tokens.deed(multi_sig_identity, deed))
 
     # create the smart contract
     print('\nSetting up smart contract')
-    contract = Contract(CONTRACT_TEXT, multi_sig_identity)
+    contract = Contract(CONTRACT_TEXT, multi_sig_identity, bytes.fromhex('590953aea8a09c51'))
 
     # TODO: Must be signed by single board member with sufficient votes
     tx = contract.create(contract_factory, multi_sig_identity, 4000, [board[3]])

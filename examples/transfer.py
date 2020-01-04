@@ -27,14 +27,12 @@ def main():
     # create the APIs
     api = LedgerApi(HOST, PORT)
 
-    # generate a random identity
-    identity1 = Entity()
-    identity2 = Entity()
-    print('Balance Before:', api.tokens.balance(identity1))
+    # generate identities from hex private keys,
+    identity1 = Entity.from_hex('6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b')
+    identity2 = Entity.from_hex('e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8')
 
-    # create the balance
-    print('Submitting wealth creation...')
-    api.sync(api.tokens.wealth(identity1, 1000))
+    print('Balance 1 Before:', api.tokens.balance(identity1))
+    print('Balance 2 Before:', api.tokens.balance(identity2))
 
     # submit and wait for the transfer to be complete
     print('Submitting transfer...')

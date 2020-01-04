@@ -53,7 +53,10 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
     num_extra_signatures = num_signatures - 0x40 if num_signatures > 0x40 else 0
     signalled_signatures = num_signatures - (num_extra_signatures + 1)
     has_valid_from = payload.valid_from != 0
-
+    print("has_valid_from")
+    print(has_valid_from)
+    print("payload.from_address")
+    print(payload.from_address)
     header0 = VERSION << 5
     header0 |= (1 if num_transfers > 0 else 0) << 2
     header0 |= (1 if num_transfers > 1 else 0) << 1
