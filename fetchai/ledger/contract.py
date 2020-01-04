@@ -45,7 +45,6 @@ class Contract:
 
         init = entries.get('init', [])
         if len(init) > 1:
-            raise RuntimeError('Contract may not have more than one @init function, found: {}'.format(', '.join(init)))
         self._init = init[0] if len(init) else None
 
     @property

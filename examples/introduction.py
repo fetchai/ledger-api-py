@@ -1,6 +1,6 @@
 import base64
 
-from fetchai.ledger.api import LedgerApi, TokenApi, ContractsApi
+from fetchai.ledger.api import LedgerApi, TokenApi, ContractsApi, TransactionApi
 from fetchai.ledger.crypto import Address, Identity,  Entity
 
 PASSWORD = 'Password!12345'
@@ -18,13 +18,13 @@ def main():
     # Return the private key as a hexadecimal string
     private_key_hex = entity.private_key_hex
 
-    print('The new private key in hexadecimal is:', private_key_hex)
+    print('\nThe new private key in hexadecimal is:', private_key_hex)
 
     # Return the private key in bytes
     private_key_bytes = entity.private_key_bytes
 
     # Get the public key associated with the private key of an Entity object
-    print('The associated public key in hexadecimal is: ', entity.public_key_hex)
+    print('\nThe associated public key in hexadecimal is: ', entity.public_key_hex)
 
     # Construct an Entity from bytes
     entity2 = Entity(private_key_bytes)
@@ -41,7 +41,7 @@ def main():
     # serialize to JSON with AES
     serialized =  entity.dumps(PASSWORD)
 
-    print('\nThis serializes to the the following encrypted JSON string :\n', serialized)
+    print('\nThis serializes to the the following encrypted JSON string :\n',serialized)
 
     # Re-create an entity from an encrypted JSON string
     entity4 =  entity.loads(serialized, PASSWORD)
@@ -51,15 +51,15 @@ def main():
      # Check if a password is strong enough to be accepted by our serialization functionality.
      # A password must contain 14 chars or more, with one or more uppercase, lowercase, numeric and a one or more special char
     strong = 'is strong enough' if Entity.strong_password(PASSWORD) else 'is not strong enough'
-    print('\nThe given password: {} {} to be used with our serialization functionality\n'.format(PASSWORD, strong))
+    print('\nOur example password: {} upon testing {} to be used with our serialization functionality\n'.format(PASSWORD, strong))
 
-    # We can also encrypt a password from the terminal using our prompt functionality.
+    #We can also encrypt a password from the terminal using our prompt functionality.
     with open('private-key.key', 'w') as private_key_file:
         entity.prompt_dump(private_key_file)
 
     print("\nUse the same password as just before to reload the entity saved in file\n")
 
-        # Load private key from the terminal using our prompt functionality.
+    # Load private key from the terminal using our prompt functionality.
     with open('private-key.key', 'r') as private_key_file:
         loaded_entity = entity.prompt_load(private_key_file)
 
@@ -103,43 +103,57 @@ def main():
     # Construct an Address from a base58-encoded string: the public representation of an Address
     address2 = Address(ADDRESS)
 
-    # Validate that a string is  valid (verify checksum, valid base58-encoding and length)
+    # Validate that a string is a valid address (verify checksum, valid base58-encoding and length)
     valid_address = 'is valid.' if Address.is_address(ADDRESS) else 'is not valid.'
     print('The Address generated from our entity {}'.format(valid_address))
-
 
     # We can get the base 58 value of an address from an address object as follows:
     public_address = str(address)
 
-    print('The public base58 representation of this Address is:', public_address)
+    print('\nThe public base58 representation of this Address is:', public_address)
 
     # *************************************
-    # ****** Connecting to a Node *******
+    # ****** Working with a Ledger ********
     # *************************************
 
-    # build the ledger API Object, which represents a connection to a node
-    ## see the Bootstrap examples for further details relating to finding a Host and Port address,
-    api = LedgerApi('127.0.0.1', 8000)
+    host = '127.0.0.1'
+    port = 8000
 
-    # This class builds and holds references to the following subclasses (), each of which can alternatively be
-    # constructed individually and allow different sets of functions to be performed against the Ledger.
+    # The LedgerApi class has some general methods for working with the Ledger and
+    # builds and holds references to various subclasses which encompass different functions to be performed against
+    # against a Ledger Nodes public API.
+    # See the Bootstrap examples file for further details relating to finding a Host and Port of an available
+    print("\nTrying to connect to a Ledger Node...")
 
-    # The TokenApi Class, which has methods for staking in our Proof-of-stake model, checking the
-    # balance of an account, and performing transfers of funds. See the staking example in this folder for further details.
-    assert isinstance(api.token, TokenApi), "token property should be instance of TokenApi"
+    api = LedgerApi(host, port)
+
+    print("\nConnected to Ledger Node at Host: {} and Port {} ...".format(host, port))
 
 
+    # The TokenApi Class has methods for staking in our Proof-of-stake model, checking the
+    # balance of an account, and performing transfers of funds between accounts.
+
+    # See the staking example file in this folder for further details.
+    assert isinstance(api.tokens, TokenApi), "token property should be instance of TokenApi class"
+
+    # We can get the nodes current block number
+    block_number = api.tokens.current_block_number()
+    print("\nThe current block number of the Ledger is:", block_number);
+
+    # ContractsApi allows contract submition, and for contracts to be called on them
+    # See the contracts example file in this folder for further details.
     assert isinstance(api.contracts, ContractsApi), "contracts property should be instance of ContractsApi"
 
-
-            self.contracts = ContractsApi(host, port, self)
-            self.tx = TransactionApi(host, port, self)
-            self.server = ServerApi(host, port, self)
-
-
+    # TransactionApi contains methods to query the status of a submitted transaction
+    # See the tx example file in this folder for further details.
+    # TODO add tx example file, then delete this comment.
+    assert isinstance(api.tx, TransactionApi), "tx property should be instance of TransactionApi"
 
 
-    block_number = api.tokens.current_block_number()
+
+
+
+
 
 
 
