@@ -159,9 +159,9 @@ class LedgerApi:
             time.sleep(1)
 
     def wait_for_blocks(self, n):
-        initial = self.tokens._current_block_number()
+        initial = self.tokens.current_block_number()
         while True:
             time.sleep(1)
-            current = self.tokens._current_block_number()
+            current = self.tokens.current_block_number()
             if current > initial + n:
                 break

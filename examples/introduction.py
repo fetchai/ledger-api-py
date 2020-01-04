@@ -1,4 +1,6 @@
 import base64
+
+from fetchai.ledger.api import LedgerApi, TokenApi, ContractsApi
 from fetchai.ledger.crypto import Address, Identity,  Entity
 
 PASSWORD = 'Password!12345'
@@ -21,7 +23,7 @@ def main():
     # Return the private key in bytes
     private_key_bytes = entity.private_key_bytes
 
-    # Get the public key derived from a private key of an Entity object
+    # Get the public key associated with the private key of an Entity object
     print('The associated public key in hexadecimal is: ', entity.public_key_hex)
 
     # Construct an Entity from bytes
@@ -55,12 +57,14 @@ def main():
     with open('private-key.key', 'w') as private_key_file:
         entity.prompt_dump(private_key_file)
 
+    print("\nUse the same password as just before to reload the entity saved in file\n")
+
         # Load private key from the terminal using our prompt functionality.
     with open('private-key.key', 'r') as private_key_file:
         loaded_entity = entity.prompt_load(private_key_file)
 
     if loaded_entity.public_key_hex == entity.public_key_hex:
-        print('Loaded public/private key pair match, as expected')
+        print('\nLoaded public/private key pair match, as expected')
 
     # *************************************
     # ***** Working with Public keys ******
@@ -103,10 +107,44 @@ def main():
     valid_address = 'is valid.' if Address.is_address(ADDRESS) else 'is not valid.'
     print('The Address generated from our entity {}'.format(valid_address))
 
+
     # We can get the base 58 value of an address from an address object as follows:
     public_address = str(address)
 
     print('The public base58 representation of this Address is:', public_address)
+
+    # *************************************
+    # ****** Connecting to a Node *******
+    # *************************************
+
+    # build the ledger API Object, which represents a connection to a node
+    ## see the Bootstrap examples for further details relating to finding a Host and Port address,
+    api = LedgerApi('127.0.0.1', 8000)
+
+    # This class builds and holds references to the following subclasses (), each of which can alternatively be
+    # constructed individually and allow different sets of functions to be performed against the Ledger.
+
+    # The TokenApi Class, which has methods for staking in our Proof-of-stake model, checking the
+    # balance of an account, and performing transfers of funds. See the staking example in this folder for further details.
+    assert isinstance(api.token, TokenApi), "token property should be instance of TokenApi"
+
+
+    assert isinstance(api.contracts, ContractsApi), "contracts property should be instance of ContractsApi"
+
+
+            self.contracts = ContractsApi(host, port, self)
+            self.tx = TransactionApi(host, port, self)
+            self.server = ServerApi(host, port, self)
+
+
+
+
+    block_number = api.tokens.current_block_number()
+
+
+
+
+
 
 if __name__ == '__main__':
     main()

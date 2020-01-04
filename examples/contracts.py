@@ -80,37 +80,6 @@ endfunction
 
 """
 
-contract2 = """
-persistent sharded balance_state : UInt64;
-
-@init
-function setup(owner : Address)
-  use balance_state[owner];
-
-  balance_state.set(owner, 1000000u64);
-endfunction
-
-@action
-function transfer(from: Address, to: Address, amount: UInt64)
-  use balance_state[from, to];   
-
-  // Check if the sender has enough balance to proceed
-  if (balance_state.get(from, 0u64) >= amount)
-    // update the account balances
-    balance_state.set(from, balance_state.get(from) - amount);
-    balance_state.set(to, balance_state.get(to, 0u64) + amount);
-  endif
-
-endfunction
-
-@query
-function balance(address: Address) : UInt64
-  use balance_state[address];
-
-  return balance_state.get(address, 0u64);
-endfunction
-    """
-
 
 def print_address_balances(api: LedgerApi, contract: Contract, addresses: List[Address]):
     for idx, address in enumerate(addresses):
@@ -153,7 +122,7 @@ def main():
     api = LedgerApi('127.0.0.1', 8000)
 
     # create the smart contract
-    contract = Contract(contract2, entity1)
+    contract = Contract(CONTRACT_TEXT, entity1)
 
     with track_cost(api.tokens, entity1, "Cost of creation: "):
         api.sync(contract.create(api, entity1, 4000))

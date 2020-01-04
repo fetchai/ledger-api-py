@@ -135,9 +135,6 @@ class Entity(Identity):
 
         while not self.strong_password(password):
             password = getpass.getpass('Please enter password 2', stream=None)
-        print("password")
-        print(password)
-        print(self.dumps(password))
         return self.dump(fp, password)
 
     def dumps(self, password):
@@ -148,9 +145,8 @@ class Entity(Identity):
     def dump(self, fp, password):
         if not self.strong_password(password):
             raise RuntimeError("Insufficiently strong password: password must contain 14 chars or more, with one or more uppercase, lowercase, and numeric and special character")
-        x = self._to_json_object(password)
-        print(x)
-        return json.dump(x, fp)
+        json = self._to_json_object(password)
+        return json.dump(json, fp)
 
     def _to_json_object(self, password):
         encrypted, key_length, init_vec, salt = _encrypt(password, self.private_key_bytes)

@@ -153,7 +153,7 @@ class ApiEndpoint(object):
         validity_period = validity_period or DEFAULT_BLOCK_VALIDITY_PERIOD
 
         # query what the current block number is on the node
-        current_block = self._current_block_number()
+        current_block = self.current_block_number()
 
         # build up the basic transaction information
         tx = Transaction()
@@ -166,12 +166,12 @@ class ApiEndpoint(object):
         validity_period = validity_period or DEFAULT_BLOCK_VALIDITY_PERIOD
 
         # query what the current block number is on the node
-        current_block = self._current_block_number()
+        current_block = self.current_block_number()
 
         tx.valid_until = current_block + validity_period
         return tx.valid_until
 
-    def _current_block_number(self):
+    def current_block_number(self):
         success, data = self._get_json('status/chain', size=1)
         if success:
             return data['chain'][0]['blockNumber']
