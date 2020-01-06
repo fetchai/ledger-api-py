@@ -40,7 +40,7 @@ def main():
     else:
         print("\nExample failure: nothing should be transferred to Address: ", str(Address(nonexistent_entity)))
 
-    # Check the status of a transaction. This is an alternative to calling the LedgerApi's sync method, which itself polls the status
+    # Check the status of a transaction. This is an alternative to calling the LedgerApi's sync method, which itself polls the below status endpoint
     status = api.tx.status(tx)
 
     print('\nCurrent Status is :',  status.status)
