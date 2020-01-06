@@ -45,7 +45,8 @@ class Contract:
 
         init = entries.get('init', [])
         if len(init) > 1:
-            self._init = init[0] if len(init) else None
+            raise RuntimeError('Contract may not have more than one @init function, found: {}'.format(', '.join(init)))
+        self._init = init[0] if len(init) else None
 
     @property
     def name(self):
@@ -55,8 +56,7 @@ class Contract:
         return json.dumps(self._to_json_object())
 
     def dump(self, fp):
-        json = self._to_json_object()
-        return json.dump(json, fp)
+        return json.dump(self._to_json_object(), fp)
 
     @classmethod
     def loads(cls, s):

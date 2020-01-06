@@ -5,7 +5,7 @@ from fetchai.ledger.crypto import Address, Identity,  Entity
 
 PASSWORD = 'Password!12345'
 ADDRESS = 'dTSCNwHBPoDdESpxj6NQkPDvX3DN1DFKGsUPZNVWDVDrfur4z'
-
+ENCRYPTED_KEY_FP = '/home/douglas/ledger-api-py/examples/private-key.key'
 
 def main():
     # *************************************
@@ -54,17 +54,19 @@ def main():
     print('\nOur example password: {} upon testing {} to be used with our serialization functionality\n'.format(PASSWORD, strong))
 
     #We can also encrypt a password from the terminal using our prompt functionality.
-    with open('private-key.key', 'w') as private_key_file:
+    with open(ENCRYPTED_KEY_FP, 'w') as private_key_file:
         entity.prompt_dump(private_key_file)
+        private_key_file.close()
 
+    print("\nSuccess! Private key, encrypted with the password has been saved in examples.")
     print("\nUse the same password as just before to reload the entity saved in file\n")
 
     # Load private key from the terminal using our prompt functionality.
-    with open('private-key.key', 'r') as private_key_file:
+    with open(ENCRYPTED_KEY_FP, 'r') as private_key_file:
         loaded_entity = entity.prompt_load(private_key_file)
 
     if loaded_entity.public_key_hex == entity.public_key_hex:
-        print('\nLoaded public/private key pair match, as expected')
+        print('\nLoaded public/private key pair match, saved in file: ' + ENCRYPTED_KEY_FP )
 
     # *************************************
     # ***** Working with Public keys ******
