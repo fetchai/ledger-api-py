@@ -17,7 +17,7 @@ def main():
     # TxContents object (below contents variable) contains all properties sent to ledger in transaction API call
     contents = api.tx.contents(tx)
 
-    # below access a subset of the properties of our TxContents object
+    # below we access a subset of the properties of our TxContents object
     valid_until = contents.valid_until
     valid_from = contents.valid_from
     from_address = contents.from_address
