@@ -50,7 +50,7 @@ class Contract:
 
     @property
     def name(self):
-        return '{}.{}'.format(self.digest.to_hex(), self.address)
+        return '{}'.format(self.address)
 
     def dumps(self):
         return json.dumps(self._to_json_object())
@@ -69,6 +69,7 @@ class Contract:
     @property
     def owner(self):
         return self._owner
+
 
     @property
     def source(self):
@@ -100,6 +101,7 @@ class Contract:
 
         # Generate resource addresses used by persistent globals
         try:
+
             resource_addresses = ['fetch.contract.state.{}'.format(self.digest.to_hex())]
             resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
                                       self._parser.used_globals_to_addresses(self._init, [self._owner]))
@@ -132,7 +134,8 @@ class Contract:
 
         return response['result']
 
-    def action(self, api: ContractsApiLike, name: str, fee: int, *args, signers: Optional[List[Entity]] = None):
+    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args,
+               from_address: Address = None):
         if self._owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
 
@@ -152,9 +155,14 @@ class Contract:
             # Generate shard mask from resource addresses
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        return self._api(api).action(self.address, name, fee,
-                                     Address(signers[0]) if len(signers) == 1 else Address(self.owner),
-                                     *args, signers=signers, shard_mask=shard_mask)
+        if from_address is None:
+            # This is not correct - in the case of multi-sig (even with *single* signer) the intended from_address
+            # of the transaction might be *different* than the signer's address
+            if len(signers) == 1:
+                from_address = Address(signers[0])
+
+        return self._api(api).action(self.address, name, fee, from_address, signers, *args, shard_mask=shard_mask)
+
 
     @staticmethod
     def _api(api: ContractsApiLike):
@@ -162,6 +170,7 @@ class Contract:
             return api.contracts
         elif isinstance(api, ContractTxFactory):
             return api
+
         else:
             assert False
 
@@ -187,3 +196,4 @@ class Contract:
             'owner': None if self._owner is None else str(self._owner),
             'source': self.encoded_source
         }
+
