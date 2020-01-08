@@ -25,7 +25,6 @@ class ContractsApi(ApiEndpoint):
         tx = ContractTxFactory(self._parent_api).create(owner, contract, fee, signers, shard_mask)
 
         # encode and sign the transaction
-        # TODO: Is multisig contract creation possible?
         encoded_tx = transaction.encode_transaction(tx, signers if signers else [owner])
 
         # submit the transaction
