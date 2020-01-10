@@ -98,5 +98,4 @@ def server_from_name(network):
     # Check if address contains a port
     protocol, host, port = split_address(ledger_address)
 
-    print(protocol + '://' + host, port)
     return protocol + '://' + host, port
