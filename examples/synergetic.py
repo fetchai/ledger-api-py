@@ -55,8 +55,9 @@ def main():
 
     # create a whole series of random data to submit to the DAG
     random_ints = [random.randint(0, 200) for _ in range(10)]
+    fee = 100000000
     api.sync(
-        [api.contracts.submit_data(entity, synergetic_contract.digest, synergetic_contract.address, value=value) \
+        [api.contracts.submit_data(entity, synergetic_contract.digest, synergetic_contract.address, fee, value=value) \
          for value in random_ints])
     print('Data submitted.')
 
