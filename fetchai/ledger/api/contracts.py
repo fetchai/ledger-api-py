@@ -130,10 +130,8 @@ class ContractTxFactory(TransactionFactory):
         """Replicate setting of validity period using server"""
         self._api.server._set_validity_period(tx, validity_period=validity_period)
 
-    def action(self, contract_address: Address, action: str,
-               fee: int, from_address: Address, *args,
-               signers: Optional[List[Entity]] = None,
-               shard_mask: Optional[BitVector] = None) -> Transaction:
+    def action(self, contract_address: Address, action: str, fee: int, from_address: Address, signers: List[Entity],
+               *args, shard_mask: Optional[BitVector] = None) -> Transaction:
 
         # Default to wildcard shard mask if none supplied
         if not shard_mask:

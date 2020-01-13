@@ -135,7 +135,7 @@ class Contract:
 
     def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args,
                from_address: Address = None):
-        if self._owner is None:
+        if self.owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
 
         # TODO(WK): Reinstate without breaking contract-to-contract calls
