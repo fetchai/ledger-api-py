@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from fetchai.ledger.api import LedgerApi, ContractsApi
 from fetchai.ledger.contract import Contract
-from fetchai.ledger.crypto import Entity
+from fetchai.ledger.crypto import Address, Entity
 from fetchai.ledger.serialisation.shardmask import ShardMask
 
 CONTRACT_TEXT = """
@@ -103,7 +103,7 @@ class ContractTests(unittest.TestCase):
         mock_shard_mask.assert_called_once_with(
             ['fetch.contract.state.{}'.format(contract.digest.to_hex())], lane_number)
         # Check api create method called
-        api.contracts.create.assert_called_once_with(owner, contract, 1000, [owner], shard_mask=dummy_shard_mask)
+        api.contracts.create.assert_called_once_with(Address(owner), contract, 1000, [owner], shard_mask=dummy_shard_mask)
 
     def test_init(self):
         # Test rejection of contract with multiple init statements

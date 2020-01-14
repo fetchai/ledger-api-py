@@ -52,13 +52,11 @@ class ContractsApi(ApiEndpoint):
     def query(self, contract_owner: Address, query: str, **kwargs):
         return self._post_json(query, prefix=str(contract_owner), data=self._encode_json_payload(**kwargs))
 
-    def action(self, contract_address: Address, action: str,
-               fee: int, from_address: Address, *args,
-               signers: EntityList, shard_mask: BitVector = None):
+    def action(self, contract_address: Address, action: str, fee: int, signers: EntityList, *args,
+               from_address: Address = None, shard_mask: BitVector = None):
 
-        tx = ContractTxFactory(self._parent_api).action(contract_address,
-                                                        action, fee, from_address, *args,
-                                                        signers=signers, shard_mask=shard_mask)
+        tx = ContractTxFactory(self._parent_api).action(contract_address, action, fee, signers, *args,
+                                                        from_address=from_address, shard_mask=shard_mask)
         tx.data = self._encode_msgpack_payload(*args)
         self._set_validity_period(tx)
 
@@ -99,8 +97,8 @@ class ContractsApi(ApiEndpoint):
 
     @staticmethod
     def _is_primitive(value):
-        for type in (bool, int, float, str):
-            if isinstance(value, type):
+        for _type in (bool, int, float, str):
+            if isinstance(value, _type):
                 return True
         return False
 
@@ -130,13 +128,17 @@ class ContractTxFactory(TransactionFactory):
         """Replicate setting of validity period using server"""
         self._api.server._set_validity_period(tx, validity_period=validity_period)
 
-    def action(self, contract_address: Address, action: str, fee: int, from_address: Address, signers: List[Entity],
-               *args, shard_mask: Optional[BitVector] = None) -> Transaction:
+    def action(self, contract_address: Address, action: str, fee: int, signers: List[Entity], *args,
+               from_address: Address = None, shard_mask: Optional[BitVector] = None) -> Transaction:
 
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
             logging.warning("Defaulting to wildcard shard mask as none supplied")
             shard_mask = BitVector()
+
+        if from_address is None:
+            if len(signers) == 1:
+                from_address = Address(signers[0])
 
         # build up the basic transaction information
         tx = self._create_action_tx(fee, from_address, action, shard_mask)

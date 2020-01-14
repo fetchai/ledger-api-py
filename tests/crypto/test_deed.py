@@ -18,15 +18,16 @@ class DeedTests(TestCase):
         for signee in self.board:
             deed.set_signee(signee, 1)
 
-        deed.amend_threshold = 3
+        deed.set_threshold(Operation.amend, 3)
 
         self.assertEqual(deed.total_votes, 4)
-        self.assertEqual(deed.return_threshold(Operation.amend), 3)
+        self.assertEqual(deed.get_threshold(Operation.amend), 3)
+        for signee in self.board:
+            self.assertEqual(deed.get_signee(signee), 1)
+        deed.is_sane(throw=True)
 
-        self.assertEqual(deed._signees, {s: 1 for s in self.board})
-        self.assertEqual(deed._thresholds, {'amend': 3})
+    def test_threshold_sanity(self):
 
-    def test_thresholds(self):
         """Test that thresholds can be correctly set"""
         deed = Deed()
 
@@ -35,17 +36,18 @@ class DeedTests(TestCase):
         deed.set_signee(self.board[1], 2)
         deed.set_signee(self.board[2], 1)
 
+        deed.set_threshold(Operation.transfer, deed.total_votes + 1)
         # Setting any threshold higher than the voting weight should fail
         with self.assertRaises(InvalidDeedError):
-            deed.set_threshold(Operation.transfer, deed.total_votes + 1)
+            deed.is_sane(throw=True)
 
         # Check threshold successfully set
-        deed.set_threshold(Operation.transfer, deed.total_votes - 1)
         deed.set_threshold(Operation.amend, deed.total_votes)
+        deed.set_threshold(Operation.transfer, deed.total_votes - 1)
+        deed.is_sane(throw=True)
 
-        json = deed.deed_creation_json()
-        self.assertEqual(json['thresholds']['amend'], 5)
-        self.assertEqual(json['thresholds']['transfer'], 4)
+        self.assertEqual(deed.get_threshold(Operation.amend), 5)
+        self.assertEqual(deed.get_threshold(Operation.transfer), 4)
 
     def test_enum(self):
         self.assertEqual(str(Operation.amend), 'amend')
@@ -65,6 +67,10 @@ class DeedTests(TestCase):
 
         # Attempting to create un-amendable deed without explicitly requesting it is an error
         with self.assertRaises(InvalidDeedError):
+            deed.is_sane(throw=True)
+
+        # Attempting to create un-amendable deed without explicitly requesting it is an error
+        with self.assertRaises(InvalidDeedError):
             deed.deed_creation_json()
 
     def test_allow_missing_amend_threshold(self):
@@ -75,32 +81,15 @@ class DeedTests(TestCase):
 
         # With explicit request, this should still be a warning
         with patch('logging.warning') as mock_warn:
+            deed.is_sane(throw=True)
+            self.assertEqual(mock_warn.call_count, 1)
+
+        # With explicit request, this should still be a warning
+        with patch('logging.warning') as mock_warn:
             json = deed.deed_creation_json()
             self.assertEqual(mock_warn.call_count, 1)
 
-        self.assertNotIn(str(Operation.amend), json)
-        self.assertIn(str(Operation.transfer), json)
-
-    def test_threshold_sanity(self):
-        """Checks successful deed operation if amend threshold is missing, but explicit permission has been granted"""
-        deed = Deed()
-
-        # Add signees with total voting weight of 6
-        deed.set_signee(self.board[0], 3)
-        deed.set_signee(self.board[1], 2)
-        deed.set_signee(self.board[2], 1)
-
-        # Adding an amend threshold greater than the available voting power should cause error
-        deed._thresholds['amend'] = deed.total_votes + 1
-        deed.deed_creation_json()
-
-        with self.assertRaises(InvalidDeedError):
-            json = deed.deed_creation_json()
-
-        # Adding an amend threshold lower than the available votes shouldn't cause a warning or error
-        deed.amend_threshold = deed.total_votes - 1
-        with patch('logging.warning') as mock_warn:
-            json = deed.deed_creation_json()
-            self.assertEqual(mock_warn.call_count, 0)
-
-
+        json = deed.deed_creation_json()
+        thresholds = json['thresholds']
+        self.assertNotIn(str(Operation.amend), thresholds)
+        self.assertIn(str(Operation.transfer), thresholds)

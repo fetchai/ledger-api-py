@@ -34,9 +34,9 @@ class Operation(Enum):
     amend = 1
     """Enables FET transfers"""
     transfer = 2
-    """Enab"""
+    """Enable execution of contract"""
     execute = 3
-
+    """Enables operations related to staking"""
     stake = 4
 
     def __repr__(self):
@@ -47,33 +47,31 @@ class Operation(Enum):
 
 
 class Deed:
-    def __init__(self, allow_no_amend=False):
+    def __init__(self, allow_no_amend: bool = False):
         self._allow_no_amend = allow_no_amend
         self._signees = {}
         self._thresholds = {}
 
     def set_signee(self, signee: Entity, voting_weight: int):
+        if voting_weight is None and signee in self._signees:
+            del self._signees[signee]
+            return
+
+        self._is_voting_weight_sane(signee, voting_weight, throw=True)
         self._signees[signee] = int(voting_weight)
 
-    def remove_signee(self, signee: Entity):
-        if signee in self._signees:
-            del self._signees[signee]
+    def get_signee(self, signee: Address):
+        return self._signees[signee] if signee in self._signees else None
 
     def set_threshold(self, operation: Operation, threshold: int):
-        if threshold is None:
+        if threshold is None and operation in self._thresholds:
             del self._thresholds[operation]
             return
 
-        if threshold > self.total_votes:
-            raise InvalidDeedError("Attempting to set threshold higher than available votes - it will never be met")
-
+        self._is_threshold_sane(operation, threshold, throw=True)
         self._thresholds[operation] = int(threshold)
 
-    def remove_threshold(self, operation: Operation):
-        if operation in self._thresholds:
-            del self._thresholds[operation]
-
-    def return_threshold(self, operation: Operation):
+    def get_threshold(self, operation: Operation):
         return self._thresholds[operation] if operation in self._thresholds else None
 
     @property
@@ -84,65 +82,45 @@ class Deed:
     def allow_no_amend(self):
         return self._allow_no_amend
 
-    def is_sane(self, throw=False):
-        if self.allow_no_amend and Operation.amend not in self._thresholds:
+    def is_sane(self, throw: bool = False):
+        if self.allow_no_amend:
+            logging.warning("Creating deed without amend threshold - future amendment will be impossible")
+        elif not self.allow_no_amend and Operation.amend not in self._thresholds:
             if throw:
-                raise InvalidDeedError("The '{}' operation is required but it not present".format(Operation.amend))
-
+                raise InvalidDeedError("The '{}' operation is mandatory but it not present".format(Operation.amend))
             return False
 
         for signee, voting_weight in self._signees.items():
-            if voting_weight <= 0:
-                if throw:
-                    raise InvalidDeedError("Invalid voting weight {} for signee '{}'".format(voting_weight, signee))
-
+            if not self._is_voting_weight_sane(signee, voting_weight, throw=throw):
                 return False
 
         total_voting_weight = self.total_votes
 
         for operation, threshold in self._thresholds.items():
-            if threshold > total_voting_weight:
+            if not self._is_threshold_sane(operation, threshold, throw=throw):
+                return False
+            elif threshold > total_voting_weight:
                 if throw:
                     raise InvalidDeedError(
                         "Threshold value {} for '{}' operation is greater than total"
                         "voting weight {}".format(threshold, operation, total_voting_weight))
-
                 return False
 
         return True
 
-    def deed_creation_json(self):
-        self.is_sane(throw=True)
+    def deed_creation_json(self, verify_sanity: bool = True):
+        if verify_sanity:
+            self.is_sane(throw=True)
 
         deed = {
-            'signees': {str(Address(k)): v for k, v in self._signees.items()},
-            'thresholds': {}
+            'signees': {str(Address(signee)): voting_weight for signee, voting_weight in self._signees.items()},
+            'thresholds': {str(operation): threshold for operation, threshold in self._thresholds.items()}
         }
-
-        if self.amend_threshold:
-            # Error if amend threshold un-meetable
-            if self.amend_threshold > self.total_votes:
-                raise InvalidDeedError(
-                    "Amend threshold greater than total voting power - future amendment will be impossible")
-
-            deed['thresholds']['amend'] = self.amend_threshold
-
-        # Warnings/errors if no amend threshold set
-        elif self.allow_no_amend:
-            logging.warning("Creating deed without amend threshold - future amendment will be impossible")
-        else:
-            raise InvalidDeedError("Creating deed without amend threshold - future amendment will be impossible")
-
-        # Add other thresholds
-        for key in self._thresholds:
-            if key == Operation.amend:
-                continue
-            deed['thresholds'][key] = self._thresholds[key]
 
         return deed
 
     @classmethod
-    def deed_from_json(cls, json_deed, allow_no_amend=False, verify_sanity=True):
+    def deed_from_json(cls, json_deed, allow_no_amend: bool = False, verify_sanity: bool = True):
         if isinstance(json_deed, str):
             json_deed = json.loads(json_deed)
 
@@ -150,20 +128,31 @@ class Deed:
 
         signees = json_deed['signees']
         for signee, voting_weight in signees.items():
-            if verify_sanity:
-                deed.set_signee(Address(signee), voting_weight)
-            else:
-                deed._signees[Address(signee)] = int(voting_weight)
+            deed._signees[Address(signee)] = int(voting_weight)
 
         thresholds = json_deed['thresholds']
         for operation, threshold in thresholds.items():
-            if verify_sanity:
-                deed.set_threshold(Operation[operation], threshold)
-            else:
-                deed._thresholds[Operation[operation]] = threshold
+            deed._thresholds[Operation[operation]] = int(threshold)
 
         if verify_sanity:
             deed.is_sane(throw=True)
 
         return deed
 
+    @classmethod
+    def _is_voting_weight_sane(cls, signee: Address, voting_weight: int, throw: bool = False):
+        if voting_weight <= 0:
+            if throw:
+                raise InvalidDeedError("Invalid voting weight {} for the '{}' signee".format(voting_weight, signee))
+            return False
+
+        return True
+
+    @classmethod
+    def _is_threshold_sane(cls, operation: Operation, threshold: int, throw: bool = False):
+        if threshold <= 0:
+            if throw:
+                raise InvalidDeedError("Invalid threshold value {} for the '{}' operation".format(threshold, operation))
+            return False
+
+        return True

@@ -154,14 +154,8 @@ class Contract:
             # Generate shard mask from resource addresses
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        if from_address is None:
-            # This is not correct - in the case of multi-sig (even with *single* signer) the intended from_address
-            # of the transaction might be *different* than the signer's address
-            if len(signers) == 1:
-                from_address = Address(signers[0])
-
-        return self._api(api).action(self.address, name, fee, from_address, signers, *args, shard_mask=shard_mask)
-
+        return self._api(api).action(self.address, name, fee, signers, *args,
+                                     from_address=from_address, shard_mask=shard_mask)
 
     @staticmethod
     def _api(api: ContractsApiLike):
