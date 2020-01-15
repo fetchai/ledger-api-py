@@ -272,7 +272,7 @@ class TokenTxFactory(TransactionFactory):
 
         data = "{}".encode('ascii')
         if deed is not None:
-            deed_json = deed.deed_creation_json()
+            deed_json = deed.to_json()
             data = cls._encode_json(deed_json)
 
         tx.data = data

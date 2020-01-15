@@ -52,7 +52,20 @@ class Deed:
         self._signees = {}
         self._thresholds = {}
 
-    def set_signee(self, signee: Entity, voting_weight: int):
+    def __eq__(self, other: 'Deed'):
+        if self is other:
+            return True
+
+        return other is not None and self._signees == other._signees and self._thresholds == other._thresholds and \
+               self._allow_no_amend == other._allow_no_amend
+
+    def __ne__(self, other: 'Deed'):
+        return not self == other
+
+    def set_signee(self, signee: AddressLike, voting_weight: int):
+        if not isinstance(signee, Address):
+            signee = Address(signee)
+
         if voting_weight is None and signee in self._signees:
             del self._signees[signee]
             return
@@ -73,6 +86,16 @@ class Deed:
 
     def get_threshold(self, operation: Operation):
         return self._thresholds[operation] if operation in self._thresholds else None
+
+    @property
+    def signees(self):
+        for signee, voting_weight in self._signees.items():
+            yield signee, voting_weight
+
+    @property
+    def thresholds(self):
+        for operation, threshold in self._thresholds.items():
+            yield operation, threshold
 
     @property
     def total_votes(self):
@@ -108,7 +131,7 @@ class Deed:
 
         return True
 
-    def deed_creation_json(self, verify_sanity: bool = True):
+    def to_json(self, verify_sanity: bool = True):
         if verify_sanity:
             self.is_sane(throw=True)
 
@@ -120,7 +143,7 @@ class Deed:
         return deed
 
     @classmethod
-    def deed_from_json(cls, json_deed, allow_no_amend: bool = False, verify_sanity: bool = True):
+    def from_json(cls, json_deed, allow_no_amend: bool = False, verify_sanity: bool = True):
         if isinstance(json_deed, str):
             json_deed = json.loads(json_deed)
 
