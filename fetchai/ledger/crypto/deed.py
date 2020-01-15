@@ -73,7 +73,10 @@ class Deed:
         self._is_voting_weight_sane(signee, voting_weight, throw=True)
         self._signees[signee] = int(voting_weight)
 
-    def get_signee(self, signee: Address):
+    def get_signee(self, signee: AddressLike):
+        if not isinstance(signee, Address):
+            signee = Address(signee)
+
         return self._signees[signee] if signee in self._signees else None
 
     def set_threshold(self, operation: Operation, threshold: int):
