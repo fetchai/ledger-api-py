@@ -81,6 +81,11 @@ def split_address(address):
 
 def server_from_name(network):
     """Queries bootstrap for the requested network and returns connection details"""
+
+    # Adding a "local" network to give the looks and feel of main and testnet
+    if network == "local":
+        return "http://127.0.0.1", 8000
+
     # Get list of active servers
     server_list = list_servers(True)
 
