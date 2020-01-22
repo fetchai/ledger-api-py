@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+
 from fetchai.ledger import __version__ as version_string
 
 setup(
@@ -10,7 +11,15 @@ setup(
     author_email='edward.fitzgerald@fetch.ai',
     packages=find_packages(exclude=['contrib', 'docs', 'tests', 'scripts']),
     package_data={'fetchai': ['ledger/parser/etch.grammar']},
-    install_requires=['requests', 'ecdsa', 'msgpack', 'base58', 'lark-parser', 'semver', 'pyaes'],
+    install_requires=[
+        'base58==2.0.0',
+        'ecdsa==0.15',
+        'lark-parser==0.7.8',
+        'msgpack==0.6.2',
+        'pyaes==1.6.1',
+        'requests==2.22.0',
+        'semver==2.9.0'
+    ],
     extras_require={
         'dev': ['check-manifest', 'pydot'],
         'test': ['coverage', 'pytest'],
