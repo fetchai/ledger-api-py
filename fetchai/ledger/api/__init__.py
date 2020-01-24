@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 #
-#   Copyright 2018-2019 Fetch.AI Limited
+#   Copyright 2018-2020 Fetch.AI Limited
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import logging
 import re
 import time
 from datetime import datetime, timedelta
-from typing import Sequence, Union
+from typing import Sequence, Union, Optional, List
 
 import semver
 
@@ -93,15 +93,16 @@ class LedgerApi:
         else:
             assert host and port, "Must specify either a server name, or a host & port"
 
-        self.tokens = TokenApi(host, port)
-        self.contracts = ContractsApi(host, port)
-        self.tx = TransactionApi(host, port)
-        self.server = ServerApi(host, port)
+        self.tokens = TokenApi(host, port, self)
+        self.contracts = ContractsApi(host, port, self)
+        self.tx = TransactionApi(host, port, self)
+        self.server = ServerApi(host, port, self)
 
         # Check that ledger version is compatible with API version
         check_version_compatibility(self.server.version(), __compatible__)
 
-    def sync(self, txs: Transactions, timeout=None, hold_state_sec=0, extend_success_status = []):
+    def sync(self, txs: Transactions, timeout: Optional[int] = None, hold_state_sec: int = 0,
+             extend_success_status: Optional[Sequence[str]] = None):
         """
         Waits till the transaction list is executed
         :param txs: list of transactions
@@ -110,6 +111,7 @@ class LedgerApi:
         :param extend_success_status: by default only "Success" is the status indicator, but in some cases other indicators are possible as well
         :return:
         """
+        extend_success_status = set(extend_success_status or [])
         timeout = int(timeout or 120)
         # given the inputs make sure that we correctly for the input set of values
         finished = []
@@ -159,9 +161,9 @@ class LedgerApi:
             time.sleep(1)
 
     def wait_for_blocks(self, n):
-        initial = self.tokens._current_block_number()
+        initial = self.tokens.current_block_number()
         while True:
             time.sleep(1)
-            current = self.tokens._current_block_number()
+            current = self.tokens.current_block_number()
             if current > initial + n:
                 break

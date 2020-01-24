@@ -109,19 +109,17 @@ def track_cost(api: TokenApi, entity: Entity, message: str):
 
 
 def main():
-    # create our first private key pair
-    entity1 = Entity()
+    # In examples we use addresses which already have funds
+    entity1 = Entity.from_hex('6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b')
+    entity2 = Entity.from_hex('e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8')
+
     address1 = Address(entity1)
 
     # create a second private key pair
-    entity2 = Entity()
     address2 = Address(entity2)
 
     # build the ledger API
     api = LedgerApi('127.0.0.1', 8000)
-
-    # create wealth so that we have the funds to be able to create contracts on the network
-    api.sync(api.tokens.wealth(entity1, 10000))
 
     # create the smart contract
     contract = Contract(CONTRACT_TEXT, entity1)
@@ -131,13 +129,13 @@ def main():
 
     # print the current status of all the tokens
     print('-- BEFORE --')
-    print_address_balances(api, contract, [address1, address2])
+    # print_address_balances(api, contract, [address1, address2])
 
     # transfer from one to the other using our newly deployed contract
     tok_transfer_amount = 200
     fet_tx_fee = 160
     with track_cost(api.tokens, entity1, "Cost of transfer: "):
-        api.sync(contract.action(api, 'transfer', fet_tx_fee, [entity1], address1, address2, tok_transfer_amount))
+        api.sync(contract.action(api, 'transfer', fet_tx_fee, address1, address2, tok_transfer_amount, [entity1]))
 
     print('-- AFTER --')
     print_address_balances(api, contract, [address1, address2])

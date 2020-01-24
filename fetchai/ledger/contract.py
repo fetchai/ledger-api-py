@@ -3,17 +3,18 @@ import hashlib
 import json
 import logging
 from os import urandom
-from typing import Union, List
+from typing import Union, List, Optional
 
+from fetchai.ledger.api.contracts import ContractTxFactory
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Identity
 from fetchai.ledger.parser.etch_parser import EtchParser, UnparsableAddress, UseWildcardShardMask, EtchParserError
 from fetchai.ledger.serialisation import sha256_hash
 from fetchai.ledger.serialisation.shardmask import ShardMask
-from .api import ContractsApi, LedgerApi
+from .api import LedgerApi
 from .crypto import Entity, Address
 
-ContractsApiLike = Union[ContractsApi, LedgerApi]
+ContractsApiLike = Union[LedgerApi, ContractTxFactory]
 AddressLike = Union[Address, Identity]
 
 
@@ -97,7 +98,7 @@ class Contract:
     def encoded_source(self):
         return base64.b64encode(self.source.encode('ascii')).decode()
 
-    def create(self, api: ContractsApiLike, owner: Entity, fee: int):
+    def create(self, api: ContractsApiLike, owner: Entity, fee: int, signers: Optional[List[Entity]] = None):
         # Set contract owner (required for resource prefix)
         self.owner = owner
 
@@ -116,7 +117,7 @@ class Contract:
             # Generate shard mask from resource addresses
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        return self._api(api).create(owner, self, fee, shard_mask=shard_mask)
+        return self._api(api).create(owner, self, fee, signers, shard_mask=shard_mask)
 
     def query(self, api: ContractsApiLike, name: str, **kwargs):
         if self._owner is None:
@@ -138,7 +139,7 @@ class Contract:
 
         return response['result']
 
-    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args):
+    def action(self, api: ContractsApiLike, name: str, fee: int, *args, signers: Optional[List[Entity]] = None):
         if self._owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
 
@@ -159,15 +160,15 @@ class Contract:
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
         return self._api(api).action(self.address, name, fee,
-                                     Address(signers[0]) if len(signers) == 1 else None, signers, *args,
-                                     shard_mask=shard_mask)
+                                     Address(signers[0]) if len(signers) == 1 else Address(self.owner),
+                                     *args, signers=signers, shard_mask=shard_mask)
 
     @staticmethod
     def _api(api: ContractsApiLike):
-        if isinstance(api, ContractsApi):
-            return api
-        elif isinstance(api, LedgerApi):
+        if isinstance(api, LedgerApi):
             return api.contracts
+        elif isinstance(api, ContractTxFactory):
+            return api
         else:
             assert False
 

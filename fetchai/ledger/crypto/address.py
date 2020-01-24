@@ -27,13 +27,33 @@ class Address:
     CHECKSUM_SIZE = 4
     DISPLAY_BYTE_LENGTH = BYTE_LENGTH + CHECKSUM_SIZE
 
+    @staticmethod
+    def is_address(s: str):
+        identity_bytes = base58.b58decode(s)
+
+        if len(identity_bytes) != Address.DISPLAY_BYTE_LENGTH:
+            return False
+
+        # split the identity into address and checksum
+        address_raw = identity_bytes[:Address.BYTE_LENGTH]
+        checksum = identity_bytes[Address.BYTE_LENGTH:]
+
+        # calculate the expected checksum
+        expected_checksum = Address._calculate_checksum(address_raw)
+
+        if checksum != expected_checksum:
+            return False
+
+        return True
+
+
     def __init__(self, identity):
         if isinstance(identity, Address):
             self._address = identity._address
             self._display = identity._display
 
         elif isinstance(identity, Identity):
-            self._address = self._digest(identity.public_key_bytes)
+            self._address = Address._digest(identity.public_key_bytes)
             self._display = self._calculate_display(self._address)
 
         elif isinstance(identity, bytes):
@@ -45,21 +65,12 @@ class Address:
             self._display = self._calculate_display(self._address)
 
         elif isinstance(identity, str):
-            identity_bytes = base58.b58decode(identity)
 
-            if len(identity_bytes) != self.DISPLAY_BYTE_LENGTH:
-                raise RuntimeError('Unable to parse address, incorrect size')
+            if not Address.is_address(identity):
+                raise RuntimeError('Invalid Address')
 
             # split the identity into address and checksum
-            address_raw = identity_bytes[:self.BYTE_LENGTH]
-            checksum = identity_bytes[self.BYTE_LENGTH:]
-
-            # calculate the expected checksum
-            expected_checksum = self._calculate_checksum(address_raw)
-
-            if checksum != expected_checksum:
-                raise RuntimeError('Invalid checksum')
-
+            address_raw = base58.b58decode(identity)[:self.BYTE_LENGTH]
             # update internals
             self._address = address_raw
             self._display = identity
@@ -77,19 +88,21 @@ class Address:
         return hash(self._address)
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return bytes(self) == bytes(other)
 
     def to_hex(self):
         return self._address.hex()
 
-    @classmethod
-    def _digest(cls, data):
+    @staticmethod
+    def _digest(data):
         return sha256_hash(data)
 
-    @classmethod
-    def _calculate_checksum(cls, address_raw):
-        return cls._digest(address_raw)[:cls.CHECKSUM_SIZE]
+    @staticmethod
+    def _calculate_checksum(address_raw):
+        return Address._digest(address_raw)[:Address.CHECKSUM_SIZE]
 
     @classmethod
     def _calculate_display(cls, address_raw):
-        return base58.b58encode(address_raw + cls._digest(address_raw)[:cls.CHECKSUM_SIZE]).decode()
+        return base58.b58encode(address_raw + Address._digest(address_raw)[:cls.CHECKSUM_SIZE]).decode()

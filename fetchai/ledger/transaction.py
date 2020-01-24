@@ -1,11 +1,18 @@
+import io
+import logging
 import random
 from collections import OrderedDict
+from io import BytesIO
 from typing import Union
 
+from fetchai.ledger.crypto import Entity
+from fetchai.ledger.serialisation import transaction, integer, identity, bytearray
+from fetchai.ledger.serialisation.transaction import decode_transaction, decode_payload
 from .bitvector import BitVector
 from .crypto import Address, Identity
 
 Identifier = Union[Address, Identity]
+AddressLike = Union[Address, Identity, str, bytes]
 
 
 class Transaction:
@@ -16,7 +23,6 @@ class Transaction:
         self._valid_until = 0
         self._charge_rate = 0
         self._charge_limit = 0
-
         self._contract_digest = None
         self._contract_address = None
         self._counter = random.getrandbits(64)
@@ -114,6 +120,59 @@ class Transaction:
     def data(self, data: bytes):
         self._data = bytes(data)
 
+    def compare(self, other: 'Transaction') -> bool:
+        if not self.from_address == other.from_address:
+            return False
+        if not self.transfers == other.transfers:
+            return False
+        if not self.valid_from == other.valid_from:
+            return False
+        if not self.valid_until == other.valid_until:
+            return False
+        if not self.charge_rate == other.charge_rate:
+            return False
+        if not self.charge_limit == other.charge_limit:
+            return False
+        if not self.contract_digest == other.contract_digest:
+            return False
+        if not self.contract_address == other.contract_address:
+            return False
+        if not self.chain_code == other.chain_code:
+            return False
+        if not self.action == other.action:
+            return False
+        if not self.shard_mask == other.shard_mask:
+            return False
+        if not self.data == other.data:
+            return False
+        if not self.signers.keys() == other.signers.keys():
+            return False
+        if not self.counter == other.counter:
+            return False
+        if not self._metadata == other._metadata:
+            return False
+        if not self.payload == other.payload:
+            return False
+        return True
+
+    @property
+    def payload(self):
+        buffer = BytesIO()
+        transaction.encode_payload(buffer, self)
+        return buffer.getvalue()
+
+    @staticmethod
+    def from_payload(payload: bytes):
+        return decode_payload(io.BytesIO(payload))
+
+    @staticmethod
+    def from_encoded(encoded_transaction: bytes):
+        valid, tx = decode_transaction(io.BytesIO(encoded_transaction))
+        if valid:
+            return tx
+        else:
+            return None
+
     @property
     def signers(self):
         return self._signers
@@ -146,4 +205,53 @@ class Transaction:
 
     def add_signer(self, signer: Identity):
         if signer not in self._signers:
-            self._signers[signer] = None  # will be replaced with a signature in the future
+            self._signers[signer] = {}  # will be replaced with a signature in the future
+
+    def sign(self, signer: Entity):
+        if Identity(signer) in self._signers:
+            signature = signer.sign(self.payload)
+            self._signers[Identity(signer)] = {
+                'signature': signature,
+                'verified': signer.verify(self.payload, signature)
+            }
+
+    def merge_signatures(self, tx2: 'Transaction'):
+        if self.payload != tx2.payload:
+            logging.warning("Attempting to combine transactions with different payloads")
+            return None
+
+        for signer, signature in tx2.signers.items():
+            if signature and not self.signers[signer]:
+                self.signers[signer] = signature
+
+    def encode_partial(self):
+        buffer = BytesIO()
+        transaction.encode_payload(buffer, self)
+
+        num_signed = len([s for s in self.signers.values() if s])
+        integer.encode(buffer, num_signed)
+
+        for signer, sig in self.signers.items():
+            if sig:
+                identity.encode(buffer, signer)
+                bytearray.encode(buffer, sig['signature'])
+        return buffer.getvalue()
+
+    @staticmethod
+    def decode_partial(data: bytes):
+        buffer = io.BytesIO(data)
+
+        tx = decode_payload(buffer)
+
+        num_sigs = integer.decode(buffer)
+
+        for i in range(num_sigs):
+            signer = identity.decode(buffer)
+            signature = bytearray.decode(buffer)
+            tx.signers[signer] = {'signature': signature,
+                                  'verified': signer.verify(tx.payload, signature)}
+
+        if not all(s['verified'] for s in tx.signers.values() if 'verified' in s):
+            logging.warning("Some signatures failed to verify")
+
+        return tx

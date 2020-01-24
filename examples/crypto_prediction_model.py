@@ -171,13 +171,10 @@ endfunction
 
 def main():
     # create our first private key pair
-    entity1 = Entity()
+    entity1 = Entity.from_hex('d5f10ad865fff147ae7fcfdc98b755452a27a345975c8b9b3433ff16f23495fb')
 
     # build the ledger API
     api = LedgerApi('127.0.0.1', 8100)
-
-    # create wealth so that we have the funds to be able to create contracts on the network
-    api.sync(api.tokens.wealth(entity1, 1000000000000000))
 
     # create the smart contract
     contract = Contract(CONTRACT_TEXT, entity1)

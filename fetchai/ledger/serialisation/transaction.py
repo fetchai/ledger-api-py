@@ -1,7 +1,8 @@
 import io
-import random
 import struct
-from typing import List
+from typing import List, Dict
+
+from fetchai.ledger.crypto import Identity
 
 from fetchai.ledger import bitvector
 from fetchai.ledger import crypto
@@ -30,7 +31,7 @@ def _byte(value: int) -> bytes:
     return bytes([value])
 
 
-def _map_contract_mode(payload: transaction.Transaction):
+def _map_contract_mode(payload: 'Transaction'):
     if payload.synergetic_data_submission:
         return SYNERGETIC
 
@@ -42,7 +43,7 @@ def _map_contract_mode(payload: transaction.Transaction):
         return NO_CONTRACT
 
 
-def encode_payload(buffer: io.BytesIO, payload: transaction.Transaction):
+def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
     num_transfers = len(payload.transfers)
     num_signatures = len(payload.signers)
 
@@ -52,7 +53,10 @@ def encode_payload(buffer: io.BytesIO, payload: transaction.Transaction):
     num_extra_signatures = num_signatures - 0x40 if num_signatures > 0x40 else 0
     signalled_signatures = num_signatures - (num_extra_signatures + 1)
     has_valid_from = payload.valid_from != 0
-
+    print("has_valid_from")
+    print(has_valid_from)
+    print("payload.from_address")
+    print(payload.from_address)
     header0 = VERSION << 5
     header0 |= (1 if num_transfers > 0 else 0) << 2
     header0 |= (1 if num_transfers > 1 else 0) << 1
@@ -140,8 +144,25 @@ def encode_payload(buffer: io.BytesIO, payload: transaction.Transaction):
     for signer in payload.signers.keys():
         identity.encode(buffer, signer)
 
+def encode_multisig_transaction(payload: 'Transaction', signatures: Dict[Identity, bytes]):
+    assert isinstance(payload, bytes) or isinstance(payload, transaction.Transaction)
 
-def encode_transaction(payload: transaction.Transaction, signers: List[crypto.Entity]):
+    # encode the contents of the transaction
+    buffer = io.BytesIO()
+    encode_payload(buffer, payload)
+
+    # append signatures in order
+    for signer in payload.signers.keys():
+        if isinstance(signatures[signer], bytes):
+            bytearray.encode(buffer, signatures[signer])
+        else:
+            bytearray.encode(buffer, signatures[signer]['signature'])
+
+    # return the encoded transaction
+    return buffer.getvalue()
+
+
+def encode_transaction(payload: 'Transaction', signers: List[crypto.Entity]):
     # encode the contents of the transaction
     buffer = io.BytesIO()
     encode_payload(buffer, payload)
@@ -164,7 +185,7 @@ def encode_transaction(payload: transaction.Transaction, signers: List[crypto.En
     return buffer.getvalue()
 
 
-def decode_transaction(stream: io.BytesIO) -> (bool, transaction.Transaction):
+def decode_payload(stream: io.BytesIO) -> 'Transaction':
     # ensure the at the magic is correctly configured
     magic = stream.read(1)[0]
     if magic != MAGIC:
@@ -193,6 +214,9 @@ def decode_transaction(stream: io.BytesIO) -> (bool, transaction.Transaction):
     stream.read(1)
 
     tx = transaction.Transaction()
+
+    # Set synergetic contract type
+    tx.synergetic_data_submission = (contract_type == SYNERGETIC)
 
     # decode the address from the thread
     tx.from_address = address.decode(stream)
@@ -269,7 +293,7 @@ def decode_transaction(stream: io.BytesIO) -> (bool, transaction.Transaction):
         tx.data = bytearray.decode(stream)
 
     # Read counter value
-    tx.counter = struct.unpack('<Q', stream.read(8))[0]
+    tx.counter = struct.unpack('>Q', stream.read(8))[0]
 
     if signature_count_minus1 == 0x3F:
         additional_signatures = integer.decode(stream)
@@ -278,11 +302,21 @@ def decode_transaction(stream: io.BytesIO) -> (bool, transaction.Transaction):
     # extract all the signing public keys from the stream
     public_keys = [identity.decode(stream) for _ in range(num_signatures)]
 
+    for ident in public_keys:
+        tx._signers[ident] = {}
+
+    return tx
+
+
+def decode_transaction(stream: io.BytesIO) -> (bool, 'Transaction'):
+    # decode transaction payload
+    tx = decode_payload(stream)
+
     # extract full copy of the payload
     payload_bytes = stream.getvalue()[:stream.tell()]
 
     verified = []
-    for ident in public_keys:
+    for ident in tx.signers.keys():
         # for n in range(num_signatures):
 
         # extract the signature from the stream

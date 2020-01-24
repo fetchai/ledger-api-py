@@ -22,7 +22,7 @@ import logging
 import os
 import re
 from typing import Tuple
-
+import getpass
 import ecdsa
 import pyaes
 from hashlib import pbkdf2_hmac
@@ -31,16 +31,46 @@ from .identity import Identity
 
 
 class Entity(Identity):
+
+    @staticmethod
+    def strong_password(password: str):
+        """
+        Checks that a password is of sufficient length and contains all character classes
+        :param password:
+        :return: True if password is strong
+        """
+        if len(password) < 14:
+            logging.warning("Please enter a password at least 14 characters long")
+            return False
+
+        if not re.search(r'[a-z]+', password):
+            logging.warning("Password must contain at least one lower case character")
+            return False
+
+        if not re.search(r'[A-Z]+', password):
+            logging.warning("Password must contain at least one upper case character")
+            return False
+
+        if not re.search(r'[0-9]+', password):
+            logging.warning("Password must contain at least one number")
+            return False
+
+        if not re.search(r'[#?!@$%^&*\-+=/\':;,.()\[\]{}~`_\\]', password):
+            logging.warning("Password must contain at least one symbol")
+            return False
+
+        return True
+
     """
     An entity is a full private/public key pair.
     """
     @classmethod
     def prompt_load(cls, fp):
-        password = input("Please enter password")
+        password = getpass.getpass('Please enter password ', stream=None)
 
-        while not _strong_password(password):
-            password = input("Please enter password")
-
+        while not  cls.strong_password(password):
+            password = getpass.getpass('Please enter password ', stream=None)
+        print("ear")
         return cls.load(fp, password)
 
     @classmethod
@@ -49,7 +79,11 @@ class Entity(Identity):
 
     @classmethod
     def load(cls, fp, password):
-        return cls._from_json_object(json.load(fp), password)
+        contents = json.load(fp)
+        print('contents    !!!!    !!   !')
+        print(contents)
+
+        return cls._from_json_object(contents, password)
 
     @staticmethod
     def from_hex(private_key_hex: str):
@@ -97,13 +131,20 @@ class Entity(Identity):
         return self._signing_key.sign(message)
 
     def prompt_dump(self, fp):
-        password = input("Please enter password")
+        password = getpass.getpass('Please enter password 11', stream=None)
+
+        while not self.strong_password(password):
+            password = getpass.getpass('Please enter password 2', stream=None)
         return self.dump(fp, password)
 
     def dumps(self, password):
+        if not self.strong_password(password):
+            raise RuntimeError("Insufficiently strong password: password must contain 14 chars or more, with one or more uppercase, lowercase, numeric and special character")
         return json.dumps(self._to_json_object(password))
 
     def dump(self, fp, password):
+        if not self.strong_password(password):
+            raise RuntimeError("Insufficiently strong password: password must contain 14 chars or more, with one or more uppercase, lowercase, and numeric and special character")
         return json.dump(self._to_json_object(password), fp)
 
     def _to_json_object(self, password):
@@ -180,32 +221,3 @@ def _decrypt(password: str, salt: bytes, data: bytes, n: int, iv: bytes) -> byte
 
     # Return original data
     return decrypted_data
-
-
-def _strong_password(password: str):
-    """
-    Checks that a password is of sufficient length and contains all character classes
-    :param password:
-    :return: True if password is strong
-    """
-    if len(password) < 14:
-        logging.warning("Please enter a password at least 14 characters long")
-        return False
-
-    if not re.search(r'[a-z]+', password):
-        logging.warning("Password must contain at least one lower case character")
-        return False
-
-    if not re.search(r'[A-Z]+', password):
-        logging.warning("Password must contain at least one upper case character")
-        return False
-
-    if not re.search(r'[0-9]+', password):
-        logging.warning("Password must contain at least one number")
-        return False
-
-    if not re.search(r'[#?!@$%^&*\-+=/\':;,.()\[\]{}~`_\\]', password):
-        logging.warning("Password must contain at least one symbol")
-        return False
-
-    return True

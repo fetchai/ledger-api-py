@@ -97,13 +97,13 @@ class ContractTests(unittest.TestCase):
         dummy_shard_mask = mock.Mock()
         mock_shard_mask.side_effect = [dummy_shard_mask]
 
-        contract.create(api, owner, 1000)
+        contract.create(api, owner, 1000, [owner])
 
         # Check shard mask gen called with contract digest address
         mock_shard_mask.assert_called_once_with(
             ['fetch.contract.state.{}'.format(contract.digest.to_hex())], lane_number)
         # Check api create method called
-        api.contracts.create.assert_called_once_with(owner, contract, 1000, shard_mask=dummy_shard_mask)
+        api.contracts.create.assert_called_once_with(owner, contract, 1000, [owner], shard_mask=dummy_shard_mask)
 
     def test_init(self):
         # Test rejection of contract with multiple init statements

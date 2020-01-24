@@ -18,13 +18,20 @@
 
 import base64
 import json
-from typing import Optional
+from typing import Optional, Dict, Union
 
+import msgpack
 import requests
+from fetchai.ledger.bitvector import BitVector
+
+from fetchai.ledger.crypto import Address, Identity
 
 from fetchai.ledger.transaction import Transaction
+from fetchai.ledger.serialisation import transaction
 
 DEFAULT_BLOCK_VALIDITY_PERIOD = 100
+
+AddressLike = Union[Address, Identity]
 
 
 def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: Optional[str], protocol: str = None):
@@ -110,7 +117,7 @@ class ApiError(RuntimeError):
 class ApiEndpoint(object):
     API_PREFIX = None
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, api: 'LedgerApi'):
         if '://' in host:
             protocol, host = host.split('://')
         else:
@@ -120,6 +127,7 @@ class ApiEndpoint(object):
         self._host = str(host)
         self._port = int(port)
         self._session = requests.session()
+        self._parent_api = api
 
     @property
     def protocol(self):
@@ -145,17 +153,25 @@ class ApiEndpoint(object):
         validity_period = validity_period or DEFAULT_BLOCK_VALIDITY_PERIOD
 
         # query what the current block number is on the node
-        current_block = self._current_block_number()
+        current_block = self.current_block_number()
 
         # build up the basic transaction information
         tx = Transaction()
         tx.valid_until = current_block + validity_period
         tx.charge_rate = 1
         tx.charge_limit = fee
-
         return tx
 
-    def _current_block_number(self):
+    def _set_validity_period(self, tx: Transaction, validity_period: Optional[int] = None):
+        validity_period = validity_period or DEFAULT_BLOCK_VALIDITY_PERIOD
+
+        # query what the current block number is on the node
+        current_block = self.current_block_number()
+
+        tx.valid_until = current_block + validity_period
+        return tx.valid_until
+
+    def current_block_number(self):
         success, data = self._get_json('status/chain', size=1)
         if success:
             return data['chain'][0]['blockNumber']
@@ -236,7 +252,7 @@ class ApiEndpoint(object):
 
         # format the URL
         url = format_contract_url(self.host, self.port, self.API_PREFIX, endpoint, protocol=self.protocol)
-
+        print(url)
         # make the request
         r = self._session.post(url, json=tx_payload, headers=headers)
         success = 200 <= r.status_code < 300
@@ -253,3 +269,61 @@ class ApiEndpoint(object):
         tx_list = response.get('txs', [])
         if len(tx_list):
             return tx_list[0]
+
+    def submit_signed_tx(self, tx: Transaction, signatures: Dict[Identity, bytes]):
+        """
+        Appends signatures to a transaction and submits it, returning the transaction digest
+        :param tx: A pre-assembled transaction
+        :param signatures: A dict of signers signatures
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+        # Encode transaction and append signatures
+        encoded_tx = transaction.encode_multisig_transaction(tx, signatures)
+
+        # Submit and return digest
+        return self._post_tx_json(encoded_tx, tx.action)
+
+
+class TransactionFactory:
+    API_PREFIX = None
+
+    @classmethod
+    def _create_skeleton_tx(cls, fee: int):
+        # build up the basic transaction information
+        tx = Transaction()
+        tx.charge_rate = 1
+        tx.charge_limit = fee
+        return tx
+
+    @classmethod
+    def _create_action_tx(cls, fee: int, entity: AddressLike, action: str, shard_mask: Optional[BitVector] = None):
+        tx = cls._create_skeleton_tx(fee)
+        tx.from_address = Address(entity)
+        tx.target_chain_code(cls.API_PREFIX, shard_mask if shard_mask else BitVector())
+        tx.action = action
+        return tx
+
+    @classmethod
+    def _encode_json(cls, obj):
+        return json.dumps(obj).encode('ascii')
+
+    @classmethod
+    def _encode_msgpack_payload(cls, *args):
+        items = []
+        for value in args:
+            if cls._is_primitive(value):
+                items.append(value)
+            elif isinstance(value, Address):
+                items.append(msgpack.ExtType(77, bytes(value)))
+            else:
+                raise RuntimeError('Unknown item to pack: ' + value.__class__.__name__)
+        return msgpack.packb(items)
+
+    @staticmethod
+    def _is_primitive(value):
+        for type in (bool, int, float, str):
+            if isinstance(value, type):
+                return True
+        return False
+
