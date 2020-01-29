@@ -52,15 +52,15 @@ class EncryptionTests(TestCase):
         #  one or more upper case letters
         #  one or more digits
         #  one or more symbols
-        self.assertTrue(Entity.strong_password('a1A_aaaaaaaaaa'), "Valid password failed")
+        self.assertTrue(Entity.is_strong_password('a1A_aaaaaaaaaa'), "Valid password failed")
 
-        self.assertFalse(Entity.strong_password('abc'), "Short password passed")
-        self.assertFalse(Entity.strong_password('aaaaaaaaaaaaaa'), "All lower case passed")
-        self.assertFalse(Entity.strong_password('11111111111111'), "All numbers passed")
-        self.assertFalse(Entity.strong_password('AAAAAAAAAAAAAA'), "All upper case passed")
-        self.assertFalse(Entity.strong_password('______________'), "All symbols passed")
+        self.assertFalse(Entity.is_strong_password('abc'), "Short password passed")
+        self.assertFalse(Entity.is_strong_password('aaaaaaaaaaaaaa'), "All lower case passed")
+        self.assertFalse(Entity.is_strong_password('11111111111111'), "All numbers passed")
+        self.assertFalse(Entity.is_strong_password('AAAAAAAAAAAAAA'), "All upper case passed")
+        self.assertFalse(Entity.is_strong_password('______________'), "All symbols passed")
 
-        self.assertFalse(Entity.strong_password('a1Aaaaaaaaaaaa'), "No symbol passed")
-        self.assertFalse(Entity.strong_password('a1a_aaaaaaaaaa'), "No upper case passed")
-        self.assertFalse(Entity.strong_password('aaA_aaaaaaaaaa'), "No number passed")
-        self.assertFalse(Entity.strong_password('A1_AAAAAAAAAAA'), "No lower case passed")
+        self.assertFalse(Entity.is_strong_password('a1Aaaaaaaaaaaa'), "No symbol passed")
+        self.assertFalse(Entity.is_strong_password('a1a_aaaaaaaaaa'), "No upper case passed")
+        self.assertFalse(Entity.is_strong_password('aaA_aaaaaaaaaa'), "No number passed")
+        self.assertFalse(Entity.is_strong_password('A1_AAAAAAAAAAA'), "No lower case passed")

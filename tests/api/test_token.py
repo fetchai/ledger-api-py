@@ -1,5 +1,5 @@
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from fetchai.ledger.api import TokenApi
 from fetchai.ledger.api.token import TokenTxFactory
@@ -43,29 +43,33 @@ class TokenAPITests(TestCase):
         with patch('fetchai.ledger.api.TokenApi._post_tx_json') as mock_post, \
                 patch('fetchai.ledger.api.token.TokenTxFactory.' + factory_function.__name__, autospec=factory_function) as mock_factory, \
                 patch('fetchai.ledger.api.TokenApi._set_validity_period') as mock_set_valid, \
-                patch('fetchai.ledger.serialisation.transaction.encode_transaction') as mock_encode:
+                patch('fetchai.ledger.serialisation.transaction.encode_transaction2') as mock_encode:
 
+            # the transaction factory should generate a known transaction
             tx = Transaction()
-
+            tx.sign2 = MagicMock()
+            tx.sign2.side_effect = [None]
             mock_factory.side_effect = [tx]
+
             mock_post.side_effect = ['result']
             mock_encode.side_effect = ['encoded']
 
+            # run the production code
             result = function(*args)
 
-            mock_factory.assert_called_once_with(*args)
+            mock_factory.assert_called_once_with(*args, [args[0]]) # somewhat confusing
             mock_set_valid.assert_called_once_with(tx)
-            mock_encode.assert_called_once_with(tx, [self.entity])
+            tx.sign2.assert_called_once_with(args[0]) # this is the entity
+            mock_encode.assert_called_once_with(tx)
             mock_post.assert_called_once_with('encoded', action)
             self.assertEqual(result, 'result')
 
     def test_deed(self):
-        self.post_test(self.api.deed, 'deed', TokenTxFactory.deed,
-                       self.entity, Deed(), [self.entity], False)
+        self.post_test(self.api.deed, 'deed', TokenTxFactory.deed, self.entity, Deed(), 2000)
 
     def test_transfer(self):
         self.post_test(self.api.transfer, 'transfer', TokenTxFactory.transfer,
-                       self.entity, self.to_address, 500, 500, [self.entity])
+                       self.entity, self.to_address, 500, 500)
 
     def test_add_stake(self):
         self.post_test(self.api.add_stake, 'addStake', TokenTxFactory.add_stake,

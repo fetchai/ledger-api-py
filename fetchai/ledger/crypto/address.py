@@ -28,15 +28,15 @@ class Address:
     DISPLAY_BYTE_LENGTH = BYTE_LENGTH + CHECKSUM_SIZE
 
     @staticmethod
-    def is_address(s: str):
-        identity_bytes = base58.b58decode(s)
+    def is_address(address: str) -> bool:
+        raw_address = base58.b58decode(address)
 
-        if len(identity_bytes) != Address.DISPLAY_BYTE_LENGTH:
+        if len(raw_address) != Address.DISPLAY_BYTE_LENGTH:
             return False
 
         # split the identity into address and checksum
-        address_raw = identity_bytes[:Address.BYTE_LENGTH]
-        checksum = identity_bytes[Address.BYTE_LENGTH:]
+        address_raw = raw_address[:Address.BYTE_LENGTH]
+        checksum = raw_address[Address.BYTE_LENGTH:]
 
         # calculate the expected checksum
         expected_checksum = Address._calculate_checksum(address_raw)
@@ -46,37 +46,35 @@ class Address:
 
         return True
 
+    def __init__(self, value):
+        if isinstance(value, Address):
+            self._address = value._address
+            self._display = value._display
 
-    def __init__(self, identity):
-        if isinstance(identity, Address):
-            self._address = identity._address
-            self._display = identity._display
-
-        elif isinstance(identity, Identity):
-            self._address = Address._digest(identity.public_key_bytes)
+        elif isinstance(value, Identity):
+            self._address = Address._digest(value.public_key_bytes)
             self._display = self._calculate_display(self._address)
 
-        elif isinstance(identity, bytes):
-            if len(identity) != self.BYTE_LENGTH:
-                raise RuntimeError('Incorrect length of binary address, expected {}, received {}'
-                                   .format(self.BYTE_LENGTH, len(identity)))
+        elif isinstance(value, bytes):
+            if len(value) != self.BYTE_LENGTH:
+                raise ValueError('Incorrect length of binary address, expected {}, received {}'
+                                 .format(self.BYTE_LENGTH, len(value)))
 
-            self._address = identity
+            self._address = value
             self._display = self._calculate_display(self._address)
 
-        elif isinstance(identity, str):
-
-            if not Address.is_address(identity):
-                raise RuntimeError('Invalid Address')
+        elif isinstance(value, str):
+            if not Address.is_address(value):
+                raise ValueError('Invalid Address')
 
             # split the identity into address and checksum
-            address_raw = base58.b58decode(identity)[:self.BYTE_LENGTH]
+            address_raw = base58.b58decode(value)[:self.BYTE_LENGTH]
             # update internals
             self._address = address_raw
-            self._display = identity
+            self._display = value
 
         else:
-            raise RuntimeError('Failed to build identity from input')
+            raise ValueError('Unknown address value type')
 
     def __str__(self):
         return self._display
@@ -87,13 +85,13 @@ class Address:
     def __hash__(self):
         return hash(self._address)
 
-    def __eq__(self, other):
-        if other is None:
-            return False
-        return bytes(self) == bytes(other)
+    def __eq__(self, other: 'Address'):
+        if isinstance(other, Address):
+            return self._address == other._address
+        return False
 
-    def to_hex(self):
-        return self._address.hex()
+    def __ne__(self, other: 'Address'):
+        return not (self == other)
 
     @staticmethod
     def _digest(data):

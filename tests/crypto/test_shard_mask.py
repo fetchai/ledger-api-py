@@ -6,18 +6,15 @@ from fetchai.ledger.serialisation.shardmask import ShardMask
 
 class TestShardMask(unittest.TestCase):
     def test_state_to_address(self):
-        contract = mock.Mock()
-        contract.digest.to_hex.side_effect = ['abc']
-        contract.owner = 'def'
+        address = ShardMask.state_to_address2('foo.bar', 'xyz')
+        self.assertEqual(address, 'foo.bar.state.xyz')
 
-        address = ShardMask.state_to_address('xyz', contract)
-        self.assertEqual(address, 'abc.def.state.xyz')
-
-    def test_resource_to_shard(self):
+    def test_resource_to_shard_invalid_lane(self):
         # Test rejection of invalid lane number
         with self.assertRaises(AssertionError):
             ShardMask.resource_to_shard('abc', 3)
 
+    def test_resource_to_shard(self):
         # Test known addresses
         addresses = ['abc', 'def', 'XYZ']
         shards = [2, 3, 1]

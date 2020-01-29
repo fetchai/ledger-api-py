@@ -57,8 +57,6 @@ def main():
         board[3]: 2,
     }
 
-
-
     # generate another entity as a target for transfers
     other_identity = Entity.from_hex("7da0e3fa62a916238decd4f54d43301c809595d66dd469f82f29e076752b155c")
 
@@ -68,7 +66,7 @@ def main():
     for sig, weight in voting_weights.items():
         deed.set_signee(sig, weight)
     deed.amend_threshold = 4
-    deed.set_threshold(Operation.transfer, 3)
+    deed.set_operation(Operation.transfer, 3)
 
     api.sync(api.tokens.deed(multi_sig_identity, deed))
 
@@ -83,7 +81,8 @@ def main():
 
     # Add intended signers to transaction
     tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board)
-    api.tokens._set_validity_period(tx)
+    # api.tokens._set_validity_period(tx)
+    tx.valid_until = api.tokens.current_block_number() + 500
 
     # Serialize and send to be signed
     stx = tx.encode_partial()

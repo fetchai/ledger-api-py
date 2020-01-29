@@ -51,16 +51,16 @@ class AddressTests(unittest.TestCase):
         self.assertEqual(bytes(address1), bytes(address2))
 
     def test_invalid_length_bytes(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError):
             _ = Address(bytes())
 
     def test_invalid_length_string(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError):
             _ = Address(str())
 
     def test_invalid_type(self):
-        with self.assertRaises(RuntimeError):
-            _ = Address(int(42))
+        with self.assertRaises(ValueError):
+            _ = Address(42)
 
     def test_invalid_display(self):
         entity = Entity()
@@ -69,14 +69,27 @@ class AddressTests(unittest.TestCase):
         invalid_checksum = bytes([0] * Address.CHECKSUM_SIZE)
         invalid_display = base58.b58encode(address_bytes + invalid_checksum).decode()
 
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError):
             _ = Address(invalid_display)
 
-    def test_hex_display(self):
+    def test_equality(self):
         entity = Entity()
-        address = Address(entity)
+        addr1 = Address(entity)
+        addr2 = Address(entity)
 
-        address_bytes = bytes(address)
-        hex_address = address_bytes.hex()
+        self.assertEqual(addr1, addr2)
 
-        self.assertEqual(hex_address, address.to_hex())
+    def test_hashing_equal(self):
+        entity = Entity()
+        addr1 = Address(entity)
+        addr2 = Address(entity)
+
+        self.assertEqual(hash(addr1), hash(addr2))
+
+    def test_hashing_not_equal(self):
+        entity1 = Entity()
+        entity2 = Entity()
+        addr1 = Address(entity1)
+        addr2 = Address(entity2)
+
+        self.assertNotEqual(hash(addr1), hash(addr2))

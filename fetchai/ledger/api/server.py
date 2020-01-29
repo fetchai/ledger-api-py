@@ -16,7 +16,7 @@
 #
 # ------------------------------------------------------------------------------
 from .common import ApiEndpoint
-
+from base64 import b64encode
 
 class ServerApi(ApiEndpoint):
 
@@ -28,7 +28,17 @@ class ServerApi(ApiEndpoint):
         """
         url = '{}://{}:{}/api/status'.format(self.protocol, self.host, self.port)
 
-        response = self._session.get(url).json()
+        # TODO: I am not sure that I understand this
+        raw_resp = self._session.get(url)
+        try:
+            response = raw_resp.json()
+        except:
+            try:
+                str_resp = raw_resp.decode()
+            except:
+                str_resp = b64encode(raw_res).decode()
+
+            response = {"error": str_resp}
 
         return response
 

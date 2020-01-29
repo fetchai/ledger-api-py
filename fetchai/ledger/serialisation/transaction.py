@@ -1,6 +1,6 @@
 import io
 import struct
-from typing import List, Dict
+from typing import List, Dict, IO, Optional
 
 from fetchai.ledger.crypto import Identity
 
@@ -43,27 +43,27 @@ def _map_contract_mode(payload: 'Transaction'):
         return NO_CONTRACT
 
 
-def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
-    num_transfers = len(payload.transfers)
-    num_signatures = len(payload.signers)
+# TODO: This seems a little bit of a weird API
+def encode_payload2(tx: 'Transaction', buffer: Optional[IO[bytes]] = None) -> bytes:
+    buffer = buffer or io.BytesIO()
 
-    # sanity check
-    assert num_signatures >= 1
+    num_transfers = len(tx.transfers)
+    num_signatures = len(tx.signers)
 
     num_extra_signatures = num_signatures - 0x40 if num_signatures > 0x40 else 0
     signalled_signatures = num_signatures - (num_extra_signatures + 1)
-    has_valid_from = payload.valid_from != 0
+    has_valid_from = tx.valid_from != 0
     print("has_valid_from")
     print(has_valid_from)
     print("payload.from_address")
-    print(payload.from_address)
+    print(tx.from_address)
     header0 = VERSION << 5
     header0 |= (1 if num_transfers > 0 else 0) << 2
     header0 |= (1 if num_transfers > 1 else 0) << 1
     header0 |= 1 if has_valid_from else 0
 
     # determine the node of the contract
-    contract_mode = _map_contract_mode(payload)
+    contract_mode = _map_contract_mode(tx)
 
     header1 = contract_mode << 6
     header1 |= signalled_signatures & 0x3f
@@ -73,24 +73,24 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
     reserved = 0
     integer.encode_fixed(buffer, value=reserved, num_bytes=1)
 
-    address.encode(buffer, payload.from_address)
+    address.encode(buffer, tx.from_address)
     if num_transfers > 1:
         integer.encode(buffer, num_transfers - 2)
 
-    for destination, amount in payload.transfers.items():
+    for destination, amount in tx.transfers.items():
         address.encode(buffer, destination)
         integer.encode(buffer, amount)
 
     if has_valid_from:
-        integer.encode(buffer, payload.valid_from)
+        integer.encode(buffer, tx.valid_from)
 
-    integer.encode(buffer, payload.valid_until)
-    integer.encode(buffer, payload.charge_rate)
-    integer.encode(buffer, payload.charge_limit)
+    integer.encode(buffer, tx.valid_until)
+    integer.encode(buffer, tx.charge_rate)
+    integer.encode(buffer, tx.charge_limit)
 
     if NO_CONTRACT != contract_mode:
 
-        shard_mask_length = len(payload.shard_mask)
+        shard_mask_length = len(tx.shard_mask)
 
         if shard_mask_length <= 1:
 
@@ -99,7 +99,7 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
 
         else:
 
-            shard_mask_bytes = bytes(payload.shard_mask)
+            shard_mask_bytes = bytes(tx.shard_mask)
             log2_mask_length = _log2(shard_mask_length)
 
             if shard_mask_length < 8:
@@ -122,70 +122,77 @@ def encode_payload(buffer: io.BytesIO, payload: 'Transaction'):
                 buffer.write(shard_mask_bytes)
 
         if SMART_CONTRACT == contract_mode or SYNERGETIC == contract_mode:
-            address.encode(buffer, payload.contract_address)
+            address.encode(buffer, tx.contract_address)
         elif CHAIN_CODE == contract_mode:
-            encoded_chain_code = payload.chain_code.encode('ascii')
+            encoded_chain_code = tx.chain_code.encode('ascii')
             bytearray.encode(buffer, encoded_chain_code)
         else:
             assert False
 
         # write the action and data fields
-        encoded_action = payload.action.encode('ascii')
+        encoded_action = tx.action.encode('ascii')
         bytearray.encode(buffer, encoded_action)
-        bytearray.encode(buffer, payload.data)
+        bytearray.encode(buffer, tx.data)
 
     # Counter value
-    integer.encode_fixed(buffer, value=payload.counter, num_bytes=8)
+    integer.encode_fixed(buffer, value=tx.counter, num_bytes=8)
 
     if num_extra_signatures > 0:
         integer.encode(buffer, num_extra_signatures)
 
     # write all the signers public keys
-    for signer in payload.signers.keys():
+    for signer in tx.signers:
         identity.encode(buffer, signer)
 
-def encode_multisig_transaction(payload: 'Transaction', signatures: Dict[Identity, bytes]):
-    assert isinstance(payload, bytes) or isinstance(payload, transaction.Transaction)
-
-    # encode the contents of the transaction
-    buffer = io.BytesIO()
-    encode_payload(buffer, payload)
-
-    # append signatures in order
-    for signer in payload.signers.keys():
-        if isinstance(signatures[signer], bytes):
-            bytearray.encode(buffer, signatures[signer])
-        else:
-            bytearray.encode(buffer, signatures[signer]['signature'])
-
-    # return the encoded transaction
     return buffer.getvalue()
 
 
-def encode_transaction(payload: 'Transaction', signers: List[crypto.Entity]):
+# def encode_multisig_transaction(payload: 'Transaction', signatures: Dict[Identity, bytes]):
+#     assert isinstance(payload, bytes) or isinstance(payload, transaction.Transaction)
+#
+#     # encode the contents of the transaction
+#     buffer = io.BytesIO()
+#     encode_payload(buffer, payload)
+#
+#     # append signatures in order
+#     for signer in payload.signers.keys():
+#         if isinstance(signatures[signer], bytes):
+#             bytearray.encode(buffer, signatures[signer])
+#         else:
+#             bytearray.encode(buffer, signatures[signer]['signature'])
+#
+#     # return the encoded transaction
+#     return buffer.getvalue()
+
+
+def encode_transaction2(tx: 'Transaction') -> bytes:
+    """
+    Encode the input transaction to a binary stream which is ready to be sent to the ledger
+
+    :param tx: The input transaction to be encoded
+    :return: The generated bytes for the TX
+    """
+
     # encode the contents of the transaction
     buffer = io.BytesIO()
-    encode_payload(buffer, payload)
-
-    # extract the payload buffer
-    payload_bytes = buffer.getvalue()
+    encode_payload2(tx, buffer)
 
     # append all the signatures of the signers in order
-    for signer in payload.signers.keys():
-        if signer not in signers:
-            raise RuntimeError('Missing signer signing set')
-
-        # find the index to the appropriate index and lookup the entity
-        entity = signers[signers.index(signer)]
-
-        # sign the payload contents and add it to the buffer
-        bytearray.encode(buffer, entity.sign(payload_bytes))
+    for ident, signature in tx.signatures:
+        bytearray.encode(buffer, signature)
 
     # return the encoded transaction
     return buffer.getvalue()
 
 
-def decode_payload(stream: io.BytesIO) -> 'Transaction':
+def decode_payload(stream: IO[bytes]) -> 'Transaction':
+    """
+    Parse the a previously encoded transaction from an input stream
+
+    :param stream: The input stream to process
+    :return: The generated transaction
+    """
+
     # ensure the at the magic is correctly configured
     magic = stream.read(1)[0]
     if magic != MAGIC:
@@ -213,6 +220,7 @@ def decode_payload(stream: io.BytesIO) -> 'Transaction':
     # Ready empty reserved byte
     stream.read(1)
 
+    # create or use
     tx = transaction.Transaction()
 
     # Set synergetic contract type
@@ -303,32 +311,36 @@ def decode_payload(stream: io.BytesIO) -> 'Transaction':
     public_keys = [identity.decode(stream) for _ in range(num_signatures)]
 
     for ident in public_keys:
-        tx._signers[ident] = {}
+        tx.add_signer(ident)
 
     return tx
 
 
 def decode_transaction(stream: io.BytesIO) -> (bool, 'Transaction'):
+    """
+    Decodes a transaction from the wire
+
+    :param stream:
+    :return:
+    """
+
     # decode transaction payload
     tx = decode_payload(stream)
 
     # extract full copy of the payload
     payload_bytes = stream.getvalue()[:stream.tell()]
 
-    verified = []
-    for ident in tx.signers.keys():
-        # for n in range(num_signatures):
+    all_verified = True
+    for ident in tx.signers:
 
         # extract the signature from the stream
         signature = bytearray.decode(stream)
 
         # verify if this signature is correct
-        verified.append(ident.verify(payload_bytes, signature))
+        if not ident.verify(payload_bytes, signature):
+            all_verified = False
 
-        # build a metadata object to store in the tx
-        tx._signers[ident] = {
-            'signature': signature,
-            'verified': verified[-1],
-        }
+        # sign the transaction with the signature bytes
+        tx.add_signature(ident, signature)
 
-    return all(verified), tx
+    return all_verified, tx

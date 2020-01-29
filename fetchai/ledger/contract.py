@@ -50,7 +50,7 @@ class Contract:
 
     @property
     def name(self):
-        return '{}.{}'.format(self.digest.to_hex(), self.address)
+        return '{}'.format(self.address)
 
     def dumps(self):
         return json.dumps(self._to_json_object())
@@ -69,10 +69,6 @@ class Contract:
     @property
     def owner(self):
         return self._owner
-
-    @owner.setter
-    def owner(self, owner):
-        self._owner = Address(owner)
 
     @property
     def source(self):
@@ -99,15 +95,12 @@ class Contract:
         return base64.b64encode(self.source.encode('ascii')).decode()
 
     def create(self, api: ContractsApiLike, owner: Entity, fee: int, signers: Optional[List[Entity]] = None):
-        # Set contract owner (required for resource prefix)
-        self.owner = owner
-
         if self._init is None:
             raise RuntimeError("Contract has no initialisation function")
 
         # Generate resource addresses used by persistent globals
         try:
-            resource_addresses = ['fetch.contract.state.{}'.format(self.digest.to_hex())]
+            resource_addresses = ['fetch.contract.state.{}'.format(str(self.address))]
             resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
                                       self._parser.used_globals_to_addresses(self._init, [self._owner]))
         except (UnparsableAddress, UseWildcardShardMask, EtchParserError):
@@ -139,8 +132,9 @@ class Contract:
 
         return response['result']
 
-    def action(self, api: ContractsApiLike, name: str, fee: int, *args, signers: Optional[List[Entity]] = None):
-        if self._owner is None:
+    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args,
+               from_address: Address = None):
+        if self.owner is None:
             raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
 
         # TODO(WK): Reinstate without breaking contract-to-contract calls
@@ -159,9 +153,8 @@ class Contract:
             # Generate shard mask from resource addresses
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        return self._api(api).action(self.address, name, fee,
-                                     Address(signers[0]) if len(signers) == 1 else Address(self.owner),
-                                     *args, signers=signers, shard_mask=shard_mask)
+        return self._api(api).action(self.address, name, fee, signers, *args,
+                                     from_address=from_address, shard_mask=shard_mask)
 
     @staticmethod
     def _api(api: ContractsApiLike):

@@ -18,16 +18,15 @@
 
 import base64
 import json
-from typing import Optional, Dict, Union
+from typing import Optional, Dict, Union, Iterable
 
 import msgpack
 import requests
+
 from fetchai.ledger.bitvector import BitVector
-
 from fetchai.ledger.crypto import Address, Identity
-
-from fetchai.ledger.transaction import Transaction
 from fetchai.ledger.serialisation import transaction
+from fetchai.ledger.transaction import Transaction
 
 DEFAULT_BLOCK_VALIDITY_PERIOD = 100
 
@@ -297,11 +296,15 @@ class TransactionFactory:
         return tx
 
     @classmethod
-    def _create_action_tx(cls, fee: int, entity: AddressLike, action: str, shard_mask: Optional[BitVector] = None):
+    def _create_chain_code_action_tx(cls, fee: int, from_address: AddressLike, action: str,
+                                     signatories: Iterable[Identity], shard_mask: Optional[BitVector] = None):
         tx = cls._create_skeleton_tx(fee)
-        tx.from_address = Address(entity)
-        tx.target_chain_code(cls.API_PREFIX, shard_mask if shard_mask else BitVector())
+        tx.from_address = Address(from_address)
+        tx.target_chain_code(cls.API_PREFIX, shard_mask or BitVector())
         tx.action = action
+        for ident in signatories:
+            tx.add_signer(ident)
+
         return tx
 
     @classmethod

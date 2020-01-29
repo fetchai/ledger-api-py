@@ -2,12 +2,10 @@ import io
 import logging
 import random
 from collections import OrderedDict
-from io import BytesIO
-from typing import Union
+from typing import Union, Optional, Dict
 
 from fetchai.ledger.crypto import Entity
-from fetchai.ledger.serialisation import transaction, integer, identity, bytearray
-from fetchai.ledger.serialisation.transaction import decode_transaction, decode_payload
+from fetchai.ledger.serialisation import transaction
 from .bitvector import BitVector
 from .crypto import Address, Identity
 
@@ -17,24 +15,49 @@ AddressLike = Union[Address, Identity, str, bytes]
 
 class Transaction:
     def __init__(self):
-        self._from = None
-        self._transfers = OrderedDict()
-        self._valid_from = 0
-        self._valid_until = 0
-        self._charge_rate = 0
-        self._charge_limit = 0
-        self._contract_digest = None
-        self._contract_address = None
-        self._counter = random.getrandbits(64)
-        self._chain_code = None
+        self._from: Optional[Address] = None
+        self._transfers: OrderedDict = OrderedDict()
+        self._valid_from: int = 0
+        self._valid_until: int = 0
+        self._charge_rate: int = 0
+        self._charge_limit: int = 0
+        self._counter: bytes = random.getrandbits(64)
+        self._contract_address: Optional[Address] = None
+        self._chain_code: Optional[str] = None
         self._shard_mask = BitVector()
-        self._action = None
+        self._action: Optional[str] = None
+        self._data = b''
+        self._signatures: Dict[Identity, bytes] = OrderedDict()
+
+        # TODO: Not sure about this data submission stuff - talk to AB
         self._metadata = {
             'synergetic_data_submission': False
         }
-        self._data = b''
 
-        self._signers = OrderedDict()
+    def __eq__(self, other):
+        if isinstance(other, Transaction):
+            return all([
+                self.from_address == other.from_address,
+                self.transfers == other.transfers,
+                self.valid_from == other.valid_from,
+                self.valid_until == other.valid_until,
+                self.charge_rate == other.charge_rate,
+                self.charge_limit == other.charge_limit,
+                self.counter == other.counter,
+                self.contract_address == other.contract_address,
+                self.chain_code == other.chain_code,
+                self.shard_mask == other.shard_mask,
+                self.action == other.action,
+                self.data == other.data,
+                self.all_signers2 == other.all_signers2,
+                self._metadata == other._metadata, # TODO: This might be removed
+                #self._encode_payload() == other._encode_payload(),
+                # TODO: This check sort of overrides all of the above checks
+            ])
+        return False
+
+    def __ne__(self, other):
+        return not (self == other)
 
     @property
     def from_address(self) -> Address:
@@ -81,10 +104,6 @@ class Transaction:
         self._charge_limit = int(limit)
 
     @property
-    def contract_digest(self):
-        return self._contract_digest
-
-    @property
     def contract_address(self):
         return self._contract_address
 
@@ -120,62 +139,45 @@ class Transaction:
     def data(self, data: bytes):
         self._data = bytes(data)
 
-    def compare(self, other: 'Transaction') -> bool:
-        if not self.from_address == other.from_address:
-            return False
-        if not self.transfers == other.transfers:
-            return False
-        if not self.valid_from == other.valid_from:
-            return False
-        if not self.valid_until == other.valid_until:
-            return False
-        if not self.charge_rate == other.charge_rate:
-            return False
-        if not self.charge_limit == other.charge_limit:
-            return False
-        if not self.contract_digest == other.contract_digest:
-            return False
-        if not self.contract_address == other.contract_address:
-            return False
-        if not self.chain_code == other.chain_code:
-            return False
-        if not self.action == other.action:
-            return False
-        if not self.shard_mask == other.shard_mask:
-            return False
-        if not self.data == other.data:
-            return False
-        if not self.signers.keys() == other.signers.keys():
-            return False
-        if not self.counter == other.counter:
-            return False
-        if not self._metadata == other._metadata:
-            return False
-        if not self.payload == other.payload:
-            return False
-        return True
-
+    # TODO: Rename
     @property
-    def payload(self):
-        buffer = BytesIO()
-        transaction.encode_payload(buffer, self)
-        return buffer.getvalue()
+    def all_signers2(self):
+        return set(self._signatures.keys())
 
-    @staticmethod
-    def from_payload(payload: bytes):
-        return decode_payload(io.BytesIO(payload))
+    # TODO: Rename
+    @property
+    def pending_signers2(self):
+        pending = set()
+        for identity, signature in self.signatures:
+            if len(signature) == 0:
+                pending.add(identity)
+        return pending
 
-    @staticmethod
-    def from_encoded(encoded_transaction: bytes):
-        valid, tx = decode_transaction(io.BytesIO(encoded_transaction))
-        if valid:
-            return tx
-        else:
-            return None
+    # TODO: Rename
+    @property
+    def present_signers(self):
+        return self.all_signers2 - self.pending_signers2
 
+    # TODO: Rename
     @property
     def signers(self):
-        return self._signers
+        return list(self._signatures.keys())
+
+    @property
+    def signatures(self):
+        return self._signatures.items()
+
+    @property
+    def is_incomplete(self):
+        return len(self.pending_signers2) > 0
+
+    def is_valid(self) -> bool:
+        payload = self.encode_payload()
+        for identity, signature in self.signatures:
+            if not identity.verify(payload, signature):
+                return False
+
+        return True
 
     def add_transfer(self, address: Identifier, amount: int):
         assert amount > 0
@@ -190,7 +192,6 @@ class Transaction:
         self._chain_code = None
 
     def target_chain_code(self, chain_code_id: str, mask: BitVector):
-        self._contract_digest = None
         self._contract_address = None
         self._shard_mask = BitVector(mask)
         self._chain_code = str(chain_code_id)
@@ -204,54 +205,83 @@ class Transaction:
         self._metadata['synergetic_data_submission'] = is_submission
 
     def add_signer(self, signer: Identity):
-        if signer not in self._signers:
-            self._signers[signer] = {}  # will be replaced with a signature in the future
+        signer = Identity(signer)
+        if signer not in self._signatures:
+            self._signatures[signer] = bytes()  # will be replaced with a signature in the future
 
-    def sign(self, signer: Entity):
-        if Identity(signer) in self._signers:
-            signature = signer.sign(self.payload)
-            self._signers[Identity(signer)] = {
-                'signature': signature,
-                'verified': signer.verify(self.payload, signature)
-            }
+    # TODO: Rename back
+    def sign2(self, signer: Entity):
+        self.add_signature(Identity(signer), signer.sign(self.encode_payload()))
 
-    def merge_signatures(self, tx2: 'Transaction'):
-        if self.payload != tx2.payload:
+    # TODO: Find global identity which is causing all the issues and rename
+    def add_signature(self, identity: Identity, signature: bytes):
+        if identity not in self._signatures:
+            raise RuntimeError('Identity is not currently part')
+        self._signatures[identity] = signature
+
+    def merge_signatures(self, other_tx: 'Transaction') -> bool:
+
+        # sanity check - make sure the encoded transaction is the same
+        if self != other_tx:
             logging.warning("Attempting to combine transactions with different payloads")
+            return False
+
+        payload = self.encode_payload()
+
+        # evaluate the signature from the other transaction and build a (more) complete set of signatures
+        success = None
+        for identity, signature_data in other_tx.signatures:
+            if identity in self._signatures:
+
+                # expect zero length signatures from partial transactions, this is not a failure case
+                if len(signature_data) == 0:
+                    continue
+
+                # validate the signature
+                if not identity.verify(payload, signature_data):
+                    success = False
+                    continue
+
+                # add the signature to the transaction
+                self._signatures[identity] = signature_data
+
+                if success is None:
+                    success = True
+
+        # if no signatures were merged then this is actually an error
+        if success is None:
+            success = False
+
+        return success
+
+    def encode_payload(self):
+        return transaction.encode_payload2(self)
+
+    # TODO: Rename
+    def encode_partial2(self) -> bytes:
+        return transaction.encode_transaction2(self)
+
+    # TODO: Rename
+    @staticmethod
+    def decode_partial2(data: bytes) -> (bool, 'Transaction'):
+        return transaction.decode_transaction(io.BytesIO(data))
+
+    # TODO: Rename
+    def encode2(self) -> Optional[bytes]:
+        if self.is_incomplete:
+            return None
+        else:
+            return transaction.encode_transaction2(self)
+
+    # TODO: Rename
+    @staticmethod
+    def decode2(encoded_transaction: bytes) -> Optional['Transaction']:
+        valid, tx = transaction.decode_transaction(io.BytesIO(encoded_transaction))
+        if valid:
+            return tx
+        else:
             return None
 
-        for signer, signature in tx2.signers.items():
-            if signature and not self.signers[signer]:
-                self.signers[signer] = signature
-
-    def encode_partial(self):
-        buffer = BytesIO()
-        transaction.encode_payload(buffer, self)
-
-        num_signed = len([s for s in self.signers.values() if s])
-        integer.encode(buffer, num_signed)
-
-        for signer, sig in self.signers.items():
-            if sig:
-                identity.encode(buffer, signer)
-                bytearray.encode(buffer, sig['signature'])
-        return buffer.getvalue()
-
     @staticmethod
-    def decode_partial(data: bytes):
-        buffer = io.BytesIO(data)
-
-        tx = decode_payload(buffer)
-
-        num_sigs = integer.decode(buffer)
-
-        for i in range(num_sigs):
-            signer = identity.decode(buffer)
-            signature = bytearray.decode(buffer)
-            tx.signers[signer] = {'signature': signature,
-                                  'verified': signer.verify(tx.payload, signature)}
-
-        if not all(s['verified'] for s in tx.signers.values() if 'verified' in s):
-            logging.warning("Some signatures failed to verify")
-
-        return tx
+    def decode_payload(payload: bytes):
+        return transaction.decode_payload(io.BytesIO(payload))

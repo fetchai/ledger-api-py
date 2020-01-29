@@ -15,17 +15,25 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+import json
 import logging
 from enum import Enum
-from typing import Union
+from typing import Union, Optional, Dict, Tuple
 
-from fetchai.ledger.crypto import Address, Identity, Entity
+from fetchai.ledger.crypto import Address, Identity
 
-AddressLike = Union[Address, Identity]
+AddressLike = Union[Address, Identity, str]
 
 
 class InvalidDeedError(Exception):
     pass
+
+
+def _greater_than_one(value):
+    value = int(value)
+    if value <= 0:
+        raise ValueError('Value {} should be greater or equal to 1'.format(value))
+    return value
 
 
 class Operation(Enum):
@@ -47,68 +55,105 @@ class Operation(Enum):
 
 class Deed:
     def __init__(self):
-        self._signees = {}
-        self._thresholds = {}
+        self._signees: Dict[Address, int] = {}
+        self._thresholds: Dict[Operation, int] = {}
 
-    def set_signee(self, signee: Entity, voting_weight: int):
-        self._signees[signee] = int(voting_weight)
+    def __eq__(self, other: 'Deed'):
+        if self is other:
+            return True
 
-    def remove_signee(self, signee: Entity):
-        if signee in self._signees:
-            del self._signees[signee]
+        return other is not None and self._signees == other._signees and self._thresholds == other._thresholds
 
-    def set_threshold(self, operation: Operation, threshold: int):
-        if threshold is None:
-            del self._thresholds[str(operation)]
-        elif threshold > self.total_votes:
-            raise InvalidDeedError("Attempting to set threshold higher than available votes - it will never be met")
-        else:
-            self._thresholds[str(operation)] = int(threshold)
+    def __ne__(self, other: 'Deed'):
+        return not self == other
 
-    def remove_threshold(self, operation: Operation):
-        if str(operation) in self._thresholds:
-            del self._signees[str(operation)]
+    @property
+    def signees(self):
+        return set(self._signees.keys())
 
-    def return_threshold(self, operation: Operation):
-        return self._thresholds[str(operation)] if  \
-            str(operation) in self._thresholds else None
+    @property
+    def votes(self):
+        return self._signees.items()
+
+    @property
+    def operations(self):
+        return set(self._thresholds.keys())
+
+    @property
+    def thresholds(self):
+        return self._thresholds.items()
 
     @property
     def total_votes(self):
         return sum(v for v in self._signees.values())
 
-    @property
-    def amend_threshold(self):
-        return self._thresholds['amend'] if \
-            'amend' in self._thresholds else None
+    def get_signee(self, signee: AddressLike):
+        signee = Address(signee)
 
-    @amend_threshold.setter
-    def amend_threshold(self, value):
-        self.set_threshold(Operation.amend, value)
+        return self._signees.get(signee)
 
-    def deed_creation_json(self, allow_no_amend=False):
-        deed = {
-            'signees': {Address(k)._display: v for k, v in self._signees.items()},
-            'thresholds': {}
+    def set_signee(self, signee: AddressLike, voting_weight: int):
+        signee = Address(signee)
+        voting_weight = _greater_than_one(voting_weight)
+
+        self._signees[signee] = int(voting_weight)
+
+    def remove_signee(self, signee: AddressLike):
+        signee = Address(signee)
+        if signee in self._signees:
+            del self._signees[signee]
+
+    def set_operation(self, operation: Operation, threshold: int):
+        threshold = _greater_than_one(threshold)
+
+        self._thresholds[operation] = int(threshold)
+
+    def remove_operation(self, operation: Operation):
+        if operation in self._thresholds:
+            del self._thresholds[operation]
+
+    def get_threshold(self, operation: Operation):
+        return self._thresholds[operation] if operation in self._thresholds else None
+
+    def validate(self, allow_no_amend: bool = False):
+        if allow_no_amend:
+            logging.warning("Creating deed without amend threshold - future amendment will be impossible")
+        elif Operation.amend not in self._thresholds:
+            raise InvalidDeedError("The '{}' operation is mandatory but it not present".format(Operation.amend))
+
+        # cache the total voting weight
+        total_voting_weight = self.total_votes
+
+        for operation, threshold in self._thresholds.items():
+            if threshold > total_voting_weight:
+                raise InvalidDeedError(
+                    "Threshold value {} for '{}' operation is greater than total voting weight {}".format(
+                        threshold, operation, total_voting_weight))
+
+    def to_json(self, allow_no_amend: bool = False):
+        self.validate(allow_no_amend)
+
+        return {
+            'signees': {str(Address(signee)): voting_weight for signee, voting_weight in self._signees.items()},
+            'thresholds': {str(operation): threshold for operation, threshold in self._thresholds.items()}
         }
 
-        if self.amend_threshold:
-            # Error if amend threshold un-meetable
-            if self.amend_threshold > self.total_votes:
-                raise InvalidDeedError("Amend threshold greater than total voting power - future amendment will be impossible")
+    @classmethod
+    def from_json(cls, json_deed, allow_no_amend: bool = False):
+        if isinstance(json_deed, str):
+            json_deed = json.loads(json_deed)
 
-            deed['thresholds']['amend'] = self.amend_threshold
+        deed = Deed()
 
-        # Warnings/errors if no amend threshold set
-        elif allow_no_amend:
-            logging.warning("Creating deed without amend threshold - future amendment will be impossible")
-        else:
-            raise InvalidDeedError("Creating deed without amend threshold - future amendment will be impossible")
+        signees = json_deed['signees']
+        for signee, voting_weight in signees.items():
+            deed._signees[Address(signee)] = int(voting_weight)
 
-        # Add other thresholds
-        for key in self._thresholds:
-            if key == 'amend':
-                continue
-            deed['thresholds'][key] = self._thresholds[key]
+        thresholds = json_deed['thresholds']
+        for operation, threshold in thresholds.items():
+            deed._thresholds[Operation[operation]] = int(threshold)
+
+        # ensure that the deed is valid
+        deed.validate(allow_no_amend)
 
         return deed
