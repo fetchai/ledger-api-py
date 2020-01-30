@@ -27,3 +27,7 @@ class UniversalDecodeTests(unittest.TestCase):
     def test_0x(self):
         self.assertEqual(decode_hex_or_b64('0x'), b'\xd3')
         self.assertEqual(decode_hex_or_b64(b'0x'), b'\xd3')
+
+    def test_invalid_decode_type(self):
+        with self.assertRaises(TypeError):
+            decode_hex_or_b64(4)

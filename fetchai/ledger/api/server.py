@@ -15,8 +15,8 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-from .common import ApiEndpoint
-from base64 import b64encode
+from .common import ApiEndpoint, ApiError
+
 
 class ServerApi(ApiEndpoint):
 
@@ -28,17 +28,14 @@ class ServerApi(ApiEndpoint):
         """
         url = '{}://{}:{}/api/status'.format(self.protocol, self.host, self.port)
 
-        # TODO: I am not sure that I understand this
-        raw_resp = self._session.get(url)
-        try:
-            response = raw_resp.json()
-        except:
-            try:
-                str_resp = raw_resp.decode()
-            except:
-                str_resp = b64encode(raw_res).decode()
+        response = self._session.get(url)
+        if not 200 <= response.status_code < 300:
+            raise ApiError('Error accessing status URL: {}'.format(url))
 
-            response = {"error": str_resp}
+        try:
+            response = response.json()
+        except Exception as ex:
+            raise ApiError('Error decoding response from status API: {}'.format(ex))
 
         return response
 

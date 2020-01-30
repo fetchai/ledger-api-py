@@ -169,7 +169,7 @@ class Transaction:
 
     @property
     def is_incomplete(self):
-        return len(self.pending_signers2) > 0
+        return len(self.all_signers2) > 0 and len(self.pending_signers2) > 0
 
     def is_valid(self) -> bool:
         payload = self.encode_payload()

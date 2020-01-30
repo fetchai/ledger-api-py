@@ -93,3 +93,8 @@ class AddressTests(unittest.TestCase):
         addr2 = Address(entity2)
 
         self.assertNotEqual(hash(addr1), hash(addr2))
+
+    def test_not_equal(self):
+        addr1 = Address(bytes(range(32)))
+        addr2 = Address(bytes(range(1,33)))
+        self.assertTrue(addr1 != addr2)

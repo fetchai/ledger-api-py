@@ -132,3 +132,60 @@ class TransactionTests(TestCase):
     def test_from_encoded(self):
         new_tx = Transaction.decode_payload(self.tx.encode_payload())
         self.assertEqual(self.tx, new_tx)
+
+    def test_equal_to_invalid_type(self):
+        self.assertNotEqual(self.tx, 5000324234)
+
+    def test_add_signature_for_non_signer(self):
+        with self.assertRaises(RuntimeError):
+            self.tx.add_signature(Entity(), bytes())
+
+    def test_merge_fail_on_different_tx(self):
+        self.assertFalse(self.tx.merge_signatures(self.mstx))
+
+    def test_merge_fail_on_no_signatures(self):
+        entity = Entity()
+
+        ref = Transaction()
+        ref.counter = 0
+        ref.add_signer(entity)
+        ref.from_address = entity
+        other = Transaction()
+        other.counter = 0
+        other.add_signer(entity)
+        other.from_address = entity
+
+        self.assertFalse(ref.merge_signatures(other))
+
+    def test_handling_of_invalid_signatures(self):
+        entity = Entity()
+
+        ref = Transaction()
+        ref.counter = 0
+        ref.add_signer(entity)
+        ref.from_address = entity
+        other = Transaction()
+        other.counter = 0
+        other.add_signer(entity)
+        other.from_address = entity
+        other.add_signature(entity, b'clearly invalid sig')
+
+        self.assertFalse(ref.merge_signatures(other))
+
+    def test_encoding_of_tx_when_incomplete(self):
+        self.assertTrue(self.tx.is_incomplete)
+        self.assertIsNone(self.tx.encode2())
+
+    def test_encoding_of_complete_tx(self):
+        self.tx.sign2(self.source_identity)
+        self.assertFalse(self.tx.is_incomplete)
+
+        encoded = self.tx.encode2()
+        recovered_tx = Transaction.decode2(encoded)
+        self.assertIsNotNone(recovered_tx)
+        self.assertEqual(self.tx, recovered_tx)
+
+    def test_failure_to_decode_partial(self):
+        encoded_partial = self.tx.encode_partial2()
+
+        self.assertIsNone(Transaction.decode2(encoded_partial))

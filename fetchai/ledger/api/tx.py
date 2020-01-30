@@ -33,16 +33,16 @@ class TxStatus:
                  digest: bytes,
                  status: str,
                  exit_code: int,
-                 charge: int,
+                 charge_limit: int,
                  charge_rate: int,
                  fee: int):
-        self._digest_bytes = digest
+        self._digest_bytes = bytes(digest)
         self._digest_hex = self._digest_bytes.hex()
-        self.status = status
-        self.exit_code = exit_code
-        self.charge = charge
-        self.charge_rate = charge_rate
-        self.fee = fee
+        self.status = str(status)
+        self.exit_code = int(exit_code)
+        self.charge_limit = int(charge_limit)
+        self.charge_rate = int(charge_rate)
+        self.fee = int(fee)
 
     @property
     def successful(self):
@@ -56,6 +56,10 @@ class TxStatus:
     @property
     def non_terminal(self):
         return self.status in self._NON_TERMINAL_STATES
+
+    @property
+    def digest(self):
+        return '0x' + self.digest_hex
 
     @property
     def digest_hex(self):
