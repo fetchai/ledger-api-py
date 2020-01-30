@@ -7,21 +7,6 @@ pipeline {
     stage('Unit Tests') {
       parallel {
 
-        stage('Python 3.5') {
-
-          agent {
-            docker {
-              image "python:3.5-alpine"
-            }
-          }
-
-          steps {
-            sh 'pip install tox'
-            sh 'tox -e py35'
-          }
-
-        } // Python 3.5
-
         stage('Python 3.6') {
 
           agent {
@@ -31,8 +16,9 @@ pipeline {
           }
 
           steps {
-            sh 'pip install tox'
-            sh 'tox -e py36'
+            sh 'python -m pip install pipenv'
+            sh 'pipenv --python 3.6 install --dev --deploy'
+            sh 'pipenv run pytest'
           }
 
         } // Python 3.6
@@ -46,11 +32,28 @@ pipeline {
           }
 
           steps {
-            sh 'pip install tox'
-            sh 'tox -e py37'
+            sh 'python -m pip install pipenv'
+            sh 'pipenv --python 3.7 install --dev --deploy'
+            sh 'pipenv run pytest'
           }
 
         } // Python 3.7
+
+        stage('Python 3.8') {
+
+          agent {
+            docker {
+              image "python:3.8-alpine"
+            }
+          }
+
+          steps {
+            sh 'python -m pip install pipenv'
+            sh 'pipenv --python 3.8 install --dev --deploy'
+            sh 'pipenv run pytest'
+          }
+
+        } // Python 3.8
 
       } // parallel
     } // build & test
@@ -58,4 +61,3 @@ pipeline {
   } // stages
 
 } // pipeline
-

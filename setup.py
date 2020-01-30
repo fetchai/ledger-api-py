@@ -5,12 +5,21 @@ from fetchai.ledger import __version__ as version_string
 setup(
     name='fetchai-ledger-api',
     version=version_string,
-    description='Tools and utilities for interacting with the ledger on the fetch network',
+    description='Tools and utilities for interacting with the Fetch.AI Smart Ledger',
     url='https://github.com/fetchai/ledger-api-py',
     author='Edward FitzGerald',
     author_email='edward.fitzgerald@fetch.ai',
-    packages=find_packages(exclude=['contrib', 'docs', 'tests', 'scripts']),
-    package_data={'fetchai': ['ledger/parser/etch.grammar']},
+    packages=[
+        'fetchai',
+        'fetchai.ledger',
+        'fetchai.ledger.api',
+        'fetchai.ledger.crypto',
+        'fetchai.ledger.genesis',
+        'fetchai.ledger.parser',
+        'fetchai.ledger.serialisation'
+    ],
+    package_data={'fetchai.ledger.parser': ['etch.grammar']},
+    include_package_data=True,
     install_requires=[
         'base58==2.0.0',
         'ecdsa==0.15',
@@ -20,12 +29,11 @@ setup(
         'requests==2.22.0',
         'semver==2.9.0'
     ],
-    extras_require={
-        'dev': ['check-manifest', 'pydot'],
-        'test': ['coverage', 'pytest'],
-    },
     classifiers=[
-        'Programming Language :: Python :: 3'
+        'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8'
     ],
-    python_requires='>=3.5'
+    python_requires='>=3.6'
 )

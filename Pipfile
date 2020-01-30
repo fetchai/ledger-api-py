@@ -4,9 +4,7 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+pytest = "==5.3.5"
 
 [packages]
 fetchai-ledger-api = {editable = true,path = "."}
-
-[requires]
-python_version = "3.7"
