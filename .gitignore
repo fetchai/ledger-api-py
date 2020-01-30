@@ -5,6 +5,8 @@
 dist/
 .idea/
 build/
+Pipfile
+Pipfile.lock
 
 # Code coverage output
 .coverage
