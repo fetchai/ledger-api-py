@@ -18,7 +18,7 @@
 import json
 import logging
 from enum import Enum
-from typing import Union, Optional, Dict, Tuple
+from typing import Union, Dict
 
 from fetchai.ledger.crypto import Address, Identity
 
@@ -55,9 +55,9 @@ class Operation(Enum):
 
 class Deed:
     def __init__(self):
-        self._signees: Dict[Address, int] = {}
-        self._thresholds: Dict[Operation, int] = {}
-        self._required_amend = True
+        self._signees = {}  # type: Dict[Address, int]
+        self._thresholds = {}  # type: Dict[Operation, int]
+        self._required_amend = True # type: bool
 
     def __eq__(self, other: 'Deed'):
         if self is other:

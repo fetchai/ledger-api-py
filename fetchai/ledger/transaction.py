@@ -15,19 +15,19 @@ AddressLike = Union[Address, Identity, str, bytes]
 
 class Transaction:
     def __init__(self):
-        self._from: Optional[Address] = None
-        self._transfers: OrderedDict = OrderedDict()
-        self._valid_from: int = 0
-        self._valid_until: int = 0
-        self._charge_rate: int = 0
-        self._charge_limit: int = 0
-        self._counter: bytes = random.getrandbits(64)
-        self._contract_address: Optional[Address] = None
-        self._chain_code: Optional[str] = None
-        self._shard_mask = BitVector()
-        self._action: Optional[str] = None
-        self._data = b''
-        self._signatures: Dict[Identity, bytes] = OrderedDict()
+        self._from = None  # type: Optional[Address]
+        self._transfers = OrderedDict()  # type: Dict[Address, int]
+        self._valid_from = 0  # type: int
+        self._valid_until = 0  # type: int
+        self._charge_rate = 0  # type: int
+        self._charge_limit = 0  # type: int
+        self._counter = random.getrandbits(64)  # type: bytes
+        self._contract_address = None  # type: Optional[Address]
+        self._chain_code = None  # type: Optional[str]
+        self._shard_mask = BitVector()  # type: BitVector
+        self._action = None  # type: Optional[str]
+        self._data = b''  # type: bytes
+        self._signatures = OrderedDict()  # type: Dict[Identity, bytes]
 
         # TODO: Not sure about this data submission stuff - talk to AB
         self._metadata = {
@@ -50,8 +50,8 @@ class Transaction:
                 self.action == other.action,
                 self.data == other.data,
                 self.all_signers2 == other.all_signers2,
-                self._metadata == other._metadata, # TODO: This might be removed
-                #self._encode_payload() == other._encode_payload(),
+                self._metadata == other._metadata,  # TODO: This might be removed
+                # self._encode_payload() == other._encode_payload(),
                 # TODO: This check sort of overrides all of the above checks
             ])
         return False
