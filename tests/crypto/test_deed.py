@@ -102,15 +102,16 @@ class DeedTests(TestCase):
         deed = Deed()
         deed.set_signee(self.board[0], 1)
         deed.set_operation(Operation.transfer, 1)
+        deed.require_amend = False
 
         # With explicit request, this should still be a warning
         with patch('logging.warning') as mock_warn:
-            deed.validate(allow_no_amend=True)
+            deed.validate()
             self.assertEqual(mock_warn.call_count, 1)
 
         # With explicit request, this should still be a warning
         with patch('logging.warning') as mock_warn:
-            obj = deed.to_json(allow_no_amend=True)
+            obj = deed.to_json()
             self.assertEqual(mock_warn.call_count, 1)
 
         thresholds = obj['thresholds']
@@ -126,7 +127,7 @@ class DeedTests(TestCase):
         self.assertEqual(deed, deed_copy)
 
     def test_to_json(self):
-        """Test creation from obj - promary workflow"""
+        """Test creation from obj - primary workflow"""
         deed = self.create_default_deed()
         obj = deed.to_json()
 

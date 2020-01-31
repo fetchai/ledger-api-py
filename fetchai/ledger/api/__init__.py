@@ -162,7 +162,13 @@ class LedgerApi:
             time.sleep(1)
 
     def submit_signed_tx(self, tx: Transaction):
+        if not tx.is_valid():
+            raise RuntimeError('Signed transaction failed validation checks')
+
         return self.tokens.submit_signed_tx(tx)
+
+    def set_validity_period(self, tx: Transaction, period: Optional[int] = None):
+        self.tokens._set_validity_period(tx, period)
 
     def wait_for_blocks(self, n):
         initial = self.tokens.current_block_number()

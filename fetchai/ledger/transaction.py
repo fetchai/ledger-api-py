@@ -2,7 +2,7 @@ import io
 import logging
 import random
 from collections import OrderedDict
-from typing import Union, Optional, Dict
+from typing import Union, Optional, Dict, List
 
 from fetchai.ledger.crypto import Entity
 from fetchai.ledger.serialisation import transaction
@@ -253,6 +253,18 @@ class Transaction:
             success = False
 
         return success
+
+    @staticmethod
+    def merge(transactions: List['Transaction']) -> (bool, Optional['Transaction']):
+        if len(transactions) == 0:
+            return False, None
+
+        # the default case where there are two or more transactions in the input list (because they need to get merged)
+        tx = transactions[0]
+        for other_tx in transactions[1:]:
+            tx.merge_signatures(other_tx)
+
+        return tx.is_valid(), tx
 
     def encode_payload(self):
         return transaction.encode_payload2(self)

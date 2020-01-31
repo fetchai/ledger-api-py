@@ -57,6 +57,7 @@ class Deed:
     def __init__(self):
         self._signees: Dict[Address, int] = {}
         self._thresholds: Dict[Operation, int] = {}
+        self._required_amend = True
 
     def __eq__(self, other: 'Deed'):
         if self is other:
@@ -87,6 +88,14 @@ class Deed:
     def total_votes(self):
         return sum(v for v in self._signees.values())
 
+    @property
+    def require_amend(self):
+        return self._required_amend
+
+    @require_amend.setter
+    def require_amend(self, value: bool):
+        self._required_amend = bool(value)
+
     def get_signee(self, signee: AddressLike):
         signee = Address(signee)
 
@@ -115,8 +124,8 @@ class Deed:
     def get_threshold(self, operation: Operation):
         return self._thresholds[operation] if operation in self._thresholds else None
 
-    def validate(self, allow_no_amend: bool = False):
-        if allow_no_amend:
+    def validate(self):
+        if not self.require_amend:
             logging.warning("Creating deed without amend threshold - future amendment will be impossible")
         elif Operation.amend not in self._thresholds:
             raise InvalidDeedError("The '{}' operation is mandatory but it not present".format(Operation.amend))
@@ -130,8 +139,8 @@ class Deed:
                     "Threshold value {} for '{}' operation is greater than total voting weight {}".format(
                         threshold, operation, total_voting_weight))
 
-    def to_json(self, allow_no_amend: bool = False):
-        self.validate(allow_no_amend)
+    def to_json(self):
+        self.validate()
 
         return {
             'signees': {str(Address(signee)): voting_weight for signee, voting_weight in self._signees.items()},
@@ -139,11 +148,12 @@ class Deed:
         }
 
     @classmethod
-    def from_json(cls, json_deed, allow_no_amend: bool = False):
+    def from_json(cls, json_deed, require_amend: bool = True):
         if isinstance(json_deed, str):
             json_deed = json.loads(json_deed)
 
         deed = Deed()
+        deed.require_amend = bool(require_amend)
 
         signees = json_deed['signees']
         for signee, voting_weight in signees.items():
@@ -154,6 +164,6 @@ class Deed:
             deed._thresholds[Operation[operation]] = int(threshold)
 
         # ensure that the deed is valid
-        deed.validate(allow_no_amend)
+        deed.validate()
 
         return deed

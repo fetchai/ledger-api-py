@@ -16,18 +16,19 @@
 #
 # ------------------------------------------------------------------------------
 import logging
-from typing import List, Optional
+from typing import List, Optional, Iterable, Union
 
 import msgpack
 
 from fetchai.ledger.api.common import TransactionFactory
-from fetchai.ledger.serialisation import transaction
 from fetchai.ledger.bitvector import BitVector
-from fetchai.ledger.crypto import Address, Entity
+from fetchai.ledger.crypto import Address, Entity, Identity
+from fetchai.ledger.serialisation import transaction
 from fetchai.ledger.transaction import Transaction
 from .common import ApiEndpoint
 
 EntityList = List[Entity]
+AddressLike = Union[Address, str]
 
 
 class ContractsApi(ApiEndpoint):
@@ -38,7 +39,7 @@ class ContractsApi(ApiEndpoint):
 
         logging.debug('Deploying contract', contract.address)
 
-        tx = ContractTxFactory.create(owner, contract, fee, shard_mask)
+        tx = ContractTxFactory.create(Address(owner), contract, fee, [owner], shard_mask)
         self._set_validity_period(tx)
         tx.sign2(owner)
 
@@ -51,11 +52,11 @@ class ContractsApi(ApiEndpoint):
     def submit_data(self, entity: Entity, contract_address: Address, fee: int, **kwargs):
         # build up the basic transaction information
         tx = self._create_skeleton_tx(fee)
-        #tx.valid_until = self._get_valid_until()
+        # tx.valid_until = self._get_valid_until()
         tx.from_address = Address(entity)
         tx.target_contract(contract_address, BitVector())
         tx.action = 'data'
-        tx.synergetic_data_submission = True #  not sure what this does
+        tx.synergetic_data_submission = True  # not sure what this does
         tx.data = self._encode_json(dict(**kwargs))
         tx.add_signer(entity)
         tx.sign2(entity)
@@ -69,16 +70,14 @@ class ContractsApi(ApiEndpoint):
     def query(self, contract_owner: Address, query: str, **kwargs):
         return self._post_json(query, prefix=str(contract_owner), data=self._encode_json_payload(**kwargs))
 
-    def action(self, contract_address: Address, action: str, fee: int, signers: EntityList, *args,
+    def action(self, contract_address: Address, action: str, fee: int, signer: Entity, *args,
                from_address: Address = None, shard_mask: BitVector = None):
 
-        tx = ContractTxFactory.action(contract_address, action, fee, signers, *args,
-                                                        from_address=from_address, shard_mask=shard_mask)
+        tx = ContractTxFactory.action(from_address or Address(signer), contract_address, action, fee, [signer], *args,
+                                      shard_mask=shard_mask)
         tx.data = self._encode_msgpack_payload(*args)
         self._set_validity_period(tx)
-
-        for signer in signers:
-            tx.sign2(signer)
+        tx.sign2(signer)
 
         encoded_tx = transaction.encode_transaction2(tx)
 
@@ -147,8 +146,27 @@ class ContractTxFactory(TransactionFactory):
     #     self._api.server._set_validity_period(tx, validity_period=validity_period)
 
     @classmethod
-    def action(cls, contract_address: Address, action: str, fee: int, signers: List[Entity], *args,
-               from_address: Address = None, shard_mask: Optional[BitVector] = None) -> Transaction:
+    def create(cls, from_address: AddressLike, contract: 'Contract', fee: int, signatories: Iterable[Identity],
+               shard_mask: Optional[BitVector] = None) -> Transaction:
+
+        # Default to wildcard shard mask if none supplied
+        if not shard_mask:
+            logging.warning("Defaulting to wildcard shard mask as none supplied")
+            shard_mask = BitVector()
+
+        # build up the basic transaction information
+        tx = cls._create_chain_code_action_tx(fee, from_address, 'create', signatories, shard_mask)
+        tx.data = cls._encode_json({
+            'nonce': contract.nonce,
+            'text': contract.encoded_source,
+            'digest': contract.digest,
+        })
+
+        return tx
+
+    @classmethod
+    def action(cls, from_address: Address, contract_address: Address, action: str, fee: int, signers: List[Identity],
+               *args, shard_mask: Optional[BitVector] = None) -> Transaction:
 
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
@@ -165,24 +183,5 @@ class ContractTxFactory(TransactionFactory):
         # build up the basic transaction information
         tx = cls._create_smart_contract_action_tx(fee, from_address, contract_address, action, signers, shard_mask)
         tx.data = cls._encode_msgpack_payload(*args)
-
-        return tx
-
-    @classmethod
-    def create(cls, owner: Entity, contract: 'Contract', fee: int,
-               shard_mask: Optional[BitVector] = None) -> Transaction:
-
-        # Default to wildcard shard mask if none supplied
-        if not shard_mask:
-            logging.warning("Defaulting to wildcard shard mask as none supplied")
-            shard_mask = BitVector()
-
-        # build up the basic transaction information
-        tx = cls._create_chain_code_action_tx(fee, owner, 'create', [owner], shard_mask)
-        tx.data = cls._encode_json({
-            'nonce': contract.nonce,
-            'text': contract.encoded_source,
-            'digest': contract.digest,
-        })
 
         return tx

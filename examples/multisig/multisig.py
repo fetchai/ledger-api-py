@@ -92,6 +92,7 @@ def main():
     # since we now want to create a transaction which has only been signed by a subset of the board, we must use
     # the factory interface in order to build out the transaction we are after
     tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, board[:2])
+    tx.valid_until = api.tokens.current_block_number() + 100
     for signatory in board[:2]:
         tx.sign2(signatory)
 
@@ -103,20 +104,34 @@ def main():
     # Some entities may have more voting power
     print("\nSubmitting transfer with single signature with 2 votes...")
     print_signing_votes(voting_weights, board[3])
-    api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20, signatories=[board[3]]))
+
+    tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, [board[3]])
+    tx.valid_until = api.tokens.current_block_number() + 100
+    tx.sign2(board[3])
+    api.sync(api.submit_signed_tx(tx))
+
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
     # Amend the deed
     print("\nAmending deed to increase transfer threshold to 3 votes...")
     deed.set_operation(Operation.transfer, 3)
-    api.sync(api.tokens.deed(multi_sig_identity, deed, board))
+    tx = TokenTxFactory.deed(multi_sig_identity, deed, 400, board)
+    tx.valid_until = api.tokens.current_block_number() + 100
+    for member in board:
+        tx.sign2(member)
+    api.sync(api.submit_signed_tx(tx))
 
     # Single member no longer has enough voting power
     print("\nSingle member transfer with 2 votes should no longer succeed...")
     try:
         print_signing_votes(voting_weights, board[3])
-        api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20, signatories=[board[3]]))
+
+        tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, [board[3]])
+        tx.valid_until = api.tokens.current_block_number() + 100
+        tx.sign2(board[3])
+        api.sync(api.submit_signed_tx(tx))
+
     except RuntimeError as e:
         print("Transaction failed as expected")
     else:
@@ -125,15 +140,28 @@ def main():
     # Correct number of signatory votes
     print("\nSuccesful transaction with sufficient voting weight...")
     print_signing_votes(voting_weights, board[1:])
-    api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board[1:]))
+
+    tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, board[1:])
+    tx.valid_until = api.tokens.current_block_number() + 100
+    for member in board[1:]:
+        tx.sign2(member)
+    api.sync(api.submit_signed_tx(tx))
 
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
     # Warning: if no amend threshold is set, future amendments are impossible
     print("\nAmending deed to remove threshold...")
-    deed.amend_threshold = None
-    allow_no_amend = True
+    deed.remove_operation(Operation.amend)
+    deed.require_amend = False
+
+    tx = TokenTxFactory.deed(multi_sig_identity, deed, 400, board)
+    tx.valid_until = api.tokens.current_block_number() + 100
+    for member in board:
+        tx.sign2(member)
+    api.sync(api.submit_signed_tx(tx))
+
+
     api.sync(api.tokens.deed(multi_sig_identity, deed, board, allow_no_amend))
 
     deed.amend_threshold = 1
