@@ -1,6 +1,6 @@
 import io
 import struct
-from typing import IO, Optional
+from typing import Optional
 
 
 from fetchai.ledger import bitvector
@@ -163,7 +163,7 @@ def encode_transaction(tx: 'Transaction') -> bytes:
     return buffer.getvalue()
 
 
-def decode_payload(stream: IO[bytes]) -> 'Transaction':
+def decode_payload(stream: io.BytesIO) -> 'Transaction':
     """
     Parse the a previously encoded transaction from an input stream
 
