@@ -20,6 +20,7 @@
 # How to set the deed for a multi-sig account
 #
 from fetchai.ledger.api import LedgerApi
+from fetchai.ledger.api.token import TokenTxFactory
 from fetchai.ledger.crypto import Entity
 from fetchai.ledger.crypto.deed import Deed, Operation
 
@@ -70,10 +71,10 @@ def main():
     deed = Deed()
     for sig, weight in voting_weights.items():
         deed.set_signee(sig, weight)
-    deed.amend_threshold = 4
-    deed.set_threshold(Operation.transfer, 2)
+    deed.set_operation(Operation.transfer, 2)
+    deed.set_operation(Operation.amend, 4)
 
-    api.sync(api.tokens.deed(multi_sig_identity, deed))
+    api.sync(api.tokens.deed(multi_sig_identity, deed, 6000))
 
     # Original address can no longer validate transfers
     print("\nTransfer with original signature should fail...")
@@ -87,7 +88,14 @@ def main():
     # Sufficient voting power required to sign transfers
     print("\nSubmitting transfer with two signatures with total 2 votes...")
     print_signing_votes(voting_weights, board[:2])
-    api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board[:2]))
+
+    # since we now want to create a transaction which has only been signed by a subset of the board, we must use
+    # the factory interface in order to build out the transaction we are after
+    tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, board[:2])
+    for signatory in board[:2]:
+        tx.sign2(signatory)
+
+    api.sync(api.submit_signed_tx(tx))
 
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
@@ -101,7 +109,7 @@ def main():
 
     # Amend the deed
     print("\nAmending deed to increase transfer threshold to 3 votes...")
-    deed.set_threshold(Operation.transfer, 3)
+    deed.set_operation(Operation.transfer, 3)
     api.sync(api.tokens.deed(multi_sig_identity, deed, board))
 
     # Single member no longer has enough voting power

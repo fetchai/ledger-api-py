@@ -22,6 +22,7 @@ from fetchai.ledger.api.common import TransactionFactory
 from fetchai.ledger.crypto import Address, Entity, Identity
 from fetchai.ledger.crypto.deed import Deed
 from fetchai.ledger.serialisation import transaction
+from fetchai.ledger.bitvector import BitVector
 
 AddressLike = Union[Address, Identity, str, bytes]
 
@@ -230,7 +231,11 @@ class TokenTxFactory(TransactionFactory):
 
     @classmethod
     def deed(cls, from_address: AddressLike, deed: Optional[Deed], fee: int, signatories: Iterable[Identity]) -> 'Transaction':
-        tx = cls._create_chain_code_action_tx(fee, from_address, 'deed', signatories)
+
+        # TODO: This is known
+        shard_mask = BitVector()
+
+        tx = cls._create_chain_code_action_tx(fee, from_address, 'deed', signatories, shard_mask)
         tx.data = cls._encode_json({} if deed is None else deed.to_json())
 
         return tx

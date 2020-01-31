@@ -25,6 +25,7 @@ from typing import Sequence, Union, Optional, List
 import semver
 
 from fetchai.ledger import __compatible__, IncompatibleLedgerVersion
+from fetchai.ledger.transaction import Transaction
 from fetchai.ledger.api import bootstrap
 from fetchai.ledger.api.server import ServerApi
 from .common import ApiEndpoint, ApiError, submit_json_transaction
@@ -159,6 +160,9 @@ class LedgerApi:
                 raise RuntimeError('Timeout waiting for txs: {}'.format(', '.join(list(remaining))))
 
             time.sleep(1)
+
+    def submit_signed_tx(self, tx: Transaction):
+        return self.tokens.submit_signed_tx(tx)
 
     def wait_for_blocks(self, n):
         initial = self.tokens.current_block_number()

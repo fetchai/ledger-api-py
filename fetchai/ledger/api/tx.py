@@ -107,10 +107,14 @@ class TxContents:
         return self.transfers.get(address, 0)
 
     @staticmethod
-    def from_json(data: Union[dict, str]):
+    def from_json(data: Union[dict, str]) -> Optional['TxContents']:
         """Creates a TxContents from a json string or dict object"""
         if isinstance(data, str):
             data = json.loads(data)
+
+        # in the case that we query a transaction which might not be present
+        if len(data) == 0:
+            return None
 
         # Extract contents from json, converting as necessary
         return TxContents(
@@ -141,7 +145,7 @@ class TransactionApi(ApiEndpoint):
 
         return self._status(tx_digest)
 
-    def _status(self, tx_digest):
+    def _status(self, tx_digest) -> TxStatus:
         url = '{}://{}:{}/api/status/tx/{}'.format(self.protocol, self.host, self.port, tx_digest)
 
         response = self._session.get(url).json()
@@ -150,11 +154,11 @@ class TransactionApi(ApiEndpoint):
             digest=decode_hex_or_b64(response['tx']),
             status=str(response['status']),
             exit_code=int(response['exit_code']),
-            charge=int(response['charge']),
+            charge_limit=int(response['charge']),
             charge_rate=int(response['charge_rate']),
             fee=int(response['fee']))
 
-    def contents(self, tx_digest) -> TxContents:
+    def contents(self, tx_digest) -> Optional[TxContents]:
         """
         Returns the contents of the transaction at the node
 
@@ -164,7 +168,7 @@ class TransactionApi(ApiEndpoint):
 
         return self._contents(tx_digest)
 
-    def _contents(self, tx_digest) -> TxContents:
+    def _contents(self, tx_digest) -> Optional[TxContents]:
         url = '{}://{}:{}/api/tx/{}'.format(self.protocol, self.host, self.port, tx_digest)
 
         response = self._session.get(url).json()

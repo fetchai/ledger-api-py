@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # ------------------------------------------------------------------------------
 #
 #   Copyright 2018-2019 Fetch.AI Limited
@@ -23,59 +24,54 @@ from fetchai.ledger.contract import Contract
 from fetchai.ledger.crypto import Entity, Address
 
 CONTRACT_TEXT = """
-persistent sharded balance_state : UInt64;
-persistent supply_state : UInt64;
+persistent sharded balance_ : UInt64;
+persistent supply_ : UInt64;
 
 @init
 function init(owner: Address)
+    use supply_;
+    use balance_[owner];
 
-    use supply_state;
-    use balance_state[owner];
-
-    supply_state.set(92817u64);
-    balance_state.set(owner, 92817u64);
-
+    supply_.set(92817u64);
+    balance_.set(owner, 92817u64);
 endfunction
 
 @query
 function totalSupply(): UInt64
+    use supply_;
 
-    use supply_state;
-    return supply_state.get();
-
+    return supply_.get();
 endfunction
-
 
 @query
 function balanceOf(address: Address) : UInt64
-    
-    use balance_state[address];
-    return balance_state.get(address, 0u64);
+    use balance_[address];
 
+    return balance_.get(address, 0u64);
 endfunction
 
 @action
-function transfer(from: Address, to: Address, value: UInt64) : Bool
+function transfer(from: Address, to: Address, value: UInt64) : Int64
+    use balance_[from, to];
 
     if(!from.signedTx())
-      return false;
+      return 1i64;
     endif
 
-    use balance_state[from, to];
-    var from_balance = balance_state.get(from, 0u64);
-    var to_balance = balance_state.get(to, 0u64);
+    var from_balance = balance_.get(from, 0u64);
+    var to_balance = balance_.get(to, 0u64);
 
     if(from_balance < value)
-      return false;
+      return 1i64;
     endif
 
     var u_from = from_balance - value;
     var u_to = to_balance + value;
 
-    balance_state.set(from, u_from);
-    balance_state.set(to, u_to);
-    return true;
+    balance_.set(from, u_from);
+    balance_.set(to, u_to);
 
+    return 0i64;
 endfunction
 
 """
@@ -135,7 +131,7 @@ def main():
     tok_transfer_amount = 200
     fet_tx_fee = 160
     with track_cost(api.tokens, entity1, "Cost of transfer: "):
-        api.sync(contract.action(api, 'transfer', fet_tx_fee, address1, address2, tok_transfer_amount, [entity1]))
+        api.sync(contract.action(api, 'transfer', fet_tx_fee, [entity1], address1, address2, tok_transfer_amount))
 
     print('-- AFTER --')
     print_address_balances(api, contract, [address1, address2])

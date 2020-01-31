@@ -33,16 +33,17 @@ EntityList = List[Entity]
 class ContractsApi(ApiEndpoint):
     API_PREFIX = 'fetch.contract'
 
-    def create(self, owner: Entity, contract: 'Contract', fee: int, signers: Optional[List[int]] = None,
-               shard_mask: BitVector = None):
+    def create(self, owner: Entity, contract: 'Contract', fee: int, shard_mask: BitVector = None):
         ENDPOINT = 'create'
 
         logging.debug('Deploying contract', contract.address)
 
-        tx = ContractTxFactory(self._parent_api).create(owner, contract, fee, signers, shard_mask)
+        tx = ContractTxFactory.create(owner, contract, fee, shard_mask)
+        self._set_validity_period(tx)
+        tx.sign2(owner)
 
         # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction(tx, signers if signers else [owner])
+        encoded_tx = transaction.encode_transaction2(tx)
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
@@ -50,15 +51,17 @@ class ContractsApi(ApiEndpoint):
     def submit_data(self, entity: Entity, contract_address: Address, fee: int, **kwargs):
         # build up the basic transaction information
         tx = self._create_skeleton_tx(fee)
+        #tx.valid_until = self._get_valid_until()
         tx.from_address = Address(entity)
         tx.target_contract(contract_address, BitVector())
         tx.action = 'data'
-        tx.synergetic_data_submission = True
+        tx.synergetic_data_submission = True #  not sure what this does
         tx.data = self._encode_json(dict(**kwargs))
         tx.add_signer(entity)
+        tx.sign2(entity)
 
         # encode the transaction
-        encoded_tx = transaction.encode_transaction(tx, [entity])
+        encoded_tx = transaction.encode_transaction2(tx)
 
         # submit the transaction to the catch-all endpoint
         return self._post_tx_json(encoded_tx, None)
@@ -69,15 +72,15 @@ class ContractsApi(ApiEndpoint):
     def action(self, contract_address: Address, action: str, fee: int, signers: EntityList, *args,
                from_address: Address = None, shard_mask: BitVector = None):
 
-        tx = ContractTxFactory(self._parent_api).action(contract_address, action, fee, signers, *args,
+        tx = ContractTxFactory.action(contract_address, action, fee, signers, *args,
                                                         from_address=from_address, shard_mask=shard_mask)
         tx.data = self._encode_msgpack_payload(*args)
         self._set_validity_period(tx)
 
         for signer in signers:
-            tx.add_signer(signer)
+            tx.sign2(signer)
 
-        encoded_tx = transaction.encode_transaction(tx, signers)
+        encoded_tx = transaction.encode_transaction2(tx)
 
         return self._post_tx_json(encoded_tx, None)
 
@@ -130,19 +133,21 @@ class ContractsApi(ApiEndpoint):
 class ContractTxFactory(TransactionFactory):
     API_PREFIX = 'fetch.contract'
 
-    def __init__(self, api: 'LedgerApi'):
-        self._api = api
+    # # TODO: No way!
+    # def __init__(self, api: 'LedgerApi'):
+    #     self._api = api
+    #
+    # @property
+    # def server(self):
+    #     """Replicate server interface for fetching number of lanes"""
+    #     return self._api.server
+    #
+    # def _set_validity_period(self, tx: Transaction, validity_period: Optional[int] = None):
+    #     """Replicate setting of validity period using server"""
+    #     self._api.server._set_validity_period(tx, validity_period=validity_period)
 
-    @property
-    def server(self):
-        """Replicate server interface for fetching number of lanes"""
-        return self._api.server
-
-    def _set_validity_period(self, tx: Transaction, validity_period: Optional[int] = None):
-        """Replicate setting of validity period using server"""
-        self._api.server._set_validity_period(tx, validity_period=validity_period)
-
-    def action(self, contract_address: Address, action: str, fee: int, signers: List[Entity], *args,
+    @classmethod
+    def action(cls, contract_address: Address, action: str, fee: int, signers: List[Entity], *args,
                from_address: Address = None, shard_mask: Optional[BitVector] = None) -> Transaction:
 
         # Default to wildcard shard mask if none supplied
@@ -150,44 +155,34 @@ class ContractTxFactory(TransactionFactory):
             logging.warning("Defaulting to wildcard shard mask as none supplied")
             shard_mask = BitVector()
 
+        # select the from address
         if from_address is None:
             if len(signers) == 1:
                 from_address = Address(signers[0])
+            else:
+                raise RuntimeError('Unable to determine from field for transaction, more than 1 signer provided')
 
         # build up the basic transaction information
-        tx = self._create_action_tx(fee, from_address, action, shard_mask)
-        tx.target_contract(contract_address, shard_mask)
-        tx.data = self._encode_msgpack_payload(*args)
-        self._set_validity_period(tx)
-
-        if signers:
-            for signer in signers:
-                tx.add_signer(signer)
-        else:
-            tx.add_signer(from_address)
+        tx = cls._create_smart_contract_action_tx(fee, from_address, contract_address, action, signers, shard_mask)
+        tx.data = cls._encode_msgpack_payload(*args)
 
         return tx
 
-    def create(self, owner: Entity, contract: 'Contract', fee: int, signers: Optional[List[Entity]] = None,
+    @classmethod
+    def create(cls, owner: Entity, contract: 'Contract', fee: int,
                shard_mask: Optional[BitVector] = None) -> Transaction:
+
         # Default to wildcard shard mask if none supplied
         if not shard_mask:
             logging.warning("Defaulting to wildcard shard mask as none supplied")
             shard_mask = BitVector()
 
         # build up the basic transaction information
-        tx = self._create_action_tx(fee, owner, 'create', shard_mask)
-        tx.data = self._encode_json({
+        tx = cls._create_chain_code_action_tx(fee, owner, 'create', [owner], shard_mask)
+        tx.data = cls._encode_json({
             'nonce': contract.nonce,
             'text': contract.encoded_source,
-            'digest': contract.digest.to_hex()
+            'digest': contract.digest,
         })
-        self._set_validity_period(tx)
-
-        if signers:
-            for signer in signers:
-                tx.add_signer(signer)
-        else:
-            tx.add_signer(owner)
 
         return tx

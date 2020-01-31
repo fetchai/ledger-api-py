@@ -49,8 +49,8 @@ class Contract:
         self._init = init[0] if len(init) else None
 
     @property
-    def name(self):
-        return '{}'.format(self.address)
+    def name(self) -> str:
+        return str(self.address)
 
     def dumps(self):
         return json.dumps(self._to_json_object())
@@ -67,16 +67,16 @@ class Contract:
         return cls._from_json_object(json.load(fp))
 
     @property
-    def owner(self):
+    def owner(self) -> Address:
         return self._owner
 
     @property
-    def source(self):
+    def source(self) -> str:
         return self._source
 
     @property
-    def digest(self):
-        return self._digest
+    def digest(self) -> str:
+        return bytes(self._digest).hex()
 
     @property
     def nonce(self) -> str:
@@ -91,18 +91,22 @@ class Contract:
         return self._address
 
     @property
-    def encoded_source(self):
+    def encoded_source(self) -> str:
         return base64.b64encode(self.source.encode('ascii')).decode()
 
-    def create(self, api: ContractsApiLike, owner: Entity, fee: int, signers: Optional[List[Entity]] = None):
+    def create(self, api: ContractsApiLike, owner: Entity, fee: int):
         if self._init is None:
             raise RuntimeError("Contract has no initialisation function")
 
         # Generate resource addresses used by persistent globals
         try:
-            resource_addresses = ['fetch.contract.state.{}'.format(str(self.address))]
-            resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
-                                      self._parser.used_globals_to_addresses(self._init, [self._owner]))
+            resource_addresses = [
+                'fetch.contract.state.{}'.format(str(self.address)),
+            ]
+
+            for variable in self._parser.used_globals_to_addresses(self._init, [self._owner]):
+                resource_addresses.append(ShardMask.state_to_address2(str(self.address), variable))
+
         except (UnparsableAddress, UseWildcardShardMask, EtchParserError):
             logging.warning("Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
@@ -110,7 +114,7 @@ class Contract:
             # Generate shard mask from resource addresses
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        return self._api(api).create(owner, self, fee, signers, shard_mask=shard_mask)
+        return self._api(api).create(owner, self, fee, shard_mask=shard_mask)
 
     def query(self, api: ContractsApiLike, name: str, **kwargs):
         if self._owner is None:

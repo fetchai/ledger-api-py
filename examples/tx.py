@@ -13,6 +13,9 @@ def main():
     # We make a Transfer which returns a transaction id.
     tx = api.tokens.transfer(identity1, identity2, 2500, 20)
 
+    # wait for the transaction to complete so that the information is 100% present
+    api.sync(tx)
+
     # We Verify that the transaction is the submitted transaction is the sent transaction
     # TxContents object (below contents variable) contains all properties sent to ledger in transaction API call
     contents = api.tx.contents(tx)

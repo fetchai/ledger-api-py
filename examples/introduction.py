@@ -1,3 +1,4 @@
+import os
 import base64
 
 from fetchai.ledger.api import LedgerApi, TokenApi, ContractsApi, TransactionApi
@@ -5,7 +6,7 @@ from fetchai.ledger.crypto import Address, Identity,  Entity
 
 PASSWORD = 'Password!12345'
 ADDRESS = 'dTSCNwHBPoDdESpxj6NQkPDvX3DN1DFKGsUPZNVWDVDrfur4z'
-ENCRYPTED_KEY_FP = '/home/douglas/ledger-api-py/examples/private-key.key'
+ENCRYPTED_KEY_FP = os.path.join(os.path.dirname(__file__), 'private-key.key')
 
 def main():
     # *************************************
@@ -50,7 +51,7 @@ def main():
 
      # Check if a password is strong enough to be accepted by our serialization functionality.
      # A password must contain 14 chars or more, with one or more uppercase, lowercase, numeric and a one or more special char
-    strong = 'is strong enough' if Entity.strong_password(PASSWORD) else 'is not strong enough'
+    strong = 'is strong enough' if Entity.is_strong_password(PASSWORD) else 'is not strong enough'
     print('\nOur example password: {} upon testing {} to be used with our serialization functionality\n'.format(PASSWORD, strong))
 
     #We can also encrypt a password from the terminal using our prompt functionality.
@@ -150,16 +151,6 @@ def main():
     # See the tx example file in this folder for further details.
     # TODO add tx example file, then delete this comment.
     assert isinstance(api.tx, TransactionApi), "tx property should be instance of TransactionApi"
-
-
-
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':

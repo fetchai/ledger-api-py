@@ -94,7 +94,7 @@ def submit_json_transaction(host: str, port: int, tx_data, session=None, protoco
     if not success:
         raise ApiError(
             'Unable to fulfill transaction request {}.{}. Status Code {}'.format(uri, endpoint,
-                                                                                r.status_code))
+                                                                                 r.status_code))
 
     # parse the response
     response = r.json()
@@ -148,17 +148,13 @@ class ApiEndpoint(object):
     def _encode_json(cls, obj):
         return json.dumps(obj).encode('ascii')
 
+    # TODO: Remove or rework
     def _create_skeleton_tx(self, fee: int, validity_period: Optional[int] = None):
-        validity_period = validity_period or DEFAULT_BLOCK_VALIDITY_PERIOD
-
-        # query what the current block number is on the node
-        current_block = self.current_block_number()
-
         # build up the basic transaction information
         tx = Transaction()
-        tx.valid_until = current_block + validity_period
         tx.charge_rate = 1
         tx.charge_limit = fee
+        self._set_validity_period(tx, validity_period)
         return tx
 
     def _set_validity_period(self, tx: Transaction, validity_period: Optional[int] = None):
@@ -167,6 +163,8 @@ class ApiEndpoint(object):
         # query what the current block number is on the node
         current_block = self.current_block_number()
 
+        # populate both the valid from and valid until
+        tx.valid_from = current_block
         tx.valid_until = current_block + validity_period
         return tx.valid_until
 
@@ -269,7 +267,7 @@ class ApiEndpoint(object):
         if len(tx_list):
             return tx_list[0]
 
-    def submit_signed_tx(self, tx: Transaction, signatures: Dict[Identity, bytes]):
+    def submit_signed_tx(self, tx: Transaction):
         """
         Appends signatures to a transaction and submits it, returning the transaction digest
         :param tx: A pre-assembled transaction
@@ -278,17 +276,17 @@ class ApiEndpoint(object):
         :raises: ApiError on any failures
         """
         # Encode transaction and append signatures
-        encoded_tx = transaction.encode_multisig_transaction(tx, signatures)
+        encoded_tx = transaction.encode_transaction2(tx)
 
         # Submit and return digest
-        return self._post_tx_json(encoded_tx, tx.action)
+        return self._post_tx_json(encoded_tx, None)
 
 
 class TransactionFactory:
     API_PREFIX = None
 
     @classmethod
-    def _create_skeleton_tx(cls, fee: int):
+    def _create_skeleton_tx(cls, fee: int) -> Transaction:
         # build up the basic transaction information
         tx = Transaction()
         tx.charge_rate = 1
@@ -297,11 +295,25 @@ class TransactionFactory:
 
     @classmethod
     def _create_chain_code_action_tx(cls, fee: int, from_address: AddressLike, action: str,
-                                     signatories: Iterable[Identity], shard_mask: Optional[BitVector] = None):
+                                     signatories: Iterable[Identity],
+                                     shard_mask: BitVector) -> Transaction:
         tx = cls._create_skeleton_tx(fee)
         tx.from_address = Address(from_address)
-        tx.target_chain_code(cls.API_PREFIX, shard_mask or BitVector())
+        tx.target_chain_code(cls.API_PREFIX, shard_mask)
         tx.action = action
+        for ident in signatories:
+            tx.add_signer(ident)
+
+        return tx
+
+    @classmethod
+    def _create_smart_contract_action_tx(cls, fee: int, from_address: AddressLike, contract_address: AddressLike,
+                                         action: str, signatories: Iterable[Identity],
+                                         shard_mask: BitVector) -> Transaction:
+        tx = cls._create_skeleton_tx(fee)
+        tx.from_address = Address(from_address)
+        tx.target_contract(Address(contract_address), shard_mask)
+        tx.action = str(action)
         for ident in signatories:
             tx.add_signer(ident)
 
@@ -329,4 +341,3 @@ class TransactionFactory:
             if isinstance(value, type):
                 return True
         return False
-
