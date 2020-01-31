@@ -49,7 +49,7 @@ class Transaction:
                 self.shard_mask == other.shard_mask,
                 self.action == other.action,
                 self.data == other.data,
-                self.all_signers2 == other.all_signers2,
+                self.all_signers == other.all_signers,
                 self._metadata == other._metadata,  # TODO: This might be removed
                 # self._encode_payload() == other._encode_payload(),
                 # TODO: This check sort of overrides all of the above checks
@@ -139,26 +139,22 @@ class Transaction:
     def data(self, data: bytes):
         self._data = bytes(data)
 
-    # TODO: Rename
     @property
-    def all_signers2(self):
+    def all_signers(self):
         return set(self._signatures.keys())
 
-    # TODO: Rename
     @property
-    def pending_signers2(self):
+    def pending_signers(self):
         pending = set()
         for identity, signature in self.signatures:
             if len(signature) == 0:
                 pending.add(identity)
         return pending
 
-    # TODO: Rename
     @property
     def present_signers(self):
-        return self.all_signers2 - self.pending_signers2
+        return self.all_signers - self.pending_signers
 
-    # TODO: Rename
     @property
     def signers(self):
         return list(self._signatures.keys())
@@ -169,7 +165,7 @@ class Transaction:
 
     @property
     def is_incomplete(self):
-        return len(self.all_signers2) > 0 and len(self.pending_signers2) > 0
+        return len(self.all_signers) > 0 and len(self.pending_signers) > 0
 
     def is_valid(self) -> bool:
         payload = self.encode_payload()
@@ -209,11 +205,9 @@ class Transaction:
         if signer not in self._signatures:
             self._signatures[signer] = bytes()  # will be replaced with a signature in the future
 
-    # TODO: Rename back
-    def sign2(self, signer: Entity):
+    def sign(self, signer: Entity):
         self.add_signature(Identity(signer), signer.sign(self.encode_payload()))
 
-    # TODO: Find global identity which is causing all the issues and rename
     def add_signature(self, identity: Identity, signature: bytes):
         if identity not in self._signatures:
             raise RuntimeError('Identity is not currently part')
@@ -267,27 +261,23 @@ class Transaction:
         return tx.is_valid(), tx
 
     def encode_payload(self):
-        return transaction.encode_payload2(self)
+        return transaction.encode_payload(self)
 
-    # TODO: Rename
-    def encode_partial2(self) -> bytes:
-        return transaction.encode_transaction2(self)
+    def encode_partial(self) -> bytes:
+        return transaction.encode_transaction(self)
 
-    # TODO: Rename
     @staticmethod
-    def decode_partial2(data: bytes) -> (bool, 'Transaction'):
+    def decode_partial(data: bytes) -> (bool, 'Transaction'):
         return transaction.decode_transaction(io.BytesIO(data))
 
-    # TODO: Rename
-    def encode2(self) -> Optional[bytes]:
+    def encode(self) -> Optional[bytes]:
         if self.is_incomplete:
             return None
         else:
-            return transaction.encode_transaction2(self)
+            return transaction.encode_transaction(self)
 
-    # TODO: Rename
     @staticmethod
-    def decode2(encoded_transaction: bytes) -> Optional['Transaction']:
+    def decode(encoded_transaction: bytes) -> Optional['Transaction']:
         valid, tx = transaction.decode_transaction(io.BytesIO(encoded_transaction))
         if valid:
             return tx

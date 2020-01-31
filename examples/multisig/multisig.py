@@ -94,7 +94,7 @@ def main():
     tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, board[:2])
     tx.valid_until = api.tokens.current_block_number() + 100
     for signatory in board[:2]:
-        tx.sign2(signatory)
+        tx.sign(signatory)
 
     api.sync(api.submit_signed_tx(tx))
 
@@ -107,7 +107,7 @@ def main():
 
     tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, [board[3]])
     tx.valid_until = api.tokens.current_block_number() + 100
-    tx.sign2(board[3])
+    tx.sign(board[3])
     api.sync(api.submit_signed_tx(tx))
 
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
@@ -119,7 +119,7 @@ def main():
     tx = TokenTxFactory.deed(multi_sig_identity, deed, 400, board)
     tx.valid_until = api.tokens.current_block_number() + 100
     for member in board:
-        tx.sign2(member)
+        tx.sign(member)
     api.sync(api.submit_signed_tx(tx))
 
     # Single member no longer has enough voting power
@@ -129,7 +129,7 @@ def main():
 
         tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, [board[3]])
         tx.valid_until = api.tokens.current_block_number() + 100
-        tx.sign2(board[3])
+        tx.sign(board[3])
         api.sync(api.submit_signed_tx(tx))
 
     except RuntimeError as e:
@@ -144,7 +144,7 @@ def main():
     tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, board[1:])
     tx.valid_until = api.tokens.current_block_number() + 100
     for member in board[1:]:
-        tx.sign2(member)
+        tx.sign(member)
     api.sync(api.submit_signed_tx(tx))
 
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
@@ -158,7 +158,7 @@ def main():
     tx = TokenTxFactory.deed(multi_sig_identity, deed, 400, board)
     tx.valid_until = api.tokens.current_block_number() + 100
     for member in board:
-        tx.sign2(member)
+        tx.sign(member)
     api.sync(api.submit_signed_tx(tx))
 
 

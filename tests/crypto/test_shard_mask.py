@@ -6,7 +6,7 @@ from fetchai.ledger.serialisation.shardmask import ShardMask
 
 class TestShardMask(unittest.TestCase):
     def test_state_to_address(self):
-        address = ShardMask.state_to_address2('foo.bar', 'xyz')
+        address = ShardMask.state_to_address('foo.bar', 'xyz')
         self.assertEqual(address, 'foo.bar.state.xyz')
 
     def test_resource_to_shard_invalid_lane(self):

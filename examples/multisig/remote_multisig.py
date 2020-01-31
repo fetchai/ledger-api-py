@@ -100,16 +100,16 @@ def main():
         assert signer_tx.encode_payload() == reference_payload
 
         # signers locally sign there version of the transaction
-        signer_tx.sign2(signer)
+        signer_tx.sign(signer)
 
         # simulate distribution of signed partial transactions
 
-        signed_txs.append(signer_tx.encode_partial2())
+        signed_txs.append(signer_tx.encode_partial())
 
     # gather and encode final transaction - this step in theory can be done by all the signers provided they are
     # received all the signature shares
     print("Gathering and combining signed transactions...")
-    partial_txs = [Transaction.decode_partial2(s)[1] for s in signed_txs]
+    partial_txs = [Transaction.decode_partial(s)[1] for s in signed_txs]
 
     # merge them together into one fully signed transaction
     success, tx = Transaction.merge(partial_txs)
@@ -139,7 +139,7 @@ def main():
         signer_tx = Transaction.decode_payload(tx_payload)
 
         # Signer decodes payload to inspect transaction
-        signer_tx.sign2(signer)
+        signer_tx.sign(signer)
 
         # ensure that when we merge the signers signature into the payload that it is correct
         assert tx.merge_signatures(signer_tx)

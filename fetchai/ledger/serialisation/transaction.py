@@ -1,11 +1,9 @@
 import io
 import struct
-from typing import List, Dict, IO, Optional
+from typing import IO, Optional
 
-from fetchai.ledger.crypto import Identity
 
 from fetchai.ledger import bitvector
-from fetchai.ledger import crypto
 from fetchai.ledger import transaction
 
 from . import address, integer, bytearray, identity
@@ -43,7 +41,7 @@ def _map_contract_mode(payload: 'Transaction'):
         return NO_CONTRACT
 
 
-def encode_payload2(tx: 'Transaction', buffer: Optional[io.BytesIO] = None) -> bytes:
+def encode_payload(tx: 'Transaction', buffer: Optional[io.BytesIO] = None) -> bytes:
     buffer = buffer or io.BytesIO()
 
     num_transfers = len(tx.transfers)
@@ -145,25 +143,7 @@ def encode_payload2(tx: 'Transaction', buffer: Optional[io.BytesIO] = None) -> b
     return buffer.getvalue()
 
 
-# def encode_multisig_transaction(payload: 'Transaction', signatures: Dict[Identity, bytes]):
-#     assert isinstance(payload, bytes) or isinstance(payload, transaction.Transaction)
-#
-#     # encode the contents of the transaction
-#     buffer = io.BytesIO()
-#     encode_payload(buffer, payload)
-#
-#     # append signatures in order
-#     for signer in payload.signers.keys():
-#         if isinstance(signatures[signer], bytes):
-#             bytearray.encode(buffer, signatures[signer])
-#         else:
-#             bytearray.encode(buffer, signatures[signer]['signature'])
-#
-#     # return the encoded transaction
-#     return buffer.getvalue()
-
-
-def encode_transaction2(tx: 'Transaction') -> bytes:
+def encode_transaction(tx: 'Transaction') -> bytes:
     """
     Encode the input transaction to a binary stream which is ready to be sent to the ledger
 
@@ -173,7 +153,7 @@ def encode_transaction2(tx: 'Transaction') -> bytes:
 
     # encode the contents of the transaction
     buffer = io.BytesIO()
-    encode_payload2(tx, buffer)
+    encode_payload(tx, buffer)
 
     # append all the signatures of the signers in order
     for ident, signature in tx.signatures:

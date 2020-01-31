@@ -23,13 +23,13 @@ class TransactionTests(TestCase):
                                           500, 500, self.multi_sig_board)
 
     def test_partial_serialize(self):
-        self.mstx.sign2(self.multi_sig_board[0])
-        self.mstx.sign2(self.multi_sig_board[2])
+        self.mstx.sign(self.multi_sig_board[0])
+        self.mstx.sign(self.multi_sig_board[2])
         self.assertEqual(len(self.mstx.present_signers), 2)
 
-        encoded = self.mstx.encode_partial2()
+        encoded = self.mstx.encode_partial()
 
-        success, tx2 = Transaction.decode_partial2(encoded)
+        success, tx2 = Transaction.decode_partial(encoded)
 
         self.assertFalse(success) # not all the signatures are populated
         self.assertEqual(self.mstx, tx2) # the body of the payload should be the same
@@ -39,9 +39,9 @@ class TransactionTests(TestCase):
     def test_invalid_sig(self):
         self.mstx.add_signature(self.multi_sig_board[0], b'invalid')
 
-        encoded = self.mstx.encode_partial2()
+        encoded = self.mstx.encode_partial()
 
-        success, tx2 = Transaction.decode_partial2(encoded)
+        success, tx2 = Transaction.decode_partial(encoded)
         self.assertFalse(success)
         self.assertFalse(tx2.is_valid())
 
@@ -51,11 +51,11 @@ class TransactionTests(TestCase):
         partials = []
         for signer in self.multi_sig_board:
             tx = Transaction.decode_payload(payload)
-            tx.sign2(signer)
-            partials.append(tx.encode_partial2())
+            tx.sign(signer)
+            partials.append(tx.encode_partial())
 
         for partial in partials:
-            _, partial_tx = Transaction.decode_partial2(partial)
+            _, partial_tx = Transaction.decode_partial(partial)
             self.assertTrue(self.mstx.merge_signatures(partial_tx))
 
         self.assertTrue(self.mstx.is_valid())
@@ -70,62 +70,62 @@ class TransactionTests(TestCase):
                                      500, 500, [self.source_identity])
 
         # encode the transaction so that copies can be made afterwards
-        encoded_tx = tx.encode_partial2()
+        encoded_tx = tx.encode_partial()
 
         # Test comparison fails if any data changed
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2.from_address = Entity()
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2.add_transfer(Entity(), 500)
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2.valid_from = 999
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2.valid_until = 999
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2.charge_rate = 999
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2.charge_limit = 999
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2._contract_address = Address(Entity())
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2._chain_code = 'changed'
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2._action = 'changed'
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2._shard_mask = BitVector(size=16)
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2.data = b'changed'
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2.add_signer(Entity())
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2._counter = 999
         self.assertNotEqual(tx, tx2)
 
-        _, tx2 = Transaction.decode_partial2(encoded_tx)
+        _, tx2 = Transaction.decode_partial(encoded_tx)
         tx2._metadata['new'] = True
         self.assertNotEqual(tx, tx2)
 
@@ -174,18 +174,18 @@ class TransactionTests(TestCase):
 
     def test_encoding_of_tx_when_incomplete(self):
         self.assertTrue(self.tx.is_incomplete)
-        self.assertIsNone(self.tx.encode2())
+        self.assertIsNone(self.tx.encode())
 
     def test_encoding_of_complete_tx(self):
-        self.tx.sign2(self.source_identity)
+        self.tx.sign(self.source_identity)
         self.assertFalse(self.tx.is_incomplete)
 
-        encoded = self.tx.encode2()
-        recovered_tx = Transaction.decode2(encoded)
+        encoded = self.tx.encode()
+        recovered_tx = Transaction.decode(encoded)
         self.assertIsNotNone(recovered_tx)
         self.assertEqual(self.tx, recovered_tx)
 
     def test_failure_to_decode_partial(self):
-        encoded_partial = self.tx.encode_partial2()
+        encoded_partial = self.tx.encode_partial()
 
-        self.assertIsNone(Transaction.decode2(encoded_partial))
+        self.assertIsNone(Transaction.decode(encoded_partial))

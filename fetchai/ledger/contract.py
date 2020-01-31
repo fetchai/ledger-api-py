@@ -146,7 +146,7 @@ class Contract:
             # only process the init functions resources if this function is actually present
             if name is not None:
                 for variable in self._parser.used_globals_to_addresses(name, [self._owner]):
-                    resource_addresses.append(ShardMask.state_to_address2(str(self.address), variable))
+                    resource_addresses.append(ShardMask.state_to_address(str(self.address), variable))
 
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, num_lanes)
 

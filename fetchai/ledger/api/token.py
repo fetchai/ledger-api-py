@@ -129,9 +129,9 @@ class TokenApi(ApiEndpoint):
 
         tx = TokenTxFactory.deed(entity, deed, fee, [entity])
         self._set_validity_period(tx)
-        tx.sign2(entity)
+        tx.sign(entity)
 
-        encoded_tx = transaction.encode_transaction2(tx)
+        encoded_tx = transaction.encode_transaction(tx)
 
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
@@ -151,10 +151,10 @@ class TokenApi(ApiEndpoint):
 
         tx = TokenTxFactory.transfer(entity, to, amount, fee, [entity])
         self._set_validity_period(tx)
-        tx.sign2(entity)
+        tx.sign(entity)
 
         # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction2(tx)
+        encoded_tx = transaction.encode_transaction(tx)
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
@@ -173,10 +173,10 @@ class TokenApi(ApiEndpoint):
 
         tx = TokenTxFactory.add_stake(entity, amount, fee, [entity])
         self._set_validity_period(tx)
-        tx.sign2(entity)
+        tx.sign(entity)
 
         # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction2(tx)
+        encoded_tx = transaction.encode_transaction(tx)
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
@@ -196,10 +196,10 @@ class TokenApi(ApiEndpoint):
 
         tx = TokenTxFactory.de_stake(entity, amount, fee, [entity])
         self._set_validity_period(tx)
-        tx.sign2(entity)
+        tx.sign(entity)
 
         # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction2(tx)
+        encoded_tx = transaction.encode_transaction(tx)
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
@@ -217,10 +217,10 @@ class TokenApi(ApiEndpoint):
 
         tx = TokenTxFactory.collect_stake(entity, fee, [entity])
         self._set_validity_period(tx)
-        tx.sign2(entity)
+        tx.sign(entity)
 
         # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction2(tx)
+        encoded_tx = transaction.encode_transaction(tx)
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)

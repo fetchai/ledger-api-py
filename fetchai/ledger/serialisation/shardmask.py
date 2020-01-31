@@ -7,9 +7,8 @@ from fetchai.ledger.serialisation.sha256 import sha256_hash
 
 class ShardMask:
 
-    # TODO: Rename
     @staticmethod
-    def state_to_address2(address: str, variable: str) -> str:
+    def state_to_address(address: str, variable: str) -> str:
         """
         Create fully qualified resource address from a contract address and variable name
 

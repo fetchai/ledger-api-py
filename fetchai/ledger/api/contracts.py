@@ -41,10 +41,10 @@ class ContractsApi(ApiEndpoint):
 
         tx = ContractTxFactory.create(Address(owner), contract, fee, [owner], shard_mask)
         self._set_validity_period(tx)
-        tx.sign2(owner)
+        tx.sign(owner)
 
         # encode and sign the transaction
-        encoded_tx = transaction.encode_transaction2(tx)
+        encoded_tx = transaction.encode_transaction(tx)
 
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
@@ -59,10 +59,10 @@ class ContractsApi(ApiEndpoint):
         tx.synergetic_data_submission = True  # not sure what this does
         tx.data = self._encode_json(dict(**kwargs))
         tx.add_signer(entity)
-        tx.sign2(entity)
+        tx.sign(entity)
 
         # encode the transaction
-        encoded_tx = transaction.encode_transaction2(tx)
+        encoded_tx = transaction.encode_transaction(tx)
 
         # submit the transaction to the catch-all endpoint
         return self._post_tx_json(encoded_tx, None)
@@ -77,9 +77,9 @@ class ContractsApi(ApiEndpoint):
                                       shard_mask=shard_mask)
         tx.data = self._encode_msgpack_payload(*args)
         self._set_validity_period(tx)
-        tx.sign2(signer)
+        tx.sign(signer)
 
-        encoded_tx = transaction.encode_transaction2(tx)
+        encoded_tx = transaction.encode_transaction(tx)
 
         return self._post_tx_json(encoded_tx, None)
 
@@ -131,19 +131,6 @@ class ContractsApi(ApiEndpoint):
 
 class ContractTxFactory(TransactionFactory):
     API_PREFIX = 'fetch.contract'
-
-    # # TODO: No way!
-    # def __init__(self, api: 'LedgerApi'):
-    #     self._api = api
-    #
-    # @property
-    # def server(self):
-    #     """Replicate server interface for fetching number of lanes"""
-    #     return self._api.server
-    #
-    # def _set_validity_period(self, tx: Transaction, validity_period: Optional[int] = None):
-    #     """Replicate setting of validity period using server"""
-    #     self._api.server._set_validity_period(tx, validity_period=validity_period)
 
     @classmethod
     def create(cls, from_address: AddressLike, contract: 'Contract', fee: int, signatories: Iterable[Identity],

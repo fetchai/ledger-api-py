@@ -276,7 +276,7 @@ class ApiEndpoint(object):
         :raises: ApiError on any failures
         """
         # Encode transaction and append signatures
-        encoded_tx = transaction.encode_transaction2(tx)
+        encoded_tx = transaction.encode_transaction(tx)
 
         # Submit and return digest
         return self._post_tx_json(encoded_tx, None)
