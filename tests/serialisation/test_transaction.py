@@ -428,4 +428,3 @@ class TransactionSerialisation(unittest.TestCase):
     def assertTxAreEqual(self, reference: Transaction, other: Transaction):
         self.assertEqual(reference, other)
         self.assertEqual(list(reference.signatures), list(other.signatures))
-

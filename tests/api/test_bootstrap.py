@@ -23,10 +23,9 @@ class BootstrapTests(unittest.TestCase):
 
         # Check that all four api's created are passed the network details
         with patch('fetchai.ledger.api.TokenApi') as tapi, \
-            patch('fetchai.ledger.api.ContractsApi') as capi, \
-            patch('fetchai.ledger.api.TransactionApi') as txapi, \
-            patch('fetchai.ledger.api.ServerApi') as sapi:
-
+                patch('fetchai.ledger.api.ContractsApi') as capi, \
+                patch('fetchai.ledger.api.TransactionApi') as txapi, \
+                patch('fetchai.ledger.api.ServerApi') as sapi:
             a = LedgerApi(network='alpha')
 
             tapi.assert_called_once_with('host', 1234, a)

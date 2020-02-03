@@ -1,4 +1,5 @@
 from unittest import TestCase
+
 from fetchai.ledger.api import check_version_compatibility
 
 

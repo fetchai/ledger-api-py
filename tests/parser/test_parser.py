@@ -1,9 +1,6 @@
 import unittest
 from unittest.mock import patch
 
-from fetchai.ledger.crypto import Entity
-
-from fetchai.ledger.contract import Contract
 from lark import GrammarError, ParseError, UnexpectedCharacters
 
 from fetchai.ledger.parser.etch_parser import EtchParser, Function

@@ -1,8 +1,8 @@
-from typing import Union
 import base64
+from typing import Union
 
 
-def decode_hex_or_b64(encoded: Union[str,bytes]) -> bytes:
+def decode_hex_or_b64(encoded: Union[str, bytes]) -> bytes:
     """Decode an input encoded as hex or base64 as bytes.
 
     :type encoded: str or bytes

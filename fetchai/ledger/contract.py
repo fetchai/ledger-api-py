@@ -93,7 +93,8 @@ class Contract:
     def encoded_source(self) -> str:
         return base64.b64encode(self.source.encode('ascii')).decode()
 
-    def create_as_tx(self, api: LedgerApi, from_address: AddressLike, fee: int, signers: Iterable[Identity]) -> 'Transaction':
+    def create_as_tx(self, api: LedgerApi, from_address: AddressLike, fee: int,
+                     signers: Iterable[Identity]) -> 'Transaction':
         # build the shard mask for the
         shard_mask = self._build_shard_mask(api.server.num_lanes(), self._init)
         tx = ContractTxFactory.create(Address(from_address), self, fee, signers, shard_mask=shard_mask)
@@ -135,7 +136,7 @@ class Contract:
         shard_mask = self._build_shard_mask(api.server.num_lanes(), name)
 
         return api.contracts.action(self.address, name, fee, signers, *args,
-                                     from_address=from_address, shard_mask=shard_mask)
+                                    from_address=from_address, shard_mask=shard_mask)
 
     def _build_shard_mask(self, num_lanes: int, name: Optional[str]) -> BitVector:
         try:

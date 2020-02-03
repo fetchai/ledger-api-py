@@ -25,13 +25,12 @@ def main():
     api.sync(api.tokens.add_stake(entity, 1000, 50))
 
     while True:
-
         print('Balance............:', api.tokens.balance(entity))
         print('Stake..............:', api.tokens.stake(entity))
         print('Stake on cooldown..:', api.tokens.stake_cooldown(entity))
 
         # De-stake half of the staked balance
-        to_destake = int(api.tokens.stake(entity)/2)
+        to_destake = int(api.tokens.stake(entity) / 2)
         api.sync(api.tokens.de_stake(entity, to_destake, 500))
 
         # Collect cooled down stakes

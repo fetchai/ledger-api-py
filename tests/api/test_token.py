@@ -41,10 +41,10 @@ class TokenAPITests(TestCase):
 
     def post_test(self, function, action, factory_function, *args):
         with patch('fetchai.ledger.api.TokenApi._post_tx_json') as mock_post, \
-                patch('fetchai.ledger.api.token.TokenTxFactory.' + factory_function.__name__, autospec=factory_function) as mock_factory, \
+                patch('fetchai.ledger.api.token.TokenTxFactory.' + factory_function.__name__,
+                      autospec=factory_function) as mock_factory, \
                 patch('fetchai.ledger.api.TokenApi._set_validity_period') as mock_set_valid, \
                 patch('fetchai.ledger.serialisation.transaction.encode_transaction') as mock_encode:
-
             # the transaction factory should generate a known transaction
             tx = Transaction()
             tx.sign = MagicMock()
@@ -57,9 +57,9 @@ class TokenAPITests(TestCase):
             # run the production code
             result = function(*args)
 
-            mock_factory.assert_called_once_with(*args, [args[0]]) # somewhat confusing
+            mock_factory.assert_called_once_with(*args, [args[0]])  # somewhat confusing
             mock_set_valid.assert_called_once_with(tx)
-            tx.sign.assert_called_once_with(args[0]) # this is the entity
+            tx.sign.assert_called_once_with(args[0])  # this is the entity
             mock_encode.assert_called_once_with(tx)
             mock_post.assert_called_once_with('encoded', action)
             self.assertEqual(result, 'result')

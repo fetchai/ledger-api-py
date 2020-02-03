@@ -2,8 +2,8 @@ import json
 from unittest import TestCase
 from unittest.mock import patch
 
-from fetchai.ledger.crypto import entity
 from fetchai.ledger.crypto import Entity
+from fetchai.ledger.crypto import entity
 
 
 class EncryptionTests(TestCase):

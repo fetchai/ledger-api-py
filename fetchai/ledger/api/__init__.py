@@ -20,14 +20,14 @@ import logging
 import re
 import time
 from datetime import datetime, timedelta
-from typing import Sequence, Union, Optional, List
+from typing import Sequence, Union, Optional
 
 import semver
 
 from fetchai.ledger import __compatible__, IncompatibleLedgerVersion
-from fetchai.ledger.transaction import Transaction
 from fetchai.ledger.api import bootstrap
 from fetchai.ledger.api.server import ServerApi
+from fetchai.ledger.transaction import Transaction
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .contracts import ContractsApi
 from .token import TokenApi
@@ -140,9 +140,11 @@ class LedgerApi:
                 raise RuntimeError('Some transactions have failed: {}'.format(', '.join(failures)))
             now = datetime.now()
             # Detect transactions with a successful status
-            successful_this_round = [status for status in remaining_statuses if status.successful or status.status in extend_success_status]
+            successful_this_round = [status for status in remaining_statuses if
+                                     status.successful or status.status in extend_success_status]
             # Filter out transactions which revert to a non-successful state before hold_time elapses
-            successful_this_round = [status for status in successful_this_round if (now - _get_or_set_default_time(hold_times, status.digest_hex, now)) >= hold_state]
+            successful_this_round = [status for status in successful_this_round if
+                                     (now - _get_or_set_default_time(hold_times, status.digest_hex, now)) >= hold_state]
             # Reset hold time for transactions which leave a successful state
             hold_times.update({status.digest_hex: -1 for status in remaining_statuses if status.non_terminal})
             finished += successful_this_round

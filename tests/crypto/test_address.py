@@ -96,5 +96,5 @@ class AddressTests(unittest.TestCase):
 
     def test_not_equal(self):
         addr1 = Address(bytes(range(32)))
-        addr2 = Address(bytes(range(1,33)))
+        addr2 = Address(bytes(range(1, 33)))
         self.assertTrue(addr1 != addr2)

@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from fetchai.ledger.api import LedgerApi, ContractsApi
 from fetchai.ledger.contract import Contract
-from fetchai.ledger.crypto import Address, Entity
+from fetchai.ledger.crypto import Entity
 from fetchai.ledger.serialisation.shardmask import ShardMask
 
 CONTRACT_TEXT = """

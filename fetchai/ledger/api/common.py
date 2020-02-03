@@ -18,7 +18,7 @@
 
 import base64
 import json
-from typing import Optional, Dict, Union, Iterable
+from typing import Optional, Union, Iterable
 
 import msgpack
 import requests

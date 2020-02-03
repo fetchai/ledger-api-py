@@ -18,6 +18,7 @@
 
 import requests
 import semver
+
 from fetchai.ledger import __version__, IncompatibleLedgerVersion
 
 

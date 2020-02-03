@@ -40,7 +40,7 @@ class ShardMask:
         :return: The shard index for this resource
         """
 
-        assert ((num_lanes & (num_lanes-1)) == 0) and num_lanes > 0, "Expecting power of two number of lanes"
+        assert ((num_lanes & (num_lanes - 1)) == 0) and num_lanes > 0, "Expecting power of two number of lanes"
 
         # Resource ID from address
         resource_id = sha256_hash(resource_address.encode('ascii'))

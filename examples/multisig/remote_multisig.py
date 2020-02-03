@@ -88,7 +88,6 @@ def main():
     # Have signers individually sign transaction
     signed_txs = []
     for signer in board:
-
         # signer builds their own transaction to compare to note that each of the signers will need to agree on all
         # parts of the message including the validity period and the counter
         signer_tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board)
@@ -134,7 +133,6 @@ def main():
 
     # Have signers individually sign transaction and pass on to next signer
     for signer in board:
-
         # build the target transaction
         signer_tx = Transaction.decode_payload(tx_payload)
 

@@ -1,8 +1,9 @@
 from fetchai.ledger.api import LedgerApi
-from fetchai.ledger.crypto import Entity, entity, Address
+from fetchai.ledger.crypto import Entity, Address
 
 HOST = '127.0.0.1'
 PORT = 8000
+
 
 def main():
     api = LedgerApi(HOST, PORT)
@@ -28,10 +29,9 @@ def main():
 
     # iterate over the transfers in the transaction, which is singular in this instance
     for to_address, amount in transfers.items():
-         print(
-             "\nThe submitted transaction is from Address: {}\nto Address: {} \nof amount: {}\nand is valid from (block number): {} \nand valid until (block number): {}".format(
-                 str(from_address), to_address, amount, valid_from, valid_until))
-
+        print(
+            "\nThe submitted transaction is from Address: {}\nto Address: {} \nof amount: {}\nand is valid from (block number): {} \nand valid until (block number): {}".format(
+                str(from_address), to_address, amount, valid_from, valid_until))
 
     nonexistent_entity = Entity()
 
@@ -46,7 +46,7 @@ def main():
     # Check the status of a transaction. This is an alternative to calling the LedgerApi's sync method, which itself polls the below status endpoint
     status = api.tx.status(tx)
 
-    print('\nCurrent Status is :',  status.status)
+    print('\nCurrent Status is :', status.status)
 
 
 if __name__ == '__main__':

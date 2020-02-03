@@ -1,12 +1,13 @@
-import os
 import base64
+import os
 
 from fetchai.ledger.api import LedgerApi, TokenApi, ContractsApi, TransactionApi
-from fetchai.ledger.crypto import Address, Identity,  Entity
+from fetchai.ledger.crypto import Address, Identity, Entity
 
 PASSWORD = 'Password!12345'
 ADDRESS = 'dTSCNwHBPoDdESpxj6NQkPDvX3DN1DFKGsUPZNVWDVDrfur4z'
 ENCRYPTED_KEY_FP = os.path.join(os.path.dirname(__file__), 'private-key.key')
+
 
 def main():
     # *************************************
@@ -40,21 +41,24 @@ def main():
     # *************************************
 
     # serialize to JSON with AES
-    serialized =  entity.dumps(PASSWORD)
+    serialized = entity.dumps(PASSWORD)
 
-    print('\nThis serializes to the the following encrypted JSON string :\n',serialized)
+    print('\nThis serializes to the the following encrypted JSON string :\n', serialized)
 
     # Re-create an entity from an encrypted JSON string
-    entity4 =  entity.loads(serialized, PASSWORD)
+    entity4 = entity.loads(serialized, PASSWORD)
 
-    print('\nWhich can be de-serialized to an entity containing the following hex private key:', entity4.private_key_hex)
+    print('\nWhich can be de-serialized to an entity containing the following hex private key:',
+          entity4.private_key_hex)
 
-     # Check if a password is strong enough to be accepted by our serialization functionality.
-     # A password must contain 14 chars or more, with one or more uppercase, lowercase, numeric and a one or more special char
+    # Check if a password is strong enough to be accepted by our serialization functionality.
+    # A password must contain 14 chars or more, with one or more uppercase, lowercase, numeric and a one or more special char
     strong = 'is strong enough' if Entity.is_strong_password(PASSWORD) else 'is not strong enough'
-    print('\nOur example password: {} upon testing {} to be used with our serialization functionality\n'.format(PASSWORD, strong))
+    print(
+        '\nOur example password: {} upon testing {} to be used with our serialization functionality\n'.format(PASSWORD,
+                                                                                                              strong))
 
-    #We can also encrypt a password from the terminal using our prompt functionality.
+    # We can also encrypt a password from the terminal using our prompt functionality.
     with open(ENCRYPTED_KEY_FP, 'w') as private_key_file:
         entity.prompt_dump(private_key_file)
         private_key_file.close()
@@ -67,7 +71,7 @@ def main():
         loaded_entity = entity.prompt_load(private_key_file)
 
     if loaded_entity.public_key_hex == entity.public_key_hex:
-        print('\nLoaded public/private key pair match, saved in file: ' + ENCRYPTED_KEY_FP )
+        print('\nLoaded public/private key pair match, saved in file: ' + ENCRYPTED_KEY_FP)
 
     # *************************************
     # ***** Working with Public keys ******
@@ -131,7 +135,6 @@ def main():
     api = LedgerApi(host, port)
 
     print("\nConnected to Ledger Node at Host: {} and Port {} ...".format(host, port))
-
 
     # The TokenApi Class has methods for staking in our Proof-of-stake model, checking the
     # balance of an account, and performing transfers of funds between accounts.

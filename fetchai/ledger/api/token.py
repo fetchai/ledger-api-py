@@ -19,10 +19,10 @@ from typing import Union, Iterable, Optional
 
 from fetchai.ledger.api import ApiEndpoint, ApiError
 from fetchai.ledger.api.common import TransactionFactory
+from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity, Identity
 from fetchai.ledger.crypto.deed import Deed
 from fetchai.ledger.serialisation import transaction
-from fetchai.ledger.bitvector import BitVector
 
 AddressLike = Union[Address, Identity, str, bytes]
 
@@ -230,8 +230,8 @@ class TokenTxFactory(TransactionFactory):
     API_PREFIX = 'fetch.token'
 
     @classmethod
-    def deed(cls, from_address: AddressLike, deed: Optional[Deed], fee: int, signatories: Iterable[Identity]) -> 'Transaction':
-
+    def deed(cls, from_address: AddressLike, deed: Optional[Deed], fee: int,
+             signatories: Iterable[Identity]) -> 'Transaction':
         # TODO: This is known
         shard_mask = BitVector()
 
@@ -243,7 +243,6 @@ class TokenTxFactory(TransactionFactory):
     @classmethod
     def transfer(cls, from_address: AddressLike, to: AddressLike, amount: int, fee: int,
                  signatories: Iterable[Identity]) -> 'Transaction':
-
         # build up the basic transaction information
         tx = cls._create_skeleton_tx(fee)
         tx.from_address = Address(from_address)
@@ -256,9 +255,8 @@ class TokenTxFactory(TransactionFactory):
 
     @classmethod
     def add_stake(cls, identity: Identity, amount: int, fee: int, signatories: Iterable[Identity]) -> 'Transaction':
-
         # build up the basic transaction information
-        tx = cls._create_chain_code_action_tx(fee, identity, 'addStake', signatories)
+        tx = cls._create_chain_code_action_tx(fee, identity, 'addStake', signatories, BitVector())
 
         # format the transaction payload
         tx.data = cls._encode_json({
@@ -270,9 +268,8 @@ class TokenTxFactory(TransactionFactory):
 
     @classmethod
     def de_stake(cls, identity: Identity, amount: int, fee: int, signatories: Iterable[Identity]) -> 'Transaction':
-
         # build up the basic transaction information
-        tx = cls._create_chain_code_action_tx(fee, identity, 'deStake', signatories)
+        tx = cls._create_chain_code_action_tx(fee, identity, 'deStake', signatories, BitVector())
 
         # format the transaction payload
         tx.data = cls._encode_json({
@@ -284,6 +281,5 @@ class TokenTxFactory(TransactionFactory):
 
     @classmethod
     def collect_stake(cls, identity: Identity, fee: int, signatories: Iterable[Identity]) -> 'Transaction':
-
         # build up the basic transaction information
-        return cls._create_chain_code_action_tx(fee, identity, 'collectStake', signatories)
+        return cls._create_chain_code_action_tx(fee, identity, 'collectStake', signatories, BitVector())

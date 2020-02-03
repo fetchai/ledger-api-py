@@ -1,12 +1,9 @@
 from unittest import TestCase
-from unittest.mock import patch
 
-from fetchai.ledger.bitvector import BitVector
-
-from fetchai.ledger.crypto import Identity, Address
-
-from fetchai.ledger.crypto import Entity
 from fetchai.ledger.api.token import TokenTxFactory
+from fetchai.ledger.bitvector import BitVector
+from fetchai.ledger.crypto import Entity
+from fetchai.ledger.crypto import Identity, Address
 from fetchai.ledger.transaction import Transaction
 
 
@@ -20,7 +17,7 @@ class TransactionTests(TestCase):
         self.tx = TokenTxFactory.transfer(self.source_identity, Identity(self.target_identity),
                                           500, 500, [self.source_identity])
         self.mstx = TokenTxFactory.transfer(self.multi_sig_identity, Identity(self.target_identity),
-                                          500, 500, self.multi_sig_board)
+                                            500, 500, self.multi_sig_board)
 
     def test_partial_serialize(self):
         self.mstx.sign(self.multi_sig_board[0])
@@ -31,9 +28,10 @@ class TransactionTests(TestCase):
 
         success, tx2 = Transaction.decode_partial(encoded)
 
-        self.assertFalse(success) # not all the signatures are populated
-        self.assertEqual(self.mstx, tx2) # the body of the payload should be the same
-        self.assertEqual(list(self.mstx.signatures), list(tx2.signatures)) # the signature present should all be the same
+        self.assertFalse(success)  # not all the signatures are populated
+        self.assertEqual(self.mstx, tx2)  # the body of the payload should be the same
+        self.assertEqual(list(self.mstx.signatures),
+                         list(tx2.signatures))  # the signature present should all be the same
         self.assertEqual(len(tx2.present_signers), 2)
 
     def test_invalid_sig(self):

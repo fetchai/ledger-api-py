@@ -136,4 +136,3 @@ class EntityTests(unittest.TestCase):
             ref.prompt_dump(stream)
 
         stream.seek(0)
-

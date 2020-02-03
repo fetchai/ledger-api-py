@@ -2,10 +2,8 @@ import io
 import struct
 from typing import Optional
 
-
 from fetchai.ledger import bitvector
 from fetchai.ledger import transaction
-
 from . import address, integer, bytearray, identity
 
 MAGIC = 0xA1

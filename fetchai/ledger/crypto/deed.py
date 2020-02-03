@@ -57,7 +57,7 @@ class Deed:
     def __init__(self):
         self._signees = {}  # type: Dict[Address, int]
         self._thresholds = {}  # type: Dict[Operation, int]
-        self._required_amend = True # type: bool
+        self._required_amend = True  # type: bool
 
     def __eq__(self, other: 'Deed'):
         if self is other:
