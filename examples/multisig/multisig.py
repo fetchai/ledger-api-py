@@ -161,7 +161,7 @@ def main():
         tx.sign(member)
     api.sync(api.submit_signed_tx(tx))
 
-    api.sync(api.tokens.deed(multi_sig_identity, deed, board, allow_no_amend))
+    api.sync(api.tokens.deed(multi_sig_identity, deed, board))
 
     deed.amend_threshold = 1
     print("\nExpecting further amendment to fail...")
