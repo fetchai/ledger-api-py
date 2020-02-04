@@ -1,3 +1,4 @@
+from typing import Callable
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
@@ -15,10 +16,11 @@ class TokenAPITests(TestCase):
         self.to_address = Address(Entity())
 
         with patch('requests.session') as mock_session:
-            self.api = TokenApi('127.0.0.1', 8000, None)
+            self.api = TokenApi('127.0.0.1', 8000)
 
     def query_test(self, function, action: str):
-        with patch('fetchai.ledger.api.TokenApi._post_json') as mock_post:
+        with patch('fetchai.ledger.api.TokenApi._post_json') as mock_post, \
+                patch('warnings.warn') as mock_warn:
             mock_post.side_effect = [(True, {action: 200})]
 
             result = function(self.address)
@@ -33,18 +35,14 @@ class TokenAPITests(TestCase):
     def test_stake(self):
         self.query_test(self.api.stake, 'stake')
 
-    def test_stake_cooldown(self):
-        # TODO: stake_cooldown returns data, not data['coodownStake']
-        #  should this be changed?
-        # self.query_test(self.api.stake_cooldown, 'cooldownStake')
-        pass
-
-    def post_test(self, function, action, factory_function, *args):
+    def post_test(self, function: Callable, action: str, factory_function: Callable, entity: Entity, *args):
         with patch('fetchai.ledger.api.TokenApi._post_tx_json') as mock_post, \
                 patch('fetchai.ledger.api.token.TokenTxFactory.' + factory_function.__name__,
                       autospec=factory_function) as mock_factory, \
                 patch('fetchai.ledger.api.TokenApi._set_validity_period') as mock_set_valid, \
+                patch('warnings.warn') as mock_warnings, \
                 patch('fetchai.ledger.serialisation.transaction.encode_transaction') as mock_encode:
+
             # the transaction factory should generate a known transaction
             tx = Transaction()
             tx.sign = MagicMock()
@@ -55,11 +53,11 @@ class TokenAPITests(TestCase):
             mock_encode.side_effect = ['encoded']
 
             # run the production code
-            result = function(*args)
+            result = function(entity, *args)
 
-            mock_factory.assert_called_once_with(*args, [args[0]])  # somewhat confusing
+            mock_factory.assert_called_once_with(entity, *args, [entity])
             mock_set_valid.assert_called_once_with(tx)
-            tx.sign.assert_called_once_with(args[0])  # this is the entity
+            tx.sign.assert_called_once_with(entity)
             mock_encode.assert_called_once_with(tx)
             mock_post.assert_called_once_with('encoded', action)
             self.assertEqual(result, 'result')

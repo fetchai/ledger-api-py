@@ -16,7 +16,7 @@ class TXContentsTest(TestCase):
     def test_contents(self, mock_contents):
         """Check that transcation api correctly queries for and returns contents"""
         # Api object
-        api = TransactionApi('abc', 1234, None)
+        api = TransactionApi('abc', 1234)
 
         # Sessions mock for receiving URL request
         mock_session = Mock(spec=requests.Session)

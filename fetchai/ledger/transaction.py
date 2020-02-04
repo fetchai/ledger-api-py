@@ -29,14 +29,12 @@ class Transaction:
         self._data = b''  # type: bytes
         self._signatures = OrderedDict()  # type: Dict[Identity, bytes]
 
-        # TODO: Not sure about this data submission stuff - talk to AB
-        self._metadata = {
-            'synergetic_data_submission': False
-        }
+        # metadata
+        self._is_synergetic = False  # type: bool
 
     def __eq__(self, other):
         if isinstance(other, Transaction):
-            return all([
+            results = [
                 self.from_address == other.from_address,
                 self.transfers == other.transfers,
                 self.valid_from == other.valid_from,
@@ -50,10 +48,11 @@ class Transaction:
                 self.action == other.action,
                 self.data == other.data,
                 self.all_signers == other.all_signers,
-                self._metadata == other._metadata,  # TODO: This might be removed
-                # self._encode_payload() == other._encode_payload(),
-                # TODO: This check sort of overrides all of the above checks
-            ])
+                self.is_synergetic == other.is_synergetic
+            ]
+            if not all(results):
+                value = 1
+            return all(results)
         return False
 
     def __ne__(self, other):
@@ -186,19 +185,23 @@ class Transaction:
         self._contract_address = Address(address)
         self._shard_mask = BitVector(mask)
         self._chain_code = None
+        self._is_synergetic = False
+
+    def target_synergetic_data(self, address: Address, mask: BitVector):
+        self._contract_address = Address(address)
+        self._shard_mask = BitVector(mask)
+        self._chain_code = None
+        self._is_synergetic = True
 
     def target_chain_code(self, chain_code_id: str, mask: BitVector):
         self._contract_address = None
         self._shard_mask = BitVector(mask)
         self._chain_code = str(chain_code_id)
+        self._is_synergetic = False
 
     @property
-    def synergetic_data_submission(self):
-        return self._metadata['synergetic_data_submission']
-
-    @synergetic_data_submission.setter
-    def synergetic_data_submission(self, is_submission):
-        self._metadata['synergetic_data_submission'] = is_submission
+    def is_synergetic(self):
+        return self._is_synergetic
 
     def add_signer(self, signer: Identity):
         signer = Identity(signer)

@@ -28,7 +28,7 @@ def _byte(value: int) -> bytes:
 
 
 def _map_contract_mode(payload: 'Transaction'):
-    if payload.synergetic_data_submission:
+    if payload.is_synergetic:
         return SYNERGETIC
 
     if payload.action:
@@ -200,7 +200,7 @@ def decode_payload(stream: io.BytesIO) -> 'Transaction':
     tx = transaction.Transaction()
 
     # Set synergetic contract type
-    tx.synergetic_data_submission = (contract_type == SYNERGETIC)
+    tx._is_synergetic = (contract_type == SYNERGETIC)
 
     # decode the address from the thread
     tx.from_address = address.decode(stream)
@@ -259,7 +259,7 @@ def decode_payload(stream: io.BytesIO) -> 'Transaction':
                 # extract the mask from the next N bytes
                 shard_mask = bitvector.BitVector.from_bytes(stream.read(byte_length), bit_length)
 
-        if contract_type == SMART_CONTRACT or contract_type == SYNERGETIC:
+        if contract_type == SMART_CONTRACT:
             contract_address = address.decode(stream)
 
             tx.target_contract(contract_address, shard_mask)
@@ -268,6 +268,11 @@ def decode_payload(stream: io.BytesIO) -> 'Transaction':
             encoded_chain_code_name = bytearray.decode(stream)
 
             tx.target_chain_code(encoded_chain_code_name.decode('ascii'), shard_mask)
+
+        elif contract_type == SYNERGETIC:
+            contract_address = address.decode(stream)
+
+            tx.target_synergetic_data(contract_address, shard_mask)
 
         else:
             # this is mostly a guard against a desync between this function and `_map_contract_mode`

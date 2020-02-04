@@ -124,7 +124,7 @@ class TransactionTests(TestCase):
         self.assertNotEqual(tx, tx2)
 
         _, tx2 = Transaction.decode_partial(encoded_tx)
-        tx2._metadata['new'] = True
+        tx2._is_synergetic = True
         self.assertNotEqual(tx, tx2)
 
     def test_from_encoded(self):

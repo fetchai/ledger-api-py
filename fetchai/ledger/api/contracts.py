@@ -52,11 +52,10 @@ class ContractsApi(ApiEndpoint):
     def submit_data(self, entity: Entity, contract_address: Address, fee: int, **kwargs):
         # build up the basic transaction information
         tx = self._create_skeleton_tx(fee)
-        # tx.valid_until = self._get_valid_until()
+        self._set_validity_period(tx)
         tx.from_address = Address(entity)
-        tx.target_contract(contract_address, BitVector())
+        tx.target_synergetic_data(contract_address, BitVector())
         tx.action = 'data'
-        tx.synergetic_data_submission = True  # not sure what this does
         tx.data = self._encode_json(dict(**kwargs))
         tx.add_signer(entity)
         tx.sign(entity)
@@ -124,9 +123,6 @@ class ContractsApi(ApiEndpoint):
             if key.endswith('_'):
                 key = key[:-1]
             yield key, value
-
-    def _post_tx_json(self, tx_data: bytes, endpoint: Optional[str]):
-        return super()._post_tx_json(tx_data=tx_data, endpoint=None)
 
 
 class ContractTxFactory(TransactionFactory):

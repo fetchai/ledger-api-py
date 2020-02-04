@@ -161,12 +161,14 @@ def main():
         tx.sign(member)
     api.sync(api.submit_signed_tx(tx))
 
-    api.sync(api.tokens.deed(multi_sig_identity, deed, board))
-
-    deed.amend_threshold = 1
+    deed.set_operation(Operation.amend, 1)
     print("\nExpecting further amendment to fail...")
     try:
-        api.sync(api.tokens.deed(multi_sig_identity, deed, board))
+        tx = TokenTxFactory.deed(multi_sig_identity, deed, 400, board)
+        tx.valid_until = api.tokens.current_block_number() + 100
+        for member in board:
+            tx.sign(member)
+        api.sync(api.submit_signed_tx(tx))
     except RuntimeError as e:
         print("Transaction failed as expected")
     else:

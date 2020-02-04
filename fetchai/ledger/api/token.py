@@ -18,7 +18,7 @@
 from typing import Union, Iterable, Optional
 
 from fetchai.ledger.api import ApiEndpoint, ApiError
-from fetchai.ledger.api.common import TransactionFactory
+from fetchai.ledger.api.common import TransactionFactory, unstable
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity, Identity
 from fetchai.ledger.crypto.deed import Deed
@@ -58,6 +58,7 @@ class TokenApi(ApiEndpoint):
         # return the balance
         return int(data['balance'])
 
+    @unstable
     def stake(self, address: AddressLike):
         """
         Query the stake for a given address from the remote node
@@ -86,6 +87,7 @@ class TokenApi(ApiEndpoint):
         # return the balance
         return int(data['stake'])
 
+    @unstable
     def stake_cooldown(self, address: AddressLike):
         """
         Query the stake on cooldown for a given address from the remote node
@@ -159,6 +161,7 @@ class TokenApi(ApiEndpoint):
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
+    @unstable
     def add_stake(self, entity: Entity, amount: int, fee: int):
         """
         Stakes a specific amount of
@@ -181,6 +184,7 @@ class TokenApi(ApiEndpoint):
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
+    @unstable
     def de_stake(self, entity: Entity, amount: int, fee: int):
         """
         Destakes a specific amount of tokens from a staking miner. This will put the
@@ -204,6 +208,7 @@ class TokenApi(ApiEndpoint):
         # submit the transaction
         return self._post_tx_json(encoded_tx, ENDPOINT)
 
+    @unstable
     def collect_stake(self, entity: Entity, fee: int):
         """
         Collect all stakes that have reached the end of the cooldown period
@@ -254,6 +259,7 @@ class TokenTxFactory(TransactionFactory):
         return tx
 
     @classmethod
+    @unstable
     def add_stake(cls, identity: Identity, amount: int, fee: int, signatories: Iterable[Identity]) -> 'Transaction':
         # build up the basic transaction information
         tx = cls._create_chain_code_action_tx(fee, identity, 'addStake', signatories, BitVector())
@@ -267,6 +273,7 @@ class TokenTxFactory(TransactionFactory):
         return tx
 
     @classmethod
+    @unstable
     def de_stake(cls, identity: Identity, amount: int, fee: int, signatories: Iterable[Identity]) -> 'Transaction':
         # build up the basic transaction information
         tx = cls._create_chain_code_action_tx(fee, identity, 'deStake', signatories, BitVector())
@@ -280,6 +287,7 @@ class TokenTxFactory(TransactionFactory):
         return tx
 
     @classmethod
+    @unstable
     def collect_stake(cls, identity: Identity, fee: int, signatories: Iterable[Identity]) -> 'Transaction':
         # build up the basic transaction information
         return cls._create_chain_code_action_tx(fee, identity, 'collectStake', signatories, BitVector())

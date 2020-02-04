@@ -26,12 +26,12 @@ class BootstrapTests(unittest.TestCase):
                 patch('fetchai.ledger.api.ContractsApi') as capi, \
                 patch('fetchai.ledger.api.TransactionApi') as txapi, \
                 patch('fetchai.ledger.api.ServerApi') as sapi:
-            a = LedgerApi(network='alpha')
+            _ = LedgerApi(network='alpha')
 
-            tapi.assert_called_once_with('host', 1234, a)
-            capi.assert_called_once_with('host', 1234, a)
-            txapi.assert_called_once_with('host', 1234, a)
-            sapi.assert_called_once_with('host', 1234, a)
+            tapi.assert_called_once_with('host', 1234)
+            capi.assert_called_once_with('host', 1234)
+            txapi.assert_called_once_with('host', 1234)
+            sapi.assert_called_once_with('host', 1234)
 
         # Check that bootstrap is queried
         mock_bootstrap.assert_called_once_with('alpha')

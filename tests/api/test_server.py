@@ -18,7 +18,7 @@ class MockRequestResponse:
 
 class TokenAPITests(TestCase):
     def setUp(self) -> None:
-        self.api = ServerApi('127.0.0.1', 9090, None)  # TODO: Why is the ledger API plumbed into the bottom
+        self.api = ServerApi('127.0.0.1', 9090)
 
     def test_status_call(self):
         data = {}

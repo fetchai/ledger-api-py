@@ -102,7 +102,6 @@ def main():
         signer_tx.sign(signer)
 
         # simulate distribution of signed partial transactions
-
         signed_txs.append(signer_tx.encode_partial())
 
     # gather and encode final transaction - this step in theory can be done by all the signers provided they are

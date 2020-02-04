@@ -157,15 +157,6 @@ class Contract:
 
         return shard_mask
 
-    # @staticmethod
-    # def _api(api: ContractsApiLike):
-    #     if isinstance(api, LedgerApi):
-    #         return api.contracts
-    #     elif isinstance(api, ContractTxFactory):
-    #         return api
-    #     else:
-    #         assert False
-
     @staticmethod
     def _from_json_object(obj):
         assert obj['version'] == 1

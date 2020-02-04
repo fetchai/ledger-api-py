@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # ------------------------------------------------------------------------------
 #
 #   Copyright 2018-2019 Fetch.AI Limited
@@ -125,7 +124,7 @@ def main():
 
     # print the current status of all the tokens
     print('-- BEFORE --')
-    # print_address_balances(api, contract, [address1, address2])
+    print_address_balances(api, contract, [address1, address2])
 
     # transfer from one to the other using our newly deployed contract
     tok_transfer_amount = 200

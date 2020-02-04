@@ -94,10 +94,10 @@ class LedgerApi:
         else:
             assert host and port, "Must specify either a server name, or a host & port"
 
-        self.tokens = TokenApi(host, port, self)
-        self.contracts = ContractsApi(host, port, self)
-        self.tx = TransactionApi(host, port, self)
-        self.server = ServerApi(host, port, self)
+        self.tokens = TokenApi(host, port)
+        self.contracts = ContractsApi(host, port)
+        self.tx = TransactionApi(host, port)
+        self.server = ServerApi(host, port)
 
         # Check that ledger version is compatible with API version
         check_version_compatibility(self.server.version(), __compatible__)

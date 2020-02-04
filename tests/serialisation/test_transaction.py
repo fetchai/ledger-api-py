@@ -119,11 +119,10 @@ class TransactionSerialisation(unittest.TestCase):
 
         payload.from_address = IDENTITIES[0]
         payload.valid_until = 10000
-        payload.target_contract(Address(IDENTITIES[4]), BitVector())
+        payload.target_synergetic_data(Address(IDENTITIES[4]), BitVector())
         payload.charge_rate = 1
         payload.charge_limit = 1000000000000
         payload.action = 'data'
-        payload.synergetic_data_submission = True
         payload.data = json.dumps({'value': 1234}).encode('ascii')
         payload.add_signer(IDENTITIES[0])
 
