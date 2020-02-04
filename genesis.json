@@ -1,0 +1,35 @@
+{
+  "version": 4,
+  "accounts": [
+    {
+      "address": "2H7Csuaom7BUrC5YcUgJUExGPnApL8vQ5Wr9yGyzGWpRNqgWiJ",
+      "balance": 10000,
+      "stake": 0
+    },
+     {
+      "address": "dTSCNwHBPoDdESpxj6NQkPDvX3DN1DFKGsUPZNVWDVDrfur4z",
+      "balance": 10000,
+      "stake": 0
+    },
+ {
+      "address": "kCVmDwrydFNiT7WErBYiQTztn8Jj1s2TFKi4KR2tqxcAUUhV7",
+      "balance": 10000,
+      "stake": 0
+    },
+ {
+      "address": "2W5HDwYjXVaxDCn4xLo886Z67ycK3JY9qBndd8Ev8oqjuhADDo",
+      "balance": 10000,
+      "stake": 0
+    },
+{
+      "address": "hgQed6d5nBnDVJejLDBiLrpg4Mp4dMpvXj1PFMjUWFkDnWyyt",
+      "balance": 10000,
+      "stake": 0
+    },
+{
+      "address": "27L4TKQ9Q32HmGTzA32V25xwSjvKoHEPCZG5cMJ41scGTqaSdW",
+      "balance": 1152947575,
+      "stake": 0
+    }
+  ]
+}

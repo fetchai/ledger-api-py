@@ -1,4 +1,4 @@
-import io
+from typing import IO
 
 from fetchai.ledger.crypto import Identity
 
@@ -6,7 +6,7 @@ UNCOMPRESSED_SCEP256K1_PUBLIC_KEY = 0x04
 UNCOMPRESSED_SCEP256K1_PUBLIC_KEY_LEN = 64
 
 
-def decode(stream: io.BytesIO) -> Identity:
+def decode(stream: IO[bytes]) -> Identity:
     header = stream.read(1)[0]
 
     if UNCOMPRESSED_SCEP256K1_PUBLIC_KEY == header:
@@ -16,6 +16,6 @@ def decode(stream: io.BytesIO) -> Identity:
         raise RuntimeError('Unsupported identity type')
 
 
-def encode(stream: io.BytesIO, value: Identity):
+def encode(stream: IO[bytes], value: Identity):
     stream.write(bytes([UNCOMPRESSED_SCEP256K1_PUBLIC_KEY]))
     stream.write(value.public_key_bytes)

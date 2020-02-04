@@ -1,9 +1,14 @@
 import base64
 import unittest
+from io import StringIO
+from unittest.mock import patch
 
 import ecdsa
 
 from fetchai.ledger.crypto.entity import Entity
+
+SUPER_SECURE_PASSWORD = "F3tch.A1 t0 th3 Moon!!!1"
+WEAK_PASSWORD = 'password'
 
 
 class EntityTests(unittest.TestCase):
@@ -72,3 +77,62 @@ class EntityTests(unittest.TestCase):
     def test_signing_key(self):
         entity = Entity()
         self.assertIsInstance(entity.signing_key, ecdsa.SigningKey)
+
+    def test_loads(self):
+        ref = Entity()
+        value = ref.dumps(SUPER_SECURE_PASSWORD)
+        other = Entity.loads(value, SUPER_SECURE_PASSWORD)
+        self.assertEqual(ref.private_key, other.private_key)
+
+    def test_load(self):
+        ref = Entity()
+        stream = StringIO(ref.dumps(SUPER_SECURE_PASSWORD))
+        other = Entity.load(stream, SUPER_SECURE_PASSWORD)
+        self.assertEqual(ref.private_key, other.private_key)
+
+    def test_dumps(self):
+        ref = Entity()
+        stream = StringIO()
+        ref.dump(stream, SUPER_SECURE_PASSWORD)
+        stream.seek(0)
+        other = Entity.load(stream, SUPER_SECURE_PASSWORD)
+        self.assertEqual(ref.private_key, other.private_key)
+
+    def test_dump_failure_on_weak_password(self):
+        stream = StringIO()
+        with self.assertRaises(RuntimeError):
+            Entity().dump(stream, WEAK_PASSWORD)
+
+    def test_dumps_failure_on_weak_password(self):
+        with self.assertRaises(RuntimeError):
+            Entity().dumps(WEAK_PASSWORD)
+
+    def test_conversion_from_hex(self):
+        ref = Entity()
+        other = Entity.from_hex(ref.private_key_hex)
+        self.assertEqual(ref.private_key, other.private_key)
+
+    def test_prompt_load(self):
+        ref = Entity()
+        stream = StringIO()
+
+        # write the entity to the stream
+        ref.dump(stream, SUPER_SECURE_PASSWORD)
+
+        # reset the stream
+        stream.seek(0)
+        with patch('getpass.getpass') as mock_getpass:
+            mock_getpass.side_effect = [SUPER_SECURE_PASSWORD]
+
+            other = Entity.prompt_load(stream)
+            self.assertEqual(other.private_key, ref.private_key)
+
+    def test_prompt_dump(self):
+        ref = Entity()
+
+        stream = StringIO()
+        with patch('getpass.getpass') as mock_getpass:
+            mock_getpass.side_effect = [WEAK_PASSWORD, SUPER_SECURE_PASSWORD, WEAK_PASSWORD, SUPER_SECURE_PASSWORD]
+            ref.prompt_dump(stream)
+
+        stream.seek(0)

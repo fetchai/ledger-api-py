@@ -101,23 +101,37 @@ class ContractTests(unittest.TestCase):
 
         # Check shard mask gen called with contract digest address
         mock_shard_mask.assert_called_once_with(
-            ['fetch.contract.state.{}'.format(contract.digest.to_hex())], lane_number)
+            ['fetch.contract.state.{}'.format(str(contract.address))], lane_number)
         # Check api create method called
         api.contracts.create.assert_called_once_with(owner, contract, 1000, shard_mask=dummy_shard_mask)
 
-    def test_init(self):
+    def test_init_fail_multiple_inits(self):
         # Test rejection of contract with multiple init statements
         owner = Entity()
         with self.assertRaises(RuntimeError):
-            contract = Contract(MULTIPLE_INITS, owner)
+            _ = Contract(MULTIPLE_INITS, owner)
 
-        # Test successful creation without init (to support local etch testing)
-        try:
-            contract = Contract(NO_INIT, owner)
-        except Exception:
-            self.fail("Contract initialisation with @init failed")
+    @patch.object(ShardMask, 'resources_to_shard_mask')
+    def test_create_without_init(self, mock_shard_mask):
+        owner = Entity()
+        contract = Contract(NO_INIT, owner)
 
-        # Test creation failure without init
-        api = mock.Mock()
-        with self.assertRaises(RuntimeError):
-            contract.create(api, owner, 100)
+        # Mock api for providing number of lanes and receiving create call
+        api = mock.Mock(spec=LedgerApi)
+        api.server = mock.Mock()
+        lane_number = 2
+        api.server.num_lanes.side_effect = [lane_number]
+        api.contracts = mock.Mock(spec=ContractsApi)
+
+        # Mock shard mask static method
+        dummy_shard_mask = mock.Mock()
+        mock_shard_mask.side_effect = [dummy_shard_mask]
+
+        contract.create(api, owner, 1000)
+
+        # Check shard mask gen called with contract digest address
+        mock_shard_mask.assert_called_once_with(
+            ['fetch.contract.state.{}'.format(str(contract.address))], lane_number)
+
+        # Check api create method called
+        api.contracts.create.assert_called_once_with(owner, contract, 1000, shard_mask=dummy_shard_mask)

@@ -27,45 +27,54 @@ class Address:
     CHECKSUM_SIZE = 4
     DISPLAY_BYTE_LENGTH = BYTE_LENGTH + CHECKSUM_SIZE
 
-    def __init__(self, identity):
-        if isinstance(identity, Address):
-            self._address = identity._address
-            self._display = identity._display
+    @staticmethod
+    def is_address(address: str) -> bool:
+        raw_address = base58.b58decode(address)
 
-        elif isinstance(identity, Identity):
-            self._address = self._digest(identity.public_key_bytes)
+        if len(raw_address) != Address.DISPLAY_BYTE_LENGTH:
+            return False
+
+        # split the identity into address and checksum
+        address_raw = raw_address[:Address.BYTE_LENGTH]
+        checksum = raw_address[Address.BYTE_LENGTH:]
+
+        # calculate the expected checksum
+        expected_checksum = Address._calculate_checksum(address_raw)
+
+        if checksum != expected_checksum:
+            return False
+
+        return True
+
+    def __init__(self, value):
+        if isinstance(value, Address):
+            self._address = value._address
+            self._display = value._display
+
+        elif isinstance(value, Identity):
+            self._address = Address._digest(value.public_key_bytes)
             self._display = self._calculate_display(self._address)
 
-        elif isinstance(identity, bytes):
-            if len(identity) != self.BYTE_LENGTH:
-                raise RuntimeError('Incorrect length of binary address, expected {}, received {}'
-                                   .format(self.BYTE_LENGTH, len(identity)))
+        elif isinstance(value, bytes):
+            if len(value) != self.BYTE_LENGTH:
+                raise ValueError('Incorrect length of binary address, expected {}, received {}'
+                                 .format(self.BYTE_LENGTH, len(value)))
 
-            self._address = identity
+            self._address = value
             self._display = self._calculate_display(self._address)
 
-        elif isinstance(identity, str):
-            identity_bytes = base58.b58decode(identity)
-
-            if len(identity_bytes) != self.DISPLAY_BYTE_LENGTH:
-                raise RuntimeError('Unable to parse address, incorrect size')
+        elif isinstance(value, str):
+            if not Address.is_address(value):
+                raise ValueError('Invalid Address')
 
             # split the identity into address and checksum
-            address_raw = identity_bytes[:self.BYTE_LENGTH]
-            checksum = identity_bytes[self.BYTE_LENGTH:]
-
-            # calculate the expected checksum
-            expected_checksum = self._calculate_checksum(address_raw)
-
-            if checksum != expected_checksum:
-                raise RuntimeError('Invalid checksum')
-
+            address_raw = base58.b58decode(value)[:self.BYTE_LENGTH]
             # update internals
             self._address = address_raw
-            self._display = identity
+            self._display = value
 
         else:
-            raise RuntimeError('Failed to build identity from input')
+            raise ValueError('Unknown address value type')
 
     def __str__(self):
         return self._display
@@ -76,20 +85,22 @@ class Address:
     def __hash__(self):
         return hash(self._address)
 
-    def __eq__(self, other):
-        return bytes(self) == bytes(other)
+    def __eq__(self, other: 'Address'):
+        if isinstance(other, Address):
+            return self._address == other._address
+        return False
 
-    def to_hex(self):
-        return self._address.hex()
+    def __ne__(self, other: 'Address'):
+        return not (self == other)
 
-    @classmethod
-    def _digest(cls, data):
+    @staticmethod
+    def _digest(data):
         return sha256_hash(data)
 
-    @classmethod
-    def _calculate_checksum(cls, address_raw):
-        return cls._digest(address_raw)[:cls.CHECKSUM_SIZE]
+    @staticmethod
+    def _calculate_checksum(address_raw):
+        return Address._digest(address_raw)[:Address.CHECKSUM_SIZE]
 
     @classmethod
     def _calculate_display(cls, address_raw):
-        return base58.b58encode(address_raw + cls._digest(address_raw)[:cls.CHECKSUM_SIZE]).decode()
+        return base58.b58encode(address_raw + Address._digest(address_raw)[:cls.CHECKSUM_SIZE]).decode()

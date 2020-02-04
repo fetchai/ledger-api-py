@@ -23,59 +23,54 @@ from fetchai.ledger.contract import Contract
 from fetchai.ledger.crypto import Entity, Address
 
 CONTRACT_TEXT = """
-persistent sharded balance_state : UInt64;
-persistent supply_state : UInt64;
+persistent sharded balance_ : UInt64;
+persistent supply_ : UInt64;
 
 @init
 function init(owner: Address)
+    use supply_;
+    use balance_[owner];
 
-    use supply_state;
-    use balance_state[owner];
-
-    supply_state.set(92817u64);
-    balance_state.set(owner, 92817u64);
-
+    supply_.set(92817u64);
+    balance_.set(owner, 92817u64);
 endfunction
 
 @query
 function totalSupply(): UInt64
+    use supply_;
 
-    use supply_state;
-    return supply_state.get();
-
+    return supply_.get();
 endfunction
-
 
 @query
 function balanceOf(address: Address) : UInt64
-    
-    use balance_state[address];
-    return balance_state.get(address, 0u64);
+    use balance_[address];
 
+    return balance_.get(address, 0u64);
 endfunction
 
 @action
-function transfer(from: Address, to: Address, value: UInt64) : Bool
+function transfer(from: Address, to: Address, value: UInt64) : Int64
+    use balance_[from, to];
 
     if(!from.signedTx())
-      return false;
+      return 1i64;
     endif
 
-    use balance_state[from, to];
-    var from_balance = balance_state.get(from, 0u64);
-    var to_balance = balance_state.get(to, 0u64);
+    var from_balance = balance_.get(from, 0u64);
+    var to_balance = balance_.get(to, 0u64);
 
     if(from_balance < value)
-      return false;
+      return 1i64;
     endif
 
     var u_from = from_balance - value;
     var u_to = to_balance + value;
 
-    balance_state.set(from, u_from);
-    balance_state.set(to, u_to);
-    return true;
+    balance_.set(from, u_from);
+    balance_.set(to, u_to);
 
+    return 0i64;
 endfunction
 
 """
@@ -109,19 +104,17 @@ def track_cost(api: TokenApi, entity: Entity, message: str):
 
 
 def main():
-    # create our first private key pair
-    entity1 = Entity()
+    # In examples we use addresses which already have funds
+    entity1 = Entity.from_hex('6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b')
+    entity2 = Entity.from_hex('e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8')
+
     address1 = Address(entity1)
 
     # create a second private key pair
-    entity2 = Entity()
     address2 = Address(entity2)
 
     # build the ledger API
     api = LedgerApi('127.0.0.1', 8000)
-
-    # create wealth so that we have the funds to be able to create contracts on the network
-    api.sync(api.tokens.wealth(entity1, 10000))
 
     # create the smart contract
     contract = Contract(CONTRACT_TEXT, entity1)

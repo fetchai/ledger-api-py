@@ -8,23 +8,14 @@ PORT = 8000
 
 
 def main():
-    key_path = '/Users/nhutton/repos/ledger/build_debug/node1/p2p.key'
-
-    with open(key_path, 'rb') as key_file:
-        key_bytes = key_file.read()
-
-    # create the entity from this private key
-    entity = Entity(key_bytes)
+    entity = Entity.from_hex('6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b')
     address = Address(entity)
     print('Address:', address)
 
     # create the APIs
     api = LedgerApi(HOST, PORT)
 
-    # create the balance
-    print('Submitting wealth creation...')
-    api.sync(api.tokens.wealth(entity, 10000))
-
+    # Display balance before
     print('Balance:', api.tokens.balance(entity))
 
     print('Stake..:', api.tokens.stake(entity))
@@ -34,13 +25,12 @@ def main():
     api.sync(api.tokens.add_stake(entity, 1000, 50))
 
     while True:
-
         print('Balance............:', api.tokens.balance(entity))
         print('Stake..............:', api.tokens.stake(entity))
         print('Stake on cooldown..:', api.tokens.stake_cooldown(entity))
 
         # De-stake half of the staked balance
-        to_destake = int(api.tokens.stake(entity)/2)
+        to_destake = int(api.tokens.stake(entity) / 2)
         api.sync(api.tokens.de_stake(entity, to_destake, 500))
 
         # Collect cooled down stakes

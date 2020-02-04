@@ -15,7 +15,5 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-import hashlib
-from typing import Union
 
 from .sha256 import sha256_hash

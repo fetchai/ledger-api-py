@@ -23,7 +23,7 @@ class BitVector:
     @staticmethod
     def from_array(bit_array: list):
         bits = BitVector(len(bit_array))
-        for i, v in enumerate(bit_array):
+        for i, v in enumerate(reversed(bit_array)):
             if v:
                 bits.set(i, True)
         return bits

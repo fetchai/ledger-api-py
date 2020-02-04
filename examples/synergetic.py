@@ -43,10 +43,7 @@ def main():
     api = LedgerApi('127.0.0.1', 8000)
 
     # create an entity and provide it some wealth
-    print('Setup...')
-    entity = Entity()
-    api.sync(api.tokens.wealth(entity, 100000000))
-    print('Setup...complete')
+    entity = Entity.from_hex('6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b')
 
     # create the contract on the ledger
     synergetic_contract = Contract(CONTRACT_TEXT, entity)

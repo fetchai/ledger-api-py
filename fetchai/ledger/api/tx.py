@@ -1,3 +1,20 @@
+# ------------------------------------------------------------------------------
+#
+#   Copyright 2018-2020 Fetch.AI Limited
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+# ------------------------------------------------------------------------------
 import json
 from typing import Union, List, Dict, Optional
 
@@ -16,16 +33,16 @@ class TxStatus:
                  digest: bytes,
                  status: str,
                  exit_code: int,
-                 charge: int,
+                 charge_limit: int,
                  charge_rate: int,
                  fee: int):
-        self._digest_bytes = digest
+        self._digest_bytes = bytes(digest)
         self._digest_hex = self._digest_bytes.hex()
-        self.status = status
-        self.exit_code = exit_code
-        self.charge = charge
-        self.charge_rate = charge_rate
-        self.fee = fee
+        self.status = str(status)
+        self.exit_code = int(exit_code)
+        self.charge_limit = int(charge_limit)
+        self.charge_rate = int(charge_rate)
+        self.fee = int(fee)
 
     @property
     def successful(self):
@@ -39,6 +56,10 @@ class TxStatus:
     @property
     def non_terminal(self):
         return self.status in self._NON_TERMINAL_STATES
+
+    @property
+    def digest(self):
+        return '0x' + self.digest_hex
 
     @property
     def digest_hex(self):
@@ -86,10 +107,14 @@ class TxContents:
         return self.transfers.get(address, 0)
 
     @staticmethod
-    def from_json(data: Union[dict, str]):
+    def from_json(data: Union[dict, str]) -> Optional['TxContents']:
         """Creates a TxContents from a json string or dict object"""
         if isinstance(data, str):
             data = json.loads(data)
+
+        # in the case that we query a transaction which might not be present
+        if len(data) == 0:
+            return None
 
         # Extract contents from json, converting as necessary
         return TxContents(
@@ -120,7 +145,7 @@ class TransactionApi(ApiEndpoint):
 
         return self._status(tx_digest)
 
-    def _status(self, tx_digest):
+    def _status(self, tx_digest) -> TxStatus:
         url = '{}://{}:{}/api/status/tx/{}'.format(self.protocol, self.host, self.port, tx_digest)
 
         response = self._session.get(url).json()
@@ -129,11 +154,11 @@ class TransactionApi(ApiEndpoint):
             digest=decode_hex_or_b64(response['tx']),
             status=str(response['status']),
             exit_code=int(response['exit_code']),
-            charge=int(response['charge']),
+            charge_limit=int(response['charge']),
             charge_rate=int(response['charge_rate']),
             fee=int(response['fee']))
 
-    def contents(self, tx_digest) -> TxContents:
+    def contents(self, tx_digest) -> Optional[TxContents]:
         """
         Returns the contents of the transaction at the node
 
@@ -143,7 +168,7 @@ class TransactionApi(ApiEndpoint):
 
         return self._contents(tx_digest)
 
-    def _contents(self, tx_digest) -> TxContents:
+    def _contents(self, tx_digest) -> Optional[TxContents]:
         url = '{}://{}:{}/api/tx/{}'.format(self.protocol, self.host, self.port, tx_digest)
 
         response = self._session.get(url).json()
