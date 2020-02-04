@@ -34,7 +34,7 @@ class Transaction:
 
     def __eq__(self, other):
         if isinstance(other, Transaction):
-            results = [
+            return all([
                 self.from_address == other.from_address,
                 self.transfers == other.transfers,
                 self.valid_from == other.valid_from,
@@ -49,10 +49,7 @@ class Transaction:
                 self.data == other.data,
                 self.all_signers == other.all_signers,
                 self.is_synergetic == other.is_synergetic
-            ]
-            if not all(results):
-                value = 1
-            return all(results)
+            ])
         return False
 
     def __ne__(self, other):
