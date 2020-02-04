@@ -42,7 +42,6 @@ class TokenAPITests(TestCase):
                 patch('fetchai.ledger.api.TokenApi._set_validity_period') as mock_set_valid, \
                 patch('warnings.warn') as mock_warnings, \
                 patch('fetchai.ledger.serialisation.transaction.encode_transaction') as mock_encode:
-
             # the transaction factory should generate a known transaction
             tx = Transaction()
             tx.sign = MagicMock()
