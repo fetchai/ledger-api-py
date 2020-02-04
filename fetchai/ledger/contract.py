@@ -3,17 +3,17 @@ import hashlib
 import json
 import logging
 from os import urandom
-from typing import Union, List
+from typing import Union, List, Optional, Iterable
 
+from fetchai.ledger.api.contracts import ContractTxFactory
 from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Identity
 from fetchai.ledger.parser.etch_parser import EtchParser, UnparsableAddress, UseWildcardShardMask, EtchParserError
 from fetchai.ledger.serialisation import sha256_hash
 from fetchai.ledger.serialisation.shardmask import ShardMask
-from .api import ContractsApi, LedgerApi
+from .api import LedgerApi
 from .crypto import Entity, Address
 
-ContractsApiLike = Union[ContractsApi, LedgerApi]
 AddressLike = Union[Address, Identity]
 
 
@@ -48,8 +48,8 @@ class Contract:
         self._init = init[0] if len(init) else None
 
     @property
-    def name(self):
-        return '{}.{}'.format(self.digest.to_hex(), self.address)
+    def name(self) -> str:
+        return str(self.address)
 
     def dumps(self):
         return json.dumps(self._to_json_object())
@@ -66,20 +66,16 @@ class Contract:
         return cls._from_json_object(json.load(fp))
 
     @property
-    def owner(self):
+    def owner(self) -> Address:
         return self._owner
 
-    @owner.setter
-    def owner(self, owner):
-        self._owner = Address(owner)
-
     @property
-    def source(self):
+    def source(self) -> str:
         return self._source
 
     @property
-    def digest(self):
-        return self._digest
+    def digest(self) -> str:
+        return bytes(self._digest).hex()
 
     @property
     def nonce(self) -> str:
@@ -94,41 +90,32 @@ class Contract:
         return self._address
 
     @property
-    def encoded_source(self):
+    def encoded_source(self) -> str:
         return base64.b64encode(self.source.encode('ascii')).decode()
 
-    def create(self, api: ContractsApiLike, owner: Entity, fee: int):
-        # Set contract owner (required for resource prefix)
-        self.owner = owner
+    def create_as_tx(self, api: LedgerApi, from_address: AddressLike, fee: int,
+                     signers: Iterable[Identity]) -> 'Transaction':
+        # build the shard mask for the
+        shard_mask = self._build_shard_mask(api.server.num_lanes(), self._init)
+        tx = ContractTxFactory.create(Address(from_address), self, fee, signers, shard_mask=shard_mask)
+        api.set_validity_period(tx)
 
-        if self._init is None:
-            raise RuntimeError("Contract has no initialisation function")
+        return tx
 
-        # Generate resource addresses used by persistent globals
-        try:
-            resource_addresses = ['fetch.contract.state.{}'.format(self.digest.to_hex())]
-            resource_addresses.extend(ShardMask.state_to_address(address, self) for address in
-                                      self._parser.used_globals_to_addresses(self._init, [self._owner]))
-        except (UnparsableAddress, UseWildcardShardMask, EtchParserError):
-            logging.warning("Couldn't auto-detect used shards, using wildcard shard mask")
-            shard_mask = BitVector()
-        else:
-            # Generate shard mask from resource addresses
-            shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
+    def create(self, api: LedgerApi, owner: Entity, fee: int):
 
-        return self._api(api).create(owner, self, fee, shard_mask=shard_mask)
+        # build the shard mask for the
+        shard_mask = self._build_shard_mask(api.server.num_lanes(), self._init)
+        return api.contracts.create(owner, self, fee, shard_mask=shard_mask)
 
-    def query(self, api: ContractsApiLike, name: str, **kwargs):
-        if self._owner is None:
-            raise RuntimeError('Contract has no owner, unable to perform any queries. Did you deploy it?')
-
+    def query(self, api: LedgerApi, name: str, **kwargs):
         # TODO(WK): Reinstate without breaking contract-to-contract calls
         # if name not in self._queries:
         #     raise RuntimeError(
         #         '{} is not an valid query name. Valid options are: {}'.format(name, ','.join(list(self._queries))))
 
         # make the required query on the API
-        success, response = self._api(api).query(self.address, name, **kwargs)
+        success, response = api.contracts.query(self.address, name, **kwargs)
 
         if not success:
             if response is not None and "msg" in response:
@@ -138,38 +125,37 @@ class Contract:
 
         return response['result']
 
-    def action(self, api: ContractsApiLike, name: str, fee: int, signers: List[Entity], *args):
-        if self._owner is None:
-            raise RuntimeError('Contract has no owner, unable to perform any actions. Did you deploy it?')
+    def action(self, api: LedgerApi, name: str, fee: int, signers: List[Entity], *args,
+               from_address: Address = None):
 
         # TODO(WK): Reinstate without breaking contract-to-contract calls
         # if name not in self._actions:
         #     raise RuntimeError(
         #         '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
 
+        shard_mask = self._build_shard_mask(api.server.num_lanes(), name)
+
+        return api.contracts.action(self.address, name, fee, signers, *args,
+                                    from_address=from_address, shard_mask=shard_mask)
+
+    def _build_shard_mask(self, num_lanes: int, name: Optional[str]) -> BitVector:
         try:
-            # Generate resource addresses used by persistent globals
-            resource_addresses = [ShardMask.state_to_address(address, self) for address in
-                                  self._parser.used_globals_to_addresses(name, list(args))]
+            resource_addresses = [
+                'fetch.contract.state.{}'.format(str(self.address)),
+            ]
+
+            # only process the init functions resources if this function is actually present
+            if name is not None:
+                for variable in self._parser.used_globals_to_addresses(name, [self._owner]):
+                    resource_addresses.append(ShardMask.state_to_address(str(self.address), variable))
+
+            shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, num_lanes)
+
         except (UnparsableAddress, UseWildcardShardMask, EtchParserError):
             logging.warning("Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
-        else:
-            # Generate shard mask from resource addresses
-            shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, api.server.num_lanes())
 
-        return self._api(api).action(self.address, name, fee,
-                                     Address(signers[0]) if len(signers) == 1 else None, signers, *args,
-                                     shard_mask=shard_mask)
-
-    @staticmethod
-    def _api(api: ContractsApiLike):
-        if isinstance(api, ContractsApi):
-            return api
-        elif isinstance(api, LedgerApi):
-            return api.contracts
-        else:
-            assert False
+        return shard_mask
 
     @staticmethod
     def _from_json_object(obj):

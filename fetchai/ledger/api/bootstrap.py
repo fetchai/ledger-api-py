@@ -1,5 +1,24 @@
+# ------------------------------------------------------------------------------
+#
+#   Copyright 2018-2020 Fetch.AI Limited
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+# ------------------------------------------------------------------------------
+
 import requests
 import semver
+
 from fetchai.ledger import __version__, IncompatibleLedgerVersion
 
 
@@ -81,6 +100,11 @@ def split_address(address):
 
 def server_from_name(network):
     """Queries bootstrap for the requested network and returns connection details"""
+
+    # Adding a "local" network to give the looks and feel of main and testnet
+    if network == "local":
+        return "http://127.0.0.1", 8000
+
     # Get list of active servers
     server_list = list_servers(True)
 

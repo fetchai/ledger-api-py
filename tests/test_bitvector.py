@@ -50,3 +50,7 @@ class BitVectorSerialisationTests(unittest.TestCase):
     def test_binary(self):
         bits = BitVector.from_bytes(bytes([0x1f]), 8)
         self.assertEqual('00011111', bits.as_binary())
+
+    def test_from_array(self):
+        bits = BitVector.from_array([0, 0, 0, 1, 1, 1, 1, 1])
+        self.assertEqual('00011111', bits.as_binary())

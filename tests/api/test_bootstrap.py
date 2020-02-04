@@ -4,7 +4,7 @@ from unittest.mock import patch, Mock
 import requests
 
 from fetchai.ledger import IncompatibleLedgerVersion
-from fetchai.ledger.api import LedgerApi, ApiEndpoint
+from fetchai.ledger.api import LedgerApi
 from fetchai.ledger.api.bootstrap import list_servers, NetworkUnavailableError, is_server_valid, get_ledger_address, \
     split_address, server_from_name
 
@@ -23,11 +23,10 @@ class BootstrapTests(unittest.TestCase):
 
         # Check that all four api's created are passed the network details
         with patch('fetchai.ledger.api.TokenApi') as tapi, \
-            patch('fetchai.ledger.api.ContractsApi') as capi, \
-            patch('fetchai.ledger.api.TransactionApi') as txapi, \
-            patch('fetchai.ledger.api.ServerApi') as sapi:
-
-            a = LedgerApi(network='alpha')
+                patch('fetchai.ledger.api.ContractsApi') as capi, \
+                patch('fetchai.ledger.api.TransactionApi') as txapi, \
+                patch('fetchai.ledger.api.ServerApi') as sapi:
+            _ = LedgerApi(network='alpha')
 
             tapi.assert_called_once_with('host', 1234)
             capi.assert_called_once_with('host', 1234)

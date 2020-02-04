@@ -5,7 +5,7 @@ import requests
 
 from fetchai.ledger.api import TransactionApi
 from fetchai.ledger.api.tx import TxContents
-from fetchai.ledger.crypto import Address, Identity, Entity
+from fetchai.ledger.crypto import Address, Entity
 
 
 class TXContentsTest(TestCase):

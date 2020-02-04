@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 #
-#   Copyright 2018-2019 Fetch.AI Limited
+#   Copyright 2018-2020 Fetch.AI Limited
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -20,13 +20,14 @@ import logging
 import re
 import time
 from datetime import datetime, timedelta
-from typing import Sequence, Union
+from typing import Sequence, Union, Optional
 
 import semver
 
 from fetchai.ledger import __compatible__, IncompatibleLedgerVersion
 from fetchai.ledger.api import bootstrap
 from fetchai.ledger.api.server import ServerApi
+from fetchai.ledger.transaction import Transaction
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .contracts import ContractsApi
 from .token import TokenApi
@@ -101,7 +102,8 @@ class LedgerApi:
         # Check that ledger version is compatible with API version
         check_version_compatibility(self.server.version(), __compatible__)
 
-    def sync(self, txs: Transactions, timeout=None, hold_state_sec=0, extend_success_status = []):
+    def sync(self, txs: Transactions, timeout: Optional[int] = None, hold_state_sec: int = 0,
+             extend_success_status: Optional[Sequence[str]] = None):
         """
         Waits till the transaction list is executed
         :param txs: list of transactions
@@ -110,6 +112,7 @@ class LedgerApi:
         :param extend_success_status: by default only "Success" is the status indicator, but in some cases other indicators are possible as well
         :return:
         """
+        extend_success_status = set(extend_success_status or [])
         timeout = int(timeout or 120)
         # given the inputs make sure that we correctly for the input set of values
         finished = []
@@ -137,9 +140,11 @@ class LedgerApi:
                 raise RuntimeError('Some transactions have failed: {}'.format(', '.join(failures)))
             now = datetime.now()
             # Detect transactions with a successful status
-            successful_this_round = [status for status in remaining_statuses if status.successful or status.status in extend_success_status]
+            successful_this_round = [status for status in remaining_statuses if
+                                     status.successful or status.status in extend_success_status]
             # Filter out transactions which revert to a non-successful state before hold_time elapses
-            successful_this_round = [status for status in successful_this_round if (now - _get_or_set_default_time(hold_times, status.digest_hex, now)) >= hold_state]
+            successful_this_round = [status for status in successful_this_round if
+                                     (now - _get_or_set_default_time(hold_times, status.digest_hex, now)) >= hold_state]
             # Reset hold time for transactions which leave a successful state
             hold_times.update({status.digest_hex: -1 for status in remaining_statuses if status.non_terminal})
             finished += successful_this_round
@@ -158,10 +163,19 @@ class LedgerApi:
 
             time.sleep(1)
 
+    def submit_signed_tx(self, tx: Transaction):
+        if not tx.is_valid():
+            raise RuntimeError('Signed transaction failed validation checks')
+
+        return self.tokens.submit_signed_tx(tx)
+
+    def set_validity_period(self, tx: Transaction, period: Optional[int] = None):
+        self.tokens._set_validity_period(tx, period)
+
     def wait_for_blocks(self, n):
-        initial = self.tokens._current_block_number()
+        initial = self.tokens.current_block_number()
         while True:
             time.sleep(1)
-            current = self.tokens._current_block_number()
+            current = self.tokens.current_block_number()
             if current > initial + n:
                 break

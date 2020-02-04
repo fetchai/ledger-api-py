@@ -17,14 +17,39 @@
 # ------------------------------------------------------------------------------
 
 import base64
+import functools
 import json
-from typing import Optional
+import warnings
+from typing import Optional, Union, Iterable
 
+import msgpack
 import requests
 
+from fetchai.ledger.bitvector import BitVector
+from fetchai.ledger.crypto import Address, Identity
+from fetchai.ledger.serialisation import transaction
 from fetchai.ledger.transaction import Transaction
 
 DEFAULT_BLOCK_VALIDITY_PERIOD = 100
+
+AddressLike = Union[Address, Identity]
+
+
+def unstable(func):
+    """
+    Function Decorator to signal which parts of the API are expected to be unstable
+    """
+
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        warnings.simplefilter('always', UserWarning)  # turn off filter
+        warnings.warn(
+            "Call to unstable API. It is expect that future API updates are possible {}.".format(func.__name__),
+            category=UserWarning, stacklevel=2)
+        warnings.simplefilter('default', UserWarning)  # reset filter
+        return func(*args, **kwargs)
+
+    return new_func
 
 
 def format_contract_url(host: str, port: int, prefix: Optional[str], endpoint: Optional[str], protocol: str = None):
@@ -88,7 +113,7 @@ def submit_json_transaction(host: str, port: int, tx_data, session=None, protoco
     if not success:
         raise ApiError(
             'Unable to fulfill transaction request {}.{}. Status Code {}'.format(uri, endpoint,
-                                                                                r.status_code))
+                                                                                 r.status_code))
 
     # parse the response
     response = r.json()
@@ -142,20 +167,25 @@ class ApiEndpoint(object):
         return json.dumps(obj).encode('ascii')
 
     def _create_skeleton_tx(self, fee: int, validity_period: Optional[int] = None):
+        # build up the basic transaction information
+        tx = Transaction()
+        tx.charge_rate = 1
+        tx.charge_limit = fee
+        self._set_validity_period(tx, validity_period)
+        return tx
+
+    def _set_validity_period(self, tx: Transaction, validity_period: Optional[int] = None):
         validity_period = validity_period or DEFAULT_BLOCK_VALIDITY_PERIOD
 
         # query what the current block number is on the node
-        current_block = self._current_block_number()
+        current_block = self.current_block_number()
 
-        # build up the basic transaction information
-        tx = Transaction()
+        # populate both the valid from and valid until
+        tx.valid_from = current_block
         tx.valid_until = current_block + validity_period
-        tx.charge_rate = 1
-        tx.charge_limit = fee
+        return tx.valid_until
 
-        return tx
-
-    def _current_block_number(self):
+    def current_block_number(self):
         success, data = self._get_json('status/chain', size=1)
         if success:
             return data['chain'][0]['blockNumber']
@@ -253,3 +283,78 @@ class ApiEndpoint(object):
         tx_list = response.get('txs', [])
         if len(tx_list):
             return tx_list[0]
+
+    def submit_signed_tx(self, tx: Transaction):
+        """
+        Appends signatures to a transaction and submits it, returning the transaction digest
+        :param tx: A pre-assembled transaction
+        :param signatures: A dict of signers signatures
+        :return: The digest of the submitted transaction
+        :raises: ApiError on any failures
+        """
+        # Encode transaction and append signatures
+        encoded_tx = transaction.encode_transaction(tx)
+
+        # Submit and return digest
+        return self._post_tx_json(encoded_tx, None)
+
+
+class TransactionFactory:
+    API_PREFIX = None
+
+    @classmethod
+    def _create_skeleton_tx(cls, fee: int) -> Transaction:
+        # build up the basic transaction information
+        tx = Transaction()
+        tx.charge_rate = 1
+        tx.charge_limit = fee
+        return tx
+
+    @classmethod
+    def _create_chain_code_action_tx(cls, fee: int, from_address: AddressLike, action: str,
+                                     signatories: Iterable[Identity],
+                                     shard_mask: BitVector) -> Transaction:
+        tx = cls._create_skeleton_tx(fee)
+        tx.from_address = Address(from_address)
+        tx.target_chain_code(cls.API_PREFIX, shard_mask)
+        tx.action = action
+        for ident in signatories:
+            tx.add_signer(ident)
+
+        return tx
+
+    @classmethod
+    def _create_smart_contract_action_tx(cls, fee: int, from_address: AddressLike, contract_address: AddressLike,
+                                         action: str, signatories: Iterable[Identity],
+                                         shard_mask: BitVector) -> Transaction:
+        tx = cls._create_skeleton_tx(fee)
+        tx.from_address = Address(from_address)
+        tx.target_contract(Address(contract_address), shard_mask)
+        tx.action = str(action)
+        for ident in signatories:
+            tx.add_signer(ident)
+
+        return tx
+
+    @classmethod
+    def _encode_json(cls, obj):
+        return json.dumps(obj).encode('ascii')
+
+    @classmethod
+    def _encode_msgpack_payload(cls, *args):
+        items = []
+        for value in args:
+            if cls._is_primitive(value):
+                items.append(value)
+            elif isinstance(value, Address):
+                items.append(msgpack.ExtType(77, bytes(value)))
+            else:
+                raise RuntimeError('Unknown item to pack: ' + value.__class__.__name__)
+        return msgpack.packb(items)
+
+    @staticmethod
+    def _is_primitive(value):
+        for type in (bool, int, float, str):
+            if isinstance(value, type):
+                return True
+        return False
