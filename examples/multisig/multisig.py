@@ -36,10 +36,10 @@ def print_signing_votes(voting_weights, signers):
 
 
 def main():
-    # create the APIs
+    # Create the APIs
     api = LedgerApi(HOST, PORT)
 
-    # generate a random identity
+    # Generate an identity from a known key, which contains funds.
     multi_sig_identity = Entity.from_hex("6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b")
     # Generate a board to control multi-sig account, with variable voting weights.
     # We use keys for accounts which already have funds.
@@ -54,10 +54,10 @@ def main():
         board[2]: 1,
         board[3]: 2,
     }
-    # generate another entity as a target for transfers
+    # Generate another entity as a target for transfers
     other_identity = Entity.from_hex("e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8")
 
-    print('Balance after wealth:', api.tokens.balance(multi_sig_identity))
+    print('Original balance of multi_sig_identity:', api.tokens.balance(multi_sig_identity))
 
     # Transfers can happen normally without a deed
     print('\nSubmitting pre-deed transfer with original signature...')
@@ -66,11 +66,12 @@ def main():
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
-    # Submit deed
+    # Submit teh original deed
     print("\nCreating deed...")
     deed = Deed()
     for sig, weight in voting_weights.items():
         deed.set_signee(sig, weight)
+    # Set our initial voting thresholds
     deed.set_operation(Operation.transfer, 2)
     deed.set_operation(Operation.amend, 4)
 
@@ -89,10 +90,11 @@ def main():
     print("\nSubmitting transfer with two signatures with total 2 votes...")
     print_signing_votes(voting_weights, board[:2])
 
-    # since we now want to create a transaction which has only been signed by a subset of the board, we must use
+    # Since we now want to create a transaction which has only been signed by a subset of the board, we must use
     # the factory interface in order to build out the transaction we are after
     tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, board[:2])
     tx.valid_until = api.tokens.current_block_number() + 100
+    # The signatories to sign the transaction
     for signatory in board[:2]:
         tx.sign(signatory)
 

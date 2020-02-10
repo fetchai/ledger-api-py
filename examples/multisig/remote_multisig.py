@@ -39,9 +39,10 @@ def main():
     # create the APIs
     api = LedgerApi(HOST, PORT)
 
-    # generate a random identity
+    # We generate an identity from a known key, which contains funds.
     multi_sig_identity = Entity.from_hex("6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b")
 
+    # generate a board to control multi-sig account, with variable voting weights
     board = [
         Entity.from_hex("e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8"),
         Entity.from_hex("4083a476c4872f25cb40839ac8d994924bcef12d83e2ba4bd3ed6c9705959860"),
