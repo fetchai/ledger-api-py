@@ -39,7 +39,7 @@ def main():
     # create the APIs
     api = LedgerApi(HOST, PORT)
 
-    # We generate an identity from a known key, which contains funds.
+    # we generate an identity from a known key, which contains funds.
     multi_sig_identity = Entity.from_hex("6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b")
 
     # generate a board to control multi-sig account, with variable voting weights
@@ -60,7 +60,7 @@ def main():
     # generate another entity as a target for transfers
     other_identity = Entity.from_hex("7da0e3fa62a916238decd4f54d43301c809595d66dd469f82f29e076752b155c")
 
-    # Submit deed
+    # submit deed
     print("\nCreating deed...")
     deed = Deed()
     for sig, weight in voting_weights.items():
@@ -70,23 +70,23 @@ def main():
 
     api.sync(api.tokens.deed(multi_sig_identity, deed, 500))
 
-    # Display balance before
+    # display balance before
     print("\nBefore remote-multisig transfer")
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
     print()
 
-    ## Scatter/gather example
+    # scatter/gather example
     print("Generating transaction and distributing to signers...")
 
-    # Add intended signers to transaction
+    # add intended signers to transaction
     ref_tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board)
     api.set_validity_period(ref_tx)
 
     # make a reference payload that can be used in this script for validation
     reference_payload = ref_tx.encode_payload()
 
-    # Have signers individually sign transaction
+    # have signers individually sign transaction
     signed_txs = []
     for signer in board:
         # signer builds their own transaction to compare to note that each of the signers will need to agree on all
@@ -121,17 +121,17 @@ def main():
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
-    # Round robin example
+    # round-robin example
     print("\nGenerating transaction and sending down the line of signers...")
 
-    # create the basis for the transcation
+    # create the basis for the transaction
     tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, signatories=board)
     api.set_validity_period(tx)
 
-    # Serialize and send to be signed
+    # serialize and send to be signed
     tx_payload = tx.encode_payload()
 
-    # Have signers individually sign transaction and pass on to next signer
+    # have signers individually sign transaction and pass on to next signer
     for signer in board:
         # build the target transaction
         signer_tx = Transaction.decode_payload(tx_payload)
