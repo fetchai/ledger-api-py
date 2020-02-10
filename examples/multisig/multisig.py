@@ -66,7 +66,7 @@ def main():
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
-    # submit teh original deed
+    # submit the original deed
     print("\nCreating deed...")
     deed = Deed()
     for sig, weight in voting_weights.items():
