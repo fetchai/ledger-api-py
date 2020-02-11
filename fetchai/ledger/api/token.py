@@ -120,7 +120,7 @@ class TokenApi(ApiEndpoint):
         """
         Sets the deed for a multi-sig account
 
-        :param entity: The entity object to create wealth for
+        :param entity: The entity object to create a deed for
         :param deed: The deed to set
         :param signatories: The entities that will sign this action
         :return: The digest of the submitted transaction

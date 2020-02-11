@@ -7,17 +7,17 @@ PORT = 8000
 
 def main():
     api = LedgerApi(HOST, PORT)
-    # In our examples we use Addresses with funds, which we load from hex-encoded private keys.
+    # in our examples we use Addresses with funds, which we load from hex-encoded private keys.
     identity1 = Entity.from_hex('6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b')
     identity2 = Entity.from_hex('e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8')
 
-    # We make a Transfer which returns a transaction id.
+    # we make a Transfer which returns a transaction id.
     tx = api.tokens.transfer(identity1, identity2, 2500, 20)
 
     # wait for the transaction to complete so that the information is 100% present
     api.sync(tx)
 
-    # We Verify that the transaction is the submitted transaction is the sent transaction
+    # we Verify that the transaction is the submitted transaction is the sent transaction
     # TxContents object (below contents variable) contains all properties sent to ledger in transaction API call
     contents = api.tx.contents(tx)
 
@@ -35,7 +35,7 @@ def main():
 
     nonexistent_entity = Entity()
 
-    # Check the amount being transferred to a particular address; zero in the below instance
+    # check the amount being transferred to a particular address; zero in the below instance
     amount = contents.transfers_to(nonexistent_entity)
 
     if amount == 0:
@@ -43,7 +43,7 @@ def main():
     else:
         print("\nExample failure: nothing should be transferred to Address: ", str(Address(nonexistent_entity)))
 
-    # Check the status of a transaction. This is an alternative to calling the LedgerApi's sync method, which itself polls the below status endpoint
+    # check the status of a transaction. This is an alternative to calling the LedgerApi's sync method, which itself polls the below status endpoint
     status = api.tx.status(tx)
 
     print('\nCurrent Status is :', status.status)
