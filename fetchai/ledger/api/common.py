@@ -42,11 +42,9 @@ def unstable(func):
 
     @functools.wraps(func)
     def new_func(*args, **kwargs):
-        warnings.simplefilter('always', UserWarning)  # turn off filter
         warnings.warn(
             "Call to unstable API. It is expect that future API updates are possible {}.".format(func.__name__),
             category=UserWarning, stacklevel=2)
-        warnings.simplefilter('default', UserWarning)  # reset filter
         return func(*args, **kwargs)
 
     return new_func
