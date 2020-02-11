@@ -29,7 +29,7 @@ class InvalidDeedError(Exception):
     pass
 
 
-def _greater_than_one(value):
+def _one_or_greater(value):
     value = int(value)
     if value <= 0:
         raise ValueError('Value {} should be greater or equal to 1'.format(value))
@@ -103,7 +103,7 @@ class Deed:
 
     def set_signee(self, signee: AddressLike, voting_weight: int):
         signee = Address(signee)
-        voting_weight = _greater_than_one(voting_weight)
+        voting_weight = _one_or_greater(voting_weight)
 
         self._signees[signee] = int(voting_weight)
 
@@ -113,7 +113,7 @@ class Deed:
             del self._signees[signee]
 
     def set_operation(self, operation: Operation, threshold: int):
-        threshold = _greater_than_one(threshold)
+        threshold = _one_or_greater(threshold)
 
         self._thresholds[operation] = int(threshold)
 

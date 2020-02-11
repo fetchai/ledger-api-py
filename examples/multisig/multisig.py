@@ -39,10 +39,10 @@ def main():
     # create the APIs
     api = LedgerApi(HOST, PORT)
 
-    # generate a random identity
+    # generate an identity from a known key, which contains funds.
     multi_sig_identity = Entity.from_hex("6e8339a0c6d51fc58b4365bf2ce18ff2698d2b8c40bb13fcef7e1ba05df18e4b")
-    # Generate a board to control multi-sig account, with variable voting weights.
-    # We use keys for accounts which already have funds.
+    # generate a board to control multi-sig account, with variable voting weights.
+    # we use keys for accounts which already have funds.
     board = []
     board.append(Entity.from_hex("e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8"))
     board.append(Entity.from_hex("4083a476c4872f25cb40839ac8d994924bcef12d83e2ba4bd3ed6c9705959860"))
@@ -57,26 +57,27 @@ def main():
     # generate another entity as a target for transfers
     other_identity = Entity.from_hex("e833c747ee0aeae29e6823e7c825d3001638bc30ffe50363f8adf2693c3286f8")
 
-    print('Balance after wealth:', api.tokens.balance(multi_sig_identity))
+    print('Original balance of multi_sig_identity:', api.tokens.balance(multi_sig_identity))
 
-    # Transfers can happen normally without a deed
+    # transfers can happen normally without a deed
     print('\nSubmitting pre-deed transfer with original signature...')
     api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20))
 
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
-    # Submit deed
+    # submit the original deed
     print("\nCreating deed...")
     deed = Deed()
     for sig, weight in voting_weights.items():
         deed.set_signee(sig, weight)
+    # set our initial voting thresholds
     deed.set_operation(Operation.transfer, 2)
     deed.set_operation(Operation.amend, 4)
 
     api.sync(api.tokens.deed(multi_sig_identity, deed, 6000))
 
-    # Original address can no longer validate transfers
+    # original address can no longer validate transfers
     print("\nTransfer with original signature should fail...")
     try:
         api.sync(api.tokens.transfer(multi_sig_identity, other_identity, 250, 20))
@@ -85,7 +86,7 @@ def main():
     else:
         print("Transaction succeeded, it shouldn't have")
 
-    # Sufficient voting power required to sign transfers
+    # sufficient voting power required to sign transfers
     print("\nSubmitting transfer with two signatures with total 2 votes...")
     print_signing_votes(voting_weights, board[:2])
 
@@ -93,6 +94,7 @@ def main():
     # the factory interface in order to build out the transaction we are after
     tx = TokenTxFactory.transfer(multi_sig_identity, other_identity, 250, 20, board[:2])
     tx.valid_until = api.tokens.current_block_number() + 100
+    # the signatories to sign the transaction
     for signatory in board[:2]:
         tx.sign(signatory)
 
@@ -101,7 +103,7 @@ def main():
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
-    # Some entities may have more voting power
+    # some entities may have more voting power
     print("\nSubmitting transfer with single signature with 2 votes...")
     print_signing_votes(voting_weights, board[3])
 
@@ -113,7 +115,7 @@ def main():
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
-    # Amend the deed
+    # amend the deed
     print("\nAmending deed to increase transfer threshold to 3 votes...")
     deed.set_operation(Operation.transfer, 3)
     tx = TokenTxFactory.deed(multi_sig_identity, deed, 400, board)
@@ -122,7 +124,7 @@ def main():
         tx.sign(member)
     api.sync(api.submit_signed_tx(tx))
 
-    # Single member no longer has enough voting power
+    # single member no longer has enough voting power
     print("\nSingle member transfer with 2 votes should no longer succeed...")
     try:
         print_signing_votes(voting_weights, board[3])
@@ -137,7 +139,7 @@ def main():
     else:
         print("Transaction succeeded, it shouldn't have")
 
-    # Correct number of signatory votes
+    # correct number of signatory votes
     print("\nSuccesful transaction with sufficient voting weight...")
     print_signing_votes(voting_weights, board[1:])
 
@@ -150,7 +152,7 @@ def main():
     print('Balance 1:', api.tokens.balance(multi_sig_identity))
     print('Balance 2:', api.tokens.balance(other_identity))
 
-    # Warning: if no amend threshold is set, future amendments are impossible
+    # warning: if no amend threshold is set, future amendments are impossible
     print("\nAmending deed to remove threshold...")
     deed.remove_operation(Operation.amend)
     deed.require_amend = False
