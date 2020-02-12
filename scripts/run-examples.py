@@ -17,12 +17,7 @@ EXAMPLES_BLACK_LIST = (
     'crypto_prediction_model.py',
     'staking.py',
     'synergetic.py',
-    # 'transfer.py',
-    # 'contracts.py',
     'introduction.py',
-    # 'tx.py',
-    # 'multisig/multisig.py',
-    # 'multisig/remote_multisig.py',
 )
 
 
