@@ -130,7 +130,7 @@ def main():
     tok_transfer_amount = 200
     fet_tx_fee = 160
     with track_cost(api.tokens, entity1, "Cost of transfer: "):
-        api.sync(contract.action(api, 'transfer', fet_tx_fee, [entity1], address1, address2, tok_transfer_amount))
+        api.sync(contract.action(api, 'transfer', fet_tx_fee, entity1, address1, address2, tok_transfer_amount))
 
     print('-- AFTER --')
     print_address_balances(api, contract, [address1, address2])
