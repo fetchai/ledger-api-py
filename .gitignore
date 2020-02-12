@@ -10,4 +10,5 @@ Pipfile.lock
 
 # Code coverage output
 .coverage
+.ledger/
 htmlcov/

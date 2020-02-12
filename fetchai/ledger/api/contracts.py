@@ -34,7 +34,7 @@ AddressLike = Union[Address, str]
 class ContractsApi(ApiEndpoint):
     API_PREFIX = 'fetch.contract'
 
-    def create(self, owner: Entity, contract: 'Contract', fee: int, shard_mask: BitVector = None):
+    def create(self, owner: Entity, contract: 'Contract', fee: int, shard_mask: Optional[BitVector] = None):
         ENDPOINT = 'create'
 
         logging.debug('Deploying contract', contract.address)
@@ -70,9 +70,9 @@ class ContractsApi(ApiEndpoint):
         return self._post_json(query, prefix=str(contract_owner), data=self._encode_json_payload(**kwargs))
 
     def action(self, contract_address: Address, action: str, fee: int, signer: Entity, *args,
-               from_address: Address = None, shard_mask: BitVector = None):
+               shard_mask: Optional[BitVector] = None):
 
-        tx = ContractTxFactory.action(from_address or Address(signer), contract_address, action, fee, [signer], *args,
+        tx = ContractTxFactory.action(Address(signer), contract_address, action, fee, [signer], *args,
                                       shard_mask=shard_mask)
         tx.data = self._encode_msgpack_payload(*args)
         self._set_validity_period(tx)

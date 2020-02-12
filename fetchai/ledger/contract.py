@@ -3,7 +3,7 @@ import hashlib
 import json
 import logging
 from os import urandom
-from typing import Union, List, Optional, Iterable
+from typing import Union, List, Optional, Iterable, Any
 
 from fetchai.ledger.api.contracts import ContractTxFactory
 from fetchai.ledger.bitvector import BitVector
@@ -22,7 +22,7 @@ def _compute_digest(source) -> Address:
 
 
 class Contract:
-    def __init__(self, source: str, owner: AddressLike, nonce: bytes = None):
+    def __init__(self, source: str, owner: AddressLike, nonce: Optional[bytes] = None):
         self._source = str(source)
         self._digest = _compute_digest(self._source)
         self._owner = Address(owner)
@@ -105,7 +105,7 @@ class Contract:
     def create(self, api: LedgerApi, owner: Entity, fee: int):
 
         # build the shard mask for the
-        shard_mask = self._build_shard_mask(api.server.num_lanes(), self._init)
+        shard_mask = self._build_shard_mask(api.server.num_lanes(), self._init, [self._owner])
         return api.contracts.create(owner, self, fee, shard_mask=shard_mask)
 
     def query(self, api: LedgerApi, name: str, **kwargs):
@@ -125,20 +125,23 @@ class Contract:
 
         return response['result']
 
-    def action(self, api: LedgerApi, name: str, fee: int, signers: List[Entity], *args,
-               from_address: Address = None):
+    def action(self, api: LedgerApi, name: str, fee: int, signer: Entity, *args):
 
         # TODO(WK): Reinstate without breaking contract-to-contract calls
         # if name not in self._actions:
         #     raise RuntimeError(
         #         '{} is not an valid action name. Valid options are: {}'.format(name, ','.join(list(self._actions))))
 
-        shard_mask = self._build_shard_mask(api.server.num_lanes(), name)
+        shard_mask = self._build_shard_mask(api.server.num_lanes(), name, list(args))
 
-        return api.contracts.action(self.address, name, fee, signers, *args,
-                                    from_address=from_address, shard_mask=shard_mask)
+        # previous versions of the API provided the list of signers as an input, this was mostly done as a work
+        # around for the multi-signature support. This has been deprecated, however, the compatibility is kept for the
+        # single entity case
+        signer = self._convert_to_single_entity(signer)
 
-    def _build_shard_mask(self, num_lanes: int, name: Optional[str]) -> BitVector:
+        return api.contracts.action(self.address, name, fee, signer, *args, shard_mask=shard_mask)
+
+    def _build_shard_mask(self, num_lanes: int, name: Optional[str], arguments: List[Any]) -> BitVector:
         try:
             resource_addresses = [
                 'fetch.contract.state.{}'.format(str(self.address)),
@@ -146,16 +149,34 @@ class Contract:
 
             # only process the init functions resources if this function is actually present
             if name is not None:
-                for variable in self._parser.used_globals_to_addresses(name, [self._owner]):
+                variables = self._parser.used_globals_to_addresses(name, arguments)
+                for variable in variables:
                     resource_addresses.append(ShardMask.state_to_address(str(self.address), variable))
 
             shard_mask = ShardMask.resources_to_shard_mask(resource_addresses, num_lanes)
 
-        except (UnparsableAddress, UseWildcardShardMask, EtchParserError):
+        except (UnparsableAddress, UseWildcardShardMask, EtchParserError, AssertionError) as ex:
+            logging.debug('Parser Error: {}'.format(ex))
             logging.warning("Couldn't auto-detect used shards, using wildcard shard mask")
             shard_mask = BitVector()
 
         return shard_mask
+
+    @staticmethod
+    def _convert_to_single_entity(value: Union[Iterable[Entity], Entity]):
+        if isinstance(value, Entity):
+            return value
+
+        try:
+            # attempt to create a list of items from the input
+            converted = list(iter(value))
+
+            if len(converted) == 1 and isinstance(converted[0], Entity):
+                return converted[0]
+        except:
+            pass
+
+        raise ValueError('Unable to extract single entity from input value')
 
     @staticmethod
     def _from_json_object(obj):
