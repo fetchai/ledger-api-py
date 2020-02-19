@@ -1,0 +1,6 @@
+include LICENSE
+include *.json
+recursive-include examples *.key
+recursive-include examples *.py
+recursive-include scripts *.py
+recursive-include tests *.py

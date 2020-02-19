@@ -1,15 +1,25 @@
+from os import path
+
 from setuptools import setup, find_packages
 
 from fetchai.ledger import __version__ as version_string
+
+project_root = path.dirname(__file__)
+
+with open(path.join(project_root, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
 
 setup(
     name='fetchai-ledger-api',
     version=version_string,
     description='Tools and utilities for interacting with the ledger on the fetch network',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     url='https://github.com/fetchai/ledger-api-py',
     author='Edward FitzGerald',
     author_email='edward.fitzgerald@fetch.ai',
-    packages=find_packages(exclude=['contrib', 'docs', 'tests', 'scripts']),
+    packages=find_packages(exclude=['contrib', 'docs', 'examples', 'tests', 'scripts']),
     package_data={'fetchai': ['ledger/parser/etch.grammar']},
     install_requires=[
         'base58==2.0.0',
@@ -31,5 +41,11 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    python_requires='>=3.5'
+    python_requires='>=3.5',
+    project_urls={
+        'Bug Reports': 'https://github.com/fetchai/ledger-api-py/issues',
+        'Developer Site': 'https://developer.fetch.ai/',
+        'Documentation': 'https://docs.fetch.ai/',
+        'Source': 'https://github.com/fetchai/ledger-api-py',
+    },
 )
