@@ -12,9 +12,10 @@ Python library code for interacting with the Fetch.ai ledger platform.
 
 ## Examples
 
-The project contains a number of example scripts to get started developing with the SDK:
+The project is a component of a larger ecosystem of projects for developing on the Fetch.ai's platform. Please check out some of the links below:
 
-https://github.com/fetchai/ledger-api-py/tree/master/examples
+- [Developer Portal](https://developer.fetch.ai/)
+- [Repo Examples](https://github.com/fetchai/ledger-api-py/tree/master/examples)
 
 ## Developing with the library
 
