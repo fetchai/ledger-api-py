@@ -1,4 +1,3 @@
-from io import open
 from os import path
 
 from setuptools import setup, find_packages
@@ -20,7 +19,7 @@ setup(
     url='https://github.com/fetchai/ledger-api-py',
     author='Edward FitzGerald',
     author_email='edward.fitzgerald@fetch.ai',
-    packages=find_packages(exclude=['contrib', 'docs', 'tests', 'scripts']),
+    packages=find_packages(exclude=['contrib', 'docs', 'examples', 'tests', 'scripts']),
     package_data={'fetchai': ['ledger/parser/etch.grammar']},
     install_requires=[
         'base58==2.0.0',
@@ -45,6 +44,8 @@ setup(
     python_requires='>=3.5',
     project_urls={
         'Bug Reports': 'https://github.com/fetchai/ledger-api-py/issues',
+        'Developer Site': 'https://developer.fetch.ai/',
+        'Documentation': 'https://docs.fetch.ai/',
         'Source': 'https://github.com/fetchai/ledger-api-py',
     },
 )
