@@ -22,6 +22,12 @@ Make sure that the library is uninstalled from the system (or use a virtualenv) 
 
     $ python3 setup.py develop
 
+## Running the unit tests
+
+The project uses pytest for running the unit tests. Simple run the following command to exectute all the of tests
+
+    $ pytest
+
 ## License
 
 This application is licensed under the Apache software license (see LICENSE file). Unless required by
