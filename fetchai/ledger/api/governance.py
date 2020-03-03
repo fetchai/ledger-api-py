@@ -17,7 +17,7 @@
 # ------------------------------------------------------------------------------
 
 import base64
-from typing import Iterable, Sequence, Collection
+from typing import Iterable, Sequence
 
 from fetchai.ledger.api import ApiEndpoint
 from fetchai.ledger.api.common import TransactionFactory, ApiError
