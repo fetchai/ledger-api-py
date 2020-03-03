@@ -61,7 +61,7 @@ class GovernanceProposal:
 
 
 class CurrentGovernanceProposals:
-    def __init__(self, active_proposal: GovernanceProposal, voting_queue: Collection[GovernanceProposal],
+    def __init__(self, active_proposal: GovernanceProposal, voting_queue: Iterable[GovernanceProposal],
                  max_number_of_proposals: int):
         self.active_proposal = active_proposal
         self.voting_queue = voting_queue
