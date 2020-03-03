@@ -210,7 +210,7 @@ class Transaction:
 
     def add_signature(self, identity: Identity, signature: bytes):
         if identity not in self._signatures:
-            raise RuntimeError('Identity is not currently part')
+            raise RuntimeError('Signer Identity not recognised for this transaction: add it by calling add_signer() first')
         self._signatures[identity] = signature
 
     def merge_signatures(self, other_tx: 'Transaction') -> bool:
