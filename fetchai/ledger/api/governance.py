@@ -15,8 +15,9 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+
 import base64
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, Collection
 
 from fetchai.ledger.api import ApiEndpoint
 from fetchai.ledger.api.common import TransactionFactory, ApiError
@@ -34,19 +35,39 @@ class GovernanceProposal:
 
         self._validate()
 
+    @classmethod
+    def from_dict(cls, data: dict):
+        return GovernanceProposal(data['version'], data['accept_by'], data['data'])
+
+    def to_dict(self):
+        return {
+            'version': self.version,
+            'accept_by': self.accept_by,
+            'data': self.data
+        }
+
     def _assert_prop(self, key_, type_):
-        assert key_ in self.data and isinstance(self.data[key_], type_), \
-            'Version {} proposal data must contain property \'{}\' of type {}' \
-                .format(self.version, key_, type_.__name__)
+        if key_ not in self.data or not isinstance(self.data[key_], type_):
+            raise ApiError('Version {} proposal data must contain property \'{}\' of type {}' \
+                           .format(self.version, key_, type_.__name__))
 
     def _validate(self):
         if self.version == 0:
             CHARGE_MULTIPLIER_KEY = 'charge_multiplier'
 
             self._assert_prop(CHARGE_MULTIPLIER_KEY, int)
-
         else:
             raise ApiError('Unrecognised proposal version {}'.format(self.version))
+
+
+class CurrentGovernanceProposals:
+    def __init__(self, active_proposal: GovernanceProposal, voting_queue: Collection[GovernanceProposal],
+                 max_number_of_proposals: int):
+        self.active_proposal = active_proposal
+        self.voting_queue = voting_queue
+
+        # Subtract one to account for currently active proposal
+        self.free_slots_in_queue = max_number_of_proposals - 1
 
 
 class GovernanceApi(ApiEndpoint):
@@ -54,10 +75,10 @@ class GovernanceApi(ApiEndpoint):
 
     def _send_gov_tx(self, factory, from_address: Address, fee: int, signatories: Sequence[Entity],
                      proposal: GovernanceProposal):
-        assert len(signatories) == 1, \
-            'Governance transactions should have a single signatory'
-        assert from_address == Address(signatories[0]), \
-            'Governance transactions should be signed and issued by the same miner'
+        if len(signatories) != 1:
+            raise ApiError('Governance transactions should have a single signatory')
+        if from_address != Address(signatories[0]):
+            raise ApiError('Governance transactions should be signed and issued by the same miner')
 
         tx = factory(from_address, fee, signatories, proposal)
 
@@ -108,6 +129,32 @@ class GovernanceApi(ApiEndpoint):
 
         return self._send_gov_tx(GovernanceTxFactory.reject, from_address, fee, signatories, proposal)
 
+    def get_proposals(self) -> CurrentGovernanceProposals:
+        """
+        Query the governance proposals currently present in the system.
+
+        :return: a CurrentGovernanceProposals object
+        :raises: ApiError on any failures
+        """
+
+        success, data = self._post_json('get_proposals')
+
+        # check for error cases
+        if not success:
+            raise ApiError('Failed to query proposals')
+
+        if not ('active_proposal' in data and 'voting_queue' in data and 'max_number_of_proposals' in data):
+            raise ApiError('Malformed response from server')
+
+        active_proposal = data['active_proposal']
+        voting_queue = data['voting_queue']
+        max_number_of_proposals = data['max_number_of_proposals']
+
+        return CurrentGovernanceProposals(
+            GovernanceProposal.from_dict(active_proposal),
+            [GovernanceProposal.from_dict(prop) for prop in voting_queue],
+            max_number_of_proposals)
+
 
 class GovernanceTxFactory(TransactionFactory):
     API_PREFIX = GOVERNANCE_API_PREFIX
@@ -119,11 +166,7 @@ class GovernanceTxFactory(TransactionFactory):
 
         tx = cls._create_chain_code_action_tx(fee, from_address, tx_endpoint, signatories, shard_mask)
 
-        tx.data = base64.b64encode(cls._encode_json({
-            'version': proposal.version,
-            'accept_by': proposal.accept_by,
-            'data': proposal.data
-        }))
+        tx.data = base64.b64encode(cls._encode_json(proposal.to_dict()))
 
         return tx
 

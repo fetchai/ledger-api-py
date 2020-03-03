@@ -15,11 +15,13 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+
 from getpass import getpass
 
 from pocketbook.key_store import KeyStore
 
 from fetchai.ledger.api import LedgerApi
+from fetchai.ledger.api.governance import GovernanceProposal
 from fetchai.ledger.crypto import Address
 
 
@@ -40,17 +42,23 @@ def main():
     address1 = Address(entity1)
     api = LedgerApi('127.0.0.1', 9001)
 
-    proposal = {
-        'version': 0,
-        'accept_by': 1000,
-        'data': {
-            'charge_multiplier': 42
-        }
+    current_gov_proposals = api.governance.get_proposals()
+
+    if current_gov_proposals.free_slots_in_queue == 0:
+        raise RuntimeError('No room in queue - try again when a proposal currently in flight expires or is rejected')
+
+    block_number = api.tokens.current_block_number()
+
+    proposal_data = {
+        'charge_multiplier': 42
     }
+
+    proposal = GovernanceProposal(0, block_number + 60000, proposal_data)
 
     propose_tx = api.governance.propose(address1, 10000, [entity1], proposal)
     api.sync(propose_tx)
 
+    # Need to cast a vote, as submitting a proposal does not implicitly do so
     accept_tx = api.governance.accept(address1, 10000, [entity1], proposal)
     api.sync(accept_tx)
 
