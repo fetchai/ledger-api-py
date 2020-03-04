@@ -16,6 +16,7 @@ EXAMPLES_FOLDER = os.path.join(PROJECT_ROOT, 'examples')
 EXAMPLES_BLACK_LIST = (
     'crypto_prediction_model.py',
     'staking.py',
+    'governance.py',
     'synergetic.py',
     'introduction.py',
 )

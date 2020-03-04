@@ -30,6 +30,7 @@ from fetchai.ledger.api.server import ServerApi
 from fetchai.ledger.transaction import Transaction
 from .common import ApiEndpoint, ApiError, submit_json_transaction
 from .contracts import ContractsApi
+from .governance import GovernanceApi
 from .token import TokenApi
 from .tx import TransactionApi
 
@@ -98,6 +99,7 @@ class LedgerApi:
         self.contracts = ContractsApi(host, port)
         self.tx = TransactionApi(host, port)
         self.server = ServerApi(host, port)
+        self.governance = GovernanceApi(host, port)
 
         # Check that ledger version is compatible with API version
         check_version_compatibility(self.server.version(), __compatible__)

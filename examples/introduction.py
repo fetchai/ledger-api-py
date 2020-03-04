@@ -144,7 +144,7 @@ def main():
 
     # We can get the nodes current block number
     block_number = api.tokens.current_block_number()
-    print("\nThe current block number of the Ledger is:", block_number);
+    print("\nThe current block number of the Ledger is:", block_number)
 
     # ContractsApi allows contract submition, and for contracts to be called on them
     # See the contracts example file in this folder for further details.
