@@ -17,7 +17,7 @@
 # ------------------------------------------------------------------------------
 
 import base64
-from typing import Iterable, Sequence
+from typing import Iterable, Callable
 
 from fetchai.ledger.api import ApiEndpoint
 from fetchai.ledger.api.common import TransactionFactory, ApiError
@@ -25,6 +25,8 @@ from fetchai.ledger.bitvector import BitVector
 from fetchai.ledger.crypto import Address, Entity, Identity
 
 GOVERNANCE_API_PREFIX = 'fetch.governance'
+
+GovTxFactory = Callable[[Address, int, Iterable[Identity], 'GovernanceProposal'], 'Transaction']
 
 
 class GovernanceProposal:
@@ -73,61 +75,55 @@ class CurrentGovernanceProposals:
 class GovernanceApi(ApiEndpoint):
     API_PREFIX = GOVERNANCE_API_PREFIX
 
-    def _send_gov_tx(self, factory, from_address: Address, fee: int, signatories: Sequence[Entity],
-                     proposal: GovernanceProposal):
-        if len(signatories) != 1:
-            raise ApiError('Governance transactions should have a single signatory')
-        if from_address != Address(signatories[0]):
-            raise ApiError('Governance transactions should be signed and issued by the same miner')
-
-        tx = factory(from_address, fee, signatories, proposal)
+    def _send_gov_tx(self, factory: GovTxFactory, name: str, fee: int, signer: Entity, proposal: GovernanceProposal):
+        tx = factory(Address(signer), fee, [signer], proposal)
 
         self._set_validity_period(tx)
-        [tx.sign(signer) for signer in signatories]
+        tx.sign(signer)
 
-        return self.submit_signed_tx(tx)
+        return self._post_tx_json(tx, name)
 
-    def propose(self, from_address: Address, fee: int, signatories: Sequence[Entity], proposal: GovernanceProposal):
+    def propose(self, proposal: GovernanceProposal, signer: Entity, fee: int):
         """
         Send a governance proposal.
 
         :param from_address: The proposal issuer
         :param fee: The maximum fee
-        :param signatories: The entities that will sign this action
+        :param signer: The entities that will sign this action
         :param proposal: The governance proposal
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
         """
 
-        return self._send_gov_tx(GovernanceTxFactory.propose, from_address, fee, signatories, proposal)
+        return self._send_gov_tx(GovernanceTxFactory.propose, 'propose', fee, signer, proposal)
 
-    def accept(self, from_address: Address, fee: int, signatories: Sequence[Entity], proposal: GovernanceProposal):
+    def accept(self, proposal: GovernanceProposal, signer: Entity, fee: int):
         """
         Accept a governance proposal.
 
         :param from_address: The proposal issuer
         :param fee: The maximum fee
-        :param signatories: The entities that will sign this action
+        :param signer: The entities that will sign this action
         :param proposal: The governance proposal
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
         """
 
-        return self._send_gov_tx(GovernanceTxFactory.accept, from_address, fee, signatories, proposal)
+        return self._send_gov_tx(GovernanceTxFactory.accept, 'accept', fee, signer, proposal)
 
-    def reject(self, from_address: Address, fee: int, signatories: Sequence[Entity], proposal: GovernanceProposal):
+    def reject(self, proposal: GovernanceProposal, signer: Entity, fee: int):
         """
         Reject a governance proposal.
 
         :param from_address: The proposal issuer
         :param fee: The maximum fee
-        :param signatories: The entities that will sign this action
+        :param signer: The entities that will sign this action
         :param proposal: The governance proposal
         :return: The digest of the submitted transaction
         :raises: ApiError on any failures
         """
 
-        return self._send_gov_tx(GovernanceTxFactory.reject, from_address, fee, signatories, proposal)
+        return self._send_gov_tx(GovernanceTxFactory.reject, 'reject', fee, signer, proposal)
 
     def get_proposals(self) -> CurrentGovernanceProposals:
         """

@@ -40,7 +40,7 @@ def get_miner_private_key(pocketbook_key_name: str, password: str = None):
 def main():
     entity1 = get_miner_private_key('my_miner_wallet')
     address1 = Address(entity1)
-    api = LedgerApi('127.0.0.1', 9001)
+    api = LedgerApi('127.0.0.1', 8000)
 
     current_gov_proposals = api.governance.get_proposals()
 
@@ -53,13 +53,13 @@ def main():
         'charge_multiplier': 42
     }
 
-    proposal = GovernanceProposal(0, block_number + 60000, proposal_data)
+    proposal = GovernanceProposal(0, block_number + 50000, proposal_data)
 
-    propose_tx = api.governance.propose(address1, 10000, [entity1], proposal)
+    propose_tx = api.governance.propose(proposal, entity1, 10000)
     api.sync(propose_tx)
 
     # Need to cast a vote, as submitting a proposal does not implicitly do so
-    accept_tx = api.governance.accept(address1, 10000, [entity1], proposal)
+    accept_tx = api.governance.accept(proposal, entity1, 10000)
     api.sync(accept_tx)
 
 
