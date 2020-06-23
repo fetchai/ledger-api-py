@@ -18,12 +18,26 @@
 
 import requests
 import semver
+import re
 
 from fetchai.ledger import __version__, IncompatibleLedgerVersion
 
 
 class NetworkUnavailableError(Exception):
     pass
+
+
+def _parse_python_version(text):
+    match = re.match(r'^(\d+)\.(\d+)\.\d+(?:[abd]\d+)?$', text.strip())
+    if match is None:
+        raise RuntimeError('Unable to parse python version')
+
+    ver = {
+        'major': int(match.group(1)),
+        'minor': int(match.group(2)),
+    }
+
+    return ver
 
 
 def list_servers(active=True):
@@ -48,7 +62,7 @@ def is_server_valid(server_list, network):
         version_constraints = server_details['versions'].split(',')
 
         # Build required version (e.g.: 0.9.1-alpha2 -> 0.9.0)
-        network_version_required = semver.parse(__version__)
+        network_version_required = _parse_python_version(__version__)
         network_version_required['prerelease'] = None
         network_version_required['build'] = None
         network_version_required['patch'] = 0
