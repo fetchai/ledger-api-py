@@ -22,13 +22,13 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'examples', 'tests', 'scripts']),
     package_data={'fetchai': ['ledger/parser/etch.grammar']},
     install_requires=[
-        'base58==2.0.0',
+        'base58==2.0.1',
         'ecdsa==0.15',
         'lark-parser==0.8.1',
         'msgpack==0.6.2',
         'pyaes==1.6.1',
         'requests==2.22.0',
-        'semver==2.9.0',
+        'semver==2.10.2',
     ],
     extras_require={
         'dev': ['check-manifest', 'pydot'],
