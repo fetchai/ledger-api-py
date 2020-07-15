@@ -1,21 +1,21 @@
 # Security Policy
 
 ## Supported Versions
-
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+V4.0.x and version 5.1x support security.md
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| 5.1.x   | :security spprt: |
+| 5.0.x   | :none:                |
+| 4.0.x   | :security spport: |
+| < 4.0   | :none:                |
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+Create new issue essential to creating solution. Merge codes with issues to reduce highlighted areas 
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Create pull request, how often they can expect to get an update on a
+Merge items, follow instructions 
+Report the vulnerability if issue withstands 
+Potential Rewarded acception, existing vulnerability on
+
